@@ -505,10 +505,3 @@ project/
 - [ ] Distribute to users
 
 ---
-
-## ZAKLJUČEK
-
-Rewrite na vanilla TypeScript + Bootstrap bi rešil **VSE trenutne packaging probleme** in ohranil **VSE funkcionalnosti**.
-
-**Priporočam: GO FOR IT!** 🚀
-
