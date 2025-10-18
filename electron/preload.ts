@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('api', {
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
   getPath: (name: string) => ipcRenderer.invoke('app:getPath', name),
   ping: async () => ipcRenderer.invoke('app:ping'),
+  restart: async () => ipcRenderer.invoke('app:restart'),
   // Auth
   auth: {
     login: (payload: { username: string; password: string }) =>
@@ -17,6 +18,8 @@ contextBridge.exposeInMainWorld('api', {
     get: () => ipcRenderer.invoke('settings:get'),
     getRoles: () => ipcRenderer.invoke('settings:getRoles'),
     setRoles: (roles: any) => ipcRenderer.invoke('settings:setRoles', roles),
+    checkRoleUsage: (roleName: string) => ipcRenderer.invoke('settings:checkRoleUsage', roleName),
+    deleteRoleReferences: (roleName: string) => ipcRenderer.invoke('settings:deleteRoleReferences', roleName),
   },
   // Officials
   officials: {

@@ -11,6 +11,17 @@ function qs(id) {
   return document.getElementById(id);
 }
 
+// Global function to clean up all modals and restore body state
+window.cleanupModals = function() {
+  // Remove all modal elements
+  document.querySelectorAll('.modal, .modal-backdrop, div[style*="rgba(0,0,0,0.5)"]').forEach(el => el.remove());
+  
+  // Remove Bootstrap modal classes from body
+  document.body.classList.remove('modal-open');
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+};
+
 const pageTitles = {
   '#/dashboard': 'Nadzorna plošča',
   '#/officials': 'Sodniki',
@@ -91,8 +102,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (session) {
     try {
       const user = JSON.parse(session);
-      // Validate session
-      const valid = await window.api?.auth?.validateSession();
+      // Validate session with userId
+      const valid = await window.api?.auth?.validateSession(user.id);
       if (valid?.ok) {
         showApp(user);
         return;

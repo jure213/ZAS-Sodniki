@@ -41,11 +41,10 @@ export async function renderOfficials(container, user) {
       if (isAdmin) {
         container.querySelectorAll('.delete-official').forEach(btn => {
           btn.onclick = async () => {
-            if (confirm('Ali ste prepričani, da želite izbrisati tega sodnika?')) {
-              const id = parseInt(btn.dataset.id);
-              await window.api?.officials?.delete(id);
-              loadOfficials();
-            }
+            // Removed confirm dialog - it blocks keyboard events in Electron
+            const id = parseInt(btn.dataset.id);
+            await window.api?.officials?.delete(id);
+            loadOfficials();
           };
         });
         container.querySelectorAll('.toggle-active').forEach(btn => {
@@ -70,6 +69,11 @@ export async function renderOfficials(container, user) {
   }
   
   function showEditForm(official = null) {
+    // Clean up any existing modals first
+    if (window.cleanupModals) {
+      window.cleanupModals();
+    }
+    
     const modal = document.createElement('div');
     modal.className = 'modal show d-block';
     modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
@@ -97,7 +101,11 @@ export async function renderOfficials(container, user) {
     document.body.appendChild(modal);
     
     modal.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
-      btn.onclick = () => modal.remove();
+      btn.onclick = () => {
+        if (window.cleanupModals) {
+          window.cleanupModals();
+        }
+      };
     });
     
     modal.querySelector('#save-official').onclick = async () => {
@@ -113,7 +121,9 @@ export async function renderOfficials(container, user) {
       } else {
         await window.api?.officials?.create(data);
       }
-      modal.remove();
+      if (window.cleanupModals) {
+        window.cleanupModals();
+      }
       loadOfficials();
     };
   }

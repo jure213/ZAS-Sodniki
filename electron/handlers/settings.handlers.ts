@@ -15,4 +15,14 @@ export function setupSettingsHandlers(db: DatabaseManager) {
   ipcMain.handle('settings:getRoles', async () => {
     return db.getSetting('official_roles') ?? [];
   });
+
+  ipcMain.handle('settings:checkRoleUsage', async (_event, roleName: string) => {
+    const usage = db.checkRoleUsage(roleName);
+    return usage;
+  });
+
+  ipcMain.handle('settings:deleteRoleReferences', async (_event, roleName: string) => {
+    const deletedCount = db.deleteRoleReferences(roleName);
+    return { deletedCount };
+  });
 }

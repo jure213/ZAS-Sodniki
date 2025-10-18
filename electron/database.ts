@@ -336,4 +336,27 @@ export class DatabaseManager {
       paidPayments: paidPayments?.total ?? 0
     };
   }
+
+  // Role management helpers
+  checkRoleUsage(roleName: string): Array<{ competition_id: number; competition_name: string; official_id: number; official_name: string }> {
+    if (!this.db) return [];
+    return this.db.prepare(`
+      SELECT 
+        co.competition_id, 
+        c.name as competition_name,
+        co.official_id,
+        o.name as official_name
+      FROM competition_officials co
+      LEFT JOIN competitions c ON co.competition_id = c.id
+      LEFT JOIN officials o ON co.official_id = o.id
+      WHERE co.role = ?
+    `).all(roleName) as any[];
+  }
+
+  deleteRoleReferences(roleName: string): number {
+    if (!this.db) return 0;
+    const stmt = this.db.prepare('DELETE FROM competition_officials WHERE role = ?');
+    const info = stmt.run(roleName);
+    return info.changes;
+  }
 }

@@ -39,13 +39,6 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
-
-  // Clear localStorage on window close for security
-  mainWindow.on('close', () => {
-    if (mainWindow) {
-      mainWindow.webContents.executeJavaScript('localStorage.clear();').catch(() => {});
-    }
-  });
 }
 
 // Initialize database and IPC handlers
@@ -111,4 +104,13 @@ ipcMain.handle('app:getPath', (_event: IpcMainInvokeEvent, name: string) => {
 
 ipcMain.handle('app:ping', async () => {
   return { pong: true, at: Date.now() };
+});
+
+ipcMain.handle('app:restart', async () => {
+  if (mainWindow) {
+    // Reload the window instead of restarting the entire app
+    mainWindow.reload();
+    return { success: true };
+  }
+  return { success: false };
 });
