@@ -1,0 +1,55 @@
+{
+  "name": "zas-sodniki-vanilla",
+  "version": "1.0.0",
+  "description": "Athletic Officials Payment Tracker - Vanilla TypeScript",
+  "main": "dist-electron/main.js",
+  "homepage": "https://github.com/zas/sodniki",
+  "author": {
+    "name": "ZAS",
+    "email": "info@zas.si"
+  },
+  "scripts": {
+    "dev": "tsc -p tsconfig.json && electron .",
+    "tsc": "tsc -p tsconfig.json",
+    "start": "npm run dev",
+    "postinstall": "electron-builder install-app-deps",
+    "build": "tsc && electron-builder",
+    "build:linux": "tsc && electron-builder --linux",
+    "build:win": "tsc && electron-builder --win"
+  },
+  "keywords": ["electron", "sqlite", "athletics", "payments"],
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.0.0"
+  },
+  "devDependencies": {
+    "electron": "^28.1.0",
+    "typescript": "^5.3.3",
+    "electron-builder": "^24.9.1",
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/node": "^20.10.6"
+  },
+  "build": {
+    "appId": "com.zas.sodniki",
+    "productName": "ZAS Sodniki",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist-electron/**/*",
+      "src/**/*",
+      "node_modules/better-sqlite3/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*"
+    ],
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Office",
+      "maintainer": "ZAS <info@zas.si>"
+    },
+    "win": {
+      "target": ["nsis"]
+    }
+  }
+}
