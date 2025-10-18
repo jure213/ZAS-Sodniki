@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
   getPath: (name: string) => ipcRenderer.invoke('app:getPath', name),
   ping: async () => ipcRenderer.invoke('app:ping'),
   restart: async () => ipcRenderer.invoke('app:restart'),
+  quit: async () => ipcRenderer.invoke('app:quit'),
   // Auth
   auth: {
     login: (payload: { username: string; password: string }) =>

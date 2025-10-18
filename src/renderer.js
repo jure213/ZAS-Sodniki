@@ -48,6 +48,17 @@ function showApp(user) {
     window.location.reload();
   };
   
+  // Quit handler
+  qs('quitBtn').onclick = async () => {
+    if (confirm('Ali ste prepričani, da želite zapreti aplikacijo?')) {
+      try {
+        await window.api?.quit();
+      } catch (e) {
+        console.error('Failed to quit:', e);
+      }
+    }
+  };
+  
   // Render sidebar
   const sidebar = qs('appNav');
   renderSidebar(sidebar, { user, onNavigate: () => route(user) });

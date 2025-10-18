@@ -114,3 +114,11 @@ ipcMain.handle('app:restart', async () => {
   }
   return { success: false };
 });
+
+ipcMain.handle('app:quit', async () => {
+  if (db) {
+    db.close();
+  }
+  app.quit();
+  return { success: true };
+});
