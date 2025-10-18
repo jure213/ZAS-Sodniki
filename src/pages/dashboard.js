@@ -21,7 +21,7 @@ export async function renderDashboard(container) {
       </div>
       <div class="col-md-3">
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #196905ff 0%, #82e2a2ff 100%); color: white;">
             <i class="bi bi-check-circle-fill"></i>
           </div>
           <div class="stat-label">Skupaj plačano</div>
@@ -30,7 +30,7 @@ export async function renderDashboard(container) {
       </div>
       <div class="col-md-3">
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white;">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #ee0d0dff 0%, #be6363ff 100%); color: white;">
             <i class="bi bi-exclamation-circle-fill"></i>
           </div>
           <div class="stat-label">Skupaj dolguje</div>
@@ -62,33 +62,42 @@ export async function renderDashboard(container) {
       </div>
     </div>
   `;
-  
+
   try {
     const stats = await window.api?.dashboard?.getStats();
     if (stats) {
-      document.getElementById('stat-officials').textContent = stats.totalOfficials;
-      document.getElementById('stat-competitions').textContent = stats.activeCompetitions;
-      document.getElementById('stat-paid').textContent = (stats.paidPayments ?? 0).toFixed(2) + ' €';
-      document.getElementById('stat-owed').textContent = (stats.owedPayments ?? 0).toFixed(2) + ' €';
+      document.getElementById("stat-officials").textContent =
+        stats.totalOfficials;
+      document.getElementById("stat-competitions").textContent =
+        stats.activeCompetitions;
+      document.getElementById("stat-paid").textContent =
+        (stats.paidPayments ?? 0).toFixed(2) + " €";
+      document.getElementById("stat-owed").textContent =
+        (stats.owedPayments ?? 0).toFixed(2) + " €";
     }
-    
+
     // Load unpaid payments
-    const payments = await window.api?.payments?.list({ status: 'owed' });
-    const tbody = document.getElementById('unpaid-payments');
+    const payments = await window.api?.payments?.list({ status: "owed" });
+    const tbody = document.getElementById("unpaid-payments");
     if (payments?.length) {
-      tbody.innerHTML = payments.slice(0, 10).map(p => `
+      tbody.innerHTML = payments
+        .slice(0, 10)
+        .map(
+          (p) => `
         <tr>
-          <td>${p.official_name || 'N/A'}</td>
-          <td>${p.competition_name || 'N/A'}</td>
+          <td>${p.official_name || "N/A"}</td>
+          <td>${p.competition_name || "N/A"}</td>
           <td><strong>${p.amount.toFixed(2)} €</strong></td>
           <td>${p.date}</td>
         </tr>
-      `).join('');
+      `
+        )
+        .join("");
     } else {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Ni neplačanih izplačil</td></tr>';
+      tbody.innerHTML =
+        '<tr><td colspan="4" class="text-center text-muted">Ni neplačanih izplačil</td></tr>';
     }
   } catch (e) {
-    console.error('Failed to load dashboard stats:', e);
+    console.error("Failed to load dashboard stats:", e);
   }
 }
-
