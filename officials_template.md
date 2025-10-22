@@ -6,8 +6,8 @@ Your Excel file should have the following columns in the first row (header):
 
 | Name | Email | Phone | License Number |
 |------|-------|-------|----------------|
-| Janez Novak | janez.novak@example.com | 031234567 | LIC-12345 |
-| Ana Kovač | ana.kovac@example.com | 041234567 | LIC-67890 |
+| Janez Novak | <janez.novak@example.com> | 031234567 | LIC-12345 |
+| Ana Kovač | <ana.kovac@example.com> | 041234567 | LIC-67890 |
 
 ## Column Names (Flexible)
 
@@ -27,12 +27,13 @@ The import function accepts various column name formats:
 
 ## Example Data
 
-```
+``` zsh
 Name                | Email                      | Phone       | License Number
-Janez Novak        | janez.novak@gmail.com      | 031123456   | LIC-001
-Marija Horvat      | marija.horvat@gmail.com    | 041234567   | LIC-002
-Peter Žnidaršič    | peter.znidar@gmail.com     | 051345678   | LIC-003
-Ana Krajnc         | ana.krajnc@gmail.com       | 040456789   | LIC-004
+--------------------------------------------------------------------------------
+Janez Novak         | janez.novak@gmail.com      | 031123456   | LIC-001
+Marija Horvat       | marija.horvat@gmail.com    | 041234567   | LIC-002
+Peter Žnidaršič     | peter.znidar@gmail.com     | 051345678   | LIC-003
+Ana Krajnc          | ana.krajnc@gmail.com       | 040456789   | LIC-004
 ```
 
 ## Steps to Import

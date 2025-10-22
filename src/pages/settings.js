@@ -9,7 +9,28 @@ export async function renderSettings(container, user) {
   container.innerHTML = "";
 
   const settingsContent = document.createElement("div");
+  
+  // Get current "remember me" setting
+  const rememberMe = localStorage.getItem('rememberMe') === 'true';
+  
   settingsContent.innerHTML = `
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-gear-fill me-2"></i>Splošne nastavitve
+      </div>
+      <div class="card-body">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="rememberMeSwitch" ${rememberMe ? 'checked' : ''}>
+          <label class="form-check-label" for="rememberMeSwitch">
+            Ostani prijavljen (shrani prijavo med sejami)
+          </label>
+        </div>
+        <small class="text-muted d-block mt-2">
+          <i class="bi bi-info-circle"></i> Ko je ta možnost vključena, boste ostali prijavljeni tudi po ponovnem zagonu aplikacije.
+        </small>
+      </div>
+    </div>
+  
     <div class="d-flex justify-content-end align-items-center mb-2">
       <button id="add-role" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj vlogo</button>
     </div>
@@ -228,6 +249,27 @@ export async function renderSettings(container, user) {
       await loadRoles();
     };
   }
+
+  // Handle remember me toggle
+  settingsContent.querySelector("#rememberMeSwitch").onchange = (e) => {
+    const isChecked = e.target.checked;
+    localStorage.setItem('rememberMe', isChecked.toString());
+    
+    // Show confirmation
+    const toast = document.createElement("div");
+    toast.className = "alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
+    toast.style.zIndex = "9999";
+    toast.innerHTML = `
+      <i class="bi bi-check-circle-fill me-2"></i>
+      <strong>Nastavitev shranjena!</strong> ${isChecked ? 'Ostali boste prijavljeni med sejami.' : 'Prijava ne bo shranjena med sejami.'}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  };
 
   settingsContent.querySelector("#add-role").onclick = async () => {
     const roles = (await window.api?.settings?.getRoles()) ?? [];

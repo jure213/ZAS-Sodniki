@@ -78,7 +78,7 @@ export async function renderPayments(container, user) {
             <td>${p.competition_name ?? ''}</td>
             <td class="text-center">${(p.amount ?? 0).toFixed(2)} €</td>
             <td>${formatPaymentMethod(p.method)}</td>
-            <td><span class="badge bg-${p.status === 'paid' ? 'success' : 'warning'}">${p.status === 'paid' ? 'Plačano' : 'Ni plačano'}</span></td>
+            <td><span class="badge bg-${p.status === 'paid' ? 'success' : 'danger'}">${p.status === 'paid' ? 'Plačano' : 'Ni plačano'}</span></td>
             <td>${window.formatDate(p.date)}</td>
             ${isAdmin ? `<td>
               <button class="btn btn-sm btn-outline-primary edit-payment" data-id="${p.id}"><i class="bi bi-pencil"></i></button>
