@@ -11,22 +11,41 @@ export async function renderSettings(container, user) {
   const settingsContent = document.createElement("div");
   settingsContent.innerHTML = `
     <h2 class="h5 mb-3">Nastavitve</h2>
-    <div class="card">
+    <div class="card mb-3">
       <div class="card-header d-flex justify-content-between align-items-center">
         <span>Vloge sodnikov</span>
         <button id="add-role" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj vlogo</button>
       </div>
       <div class="card-body p-0">
         <!-- Header Row -->
-        <div class="d-flex border-bottom bg-light px-3 py-2 fw-semibold text-uppercase small text-muted">
-          <div style="width: 33.33%; text-align: left;">IME VLOGE</div>
+        <div class="d-flex border-bottom bg-light px-3 py-2 fw-semibold text-uppercase small text-muted align-items-center">
+          <div style="width: 33.33%; text-align: center;">IME VLOGE</div>
           <div style="width: 33.33%; text-align: center;">URNA POSTAVKA</div>
-          <div style="width: 33.33%; text-align: right;">AKCIJE</div>
+          <div style="width: 33.33%; text-align: center;">AKCIJE</div>
         </div>
         <!-- Roles Container -->
         <div id="roles-body">
           <div class="px-3 py-2 text-muted">Nalagam…</div>
         </div>
+      </div>
+    </div>
+    
+    <div class="card border-danger">
+      <div class="card-header bg-danger text-white">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>Nevarno območje
+      </div>
+      <div class="card-body">
+        <h6 class="card-title">Počisti bazo podatkov</h6>
+        <p class="card-text text-muted">
+          Ta akcija bo izbrisala VSE podatke iz baze (sodnike, tekmovanja, plačila, uporabnike), 
+          vendar bo ohranila strukturo baze, administratorski račun in nastavitve vlog.
+        </p>
+        <p class="card-text text-danger fw-bold">
+          <i class="bi bi-exclamation-circle me-1"></i>TA AKCIJA JE NEPOVRATNA!
+        </p>
+        <button id="clear-database" class="btn btn-danger">
+          <i class="bi bi-trash3 me-1"></i>Počisti bazo podatkov
+        </button>
       </div>
     </div>
   `;
@@ -51,9 +70,9 @@ export async function renderSettings(container, user) {
         .map(
           (r) => `
           <div class="d-flex align-items-center border-bottom px-3 py-3">
-            <div style="width: 33.33%; text-align: left;">${r.name}</div>
+            <div style="width: 33.33%; text-align: center;">${r.name}</div>
             <div style="width: 33.33%; text-align: center;">${(r.hourlyRate || 0).toFixed(2)} €</div>
-            <div style="width: 33.33%; text-align: right;">
+            <div style="width: 33.33%; text-align: center;">
               <button class="btn btn-sm btn-outline-primary edit-role me-1" data-id="${
                 r.id
               }" data-name="${r.name}" data-rate="${r.hourlyRate}"><i class="bi bi-pencil"></i></button>
@@ -93,9 +112,16 @@ export async function renderSettings(container, user) {
         const id = parseInt(deleteBtn.dataset.id);
         const roleName = deleteBtn.dataset.name;
 
-        // Check if role is being used and delete references if needed
-        const usage =
-          (await window.api?.settings?.checkRoleUsage(roleName)) ?? [];
+        // Check if role is being used
+        const usage = (await window.api?.settings?.checkRoleUsage(roleName)) ?? [];
+        
+        let confirmMessage = `Ali ste prepričani, da želite izbrisati vlogo "${roleName}"?`;
+        if (usage.length > 0) {
+          confirmMessage += `\n\nVloga je v uporabi pri ${usage.length} dodelitvi(-ah). Te dodelitve bodo odstranjene.`;
+        }
+        
+        const confirmed = await window.confirmDialog(confirmMessage, 'Izbriši vlogo');
+        if (!confirmed) return;
 
         if (usage.length > 0) {
           // Delete references first (cascade delete)
@@ -206,6 +232,55 @@ export async function renderSettings(container, user) {
   settingsContent.querySelector("#add-role").onclick = async () => {
     const roles = (await window.api?.settings?.getRoles()) ?? [];
     showEditForm(null, roles);
+  };
+
+  settingsContent.querySelector("#clear-database").onclick = async () => {
+    const confirmed = await window.confirmDialog(
+      "Ali ste POPOLNOMA prepričani, da želite izbrisati VSE podatke iz baze?\n\n" +
+      "To bo izbrisalo:\n" +
+      "• Vse sodnike\n" +
+      "• Vsa tekmovanja\n" +
+      "• Vse dodelitve sodnikov\n" +
+      "• Vsa plačila\n" +
+      "• Vse uporabnike razen administratorja\n\n" +
+      "Ohranilo bo:\n" +
+      "• Administratorski račun\n" +
+      "• Nastavitve vlog\n\n" +
+      "TA AKCIJA JE NEPOVRATNA!",
+      "Počisti bazo podatkov"
+    );
+
+    if (!confirmed) return;
+
+    // Double confirmation
+    const doubleConfirmed = await window.confirmDialog(
+      "Zadnje opozorilo!\n\nRes želite izbrisati vse podatke?\n\nTo dejanje ni mogoče razveljaviti.",
+      "Potrdite brisanje"
+    );
+
+    if (!doubleConfirmed) return;
+
+    try {
+      await window.api?.settings?.clearDatabase();
+      
+      // Show success message
+      const successDiv = document.createElement("div");
+      successDiv.className = "alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
+      successDiv.style.zIndex = "9999";
+      successDiv.innerHTML = `
+        <strong>Uspeh!</strong> Baza podatkov je bila počiščena. Vsi podatki so bili izbrisani.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.body.appendChild(successDiv);
+      
+      setTimeout(() => {
+        successDiv.remove();
+      }, 5000);
+
+    } catch (err) {
+      console.error("Error clearing database:", err);
+      alert(`Napaka pri čiščenju baze: ${err.message || err}`);
+    }
   };
 
   await loadRoles();

@@ -25,4 +25,9 @@ export function setupSettingsHandlers(db: DatabaseManager) {
     const deletedCount = db.deleteRoleReferences(roleName);
     return { deletedCount };
   });
+
+  ipcMain.handle('settings:clearDatabase', async () => {
+    db.clearAllData();
+    return { ok: true };
+  });
 }

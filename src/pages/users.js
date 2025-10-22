@@ -12,8 +12,8 @@ export async function renderUsers(container, user) {
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover">
-        <thead><tr><th>Uporabniško ime</th><th>Ime</th><th>Vloga</th><th>Ustvarjen</th><th>Akcije</th></tr></thead>
-        <tbody id="users-body"><tr><td colspan="5">Nalagam…</td></tr></tbody>
+        <thead class="text-center"><tr><th>Uporabniško ime</th><th>Ime</th><th>Vloga</th><th>Ustvarjen</th><th>Akcije</th></tr></thead>
+        <tbody id="users-body" class="align-middle text-center"><tr><td colspan="5">Nalagam…</td></tr></tbody>
       </table>
     </div>
   `;
@@ -30,7 +30,7 @@ export async function renderUsers(container, user) {
             <td><span class="badge bg-${
               u.role === "admin" ? "primary" : "secondary"
             }">${u.role}</span></td>
-            <td>${u.created_at?.substring(0, 10) ?? ""}</td>
+            <td>${window.formatDate(u.created_at)}</td>
             <td>
               <button class="btn btn-sm btn-outline-primary edit-user" data-id="${
                 u.id
@@ -51,10 +51,12 @@ export async function renderUsers(container, user) {
 
       container.querySelectorAll(".delete-user").forEach((btn) => {
         btn.onclick = async () => {
-          // Removed confirm dialog - it blocks keyboard events in Electron
           const id = parseInt(btn.dataset.id);
-          await window.api?.users?.delete(id);
-          loadUsers();
+          const confirmed = await window.confirmDialog('Ali ste prepričani, da želite izbrisati tega uporabnika?', 'Izbriši uporabnika');
+          if (confirmed) {
+            await window.api?.users?.delete(id);
+            loadUsers();
+          }
         };
       });
 

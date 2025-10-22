@@ -23,8 +23,8 @@ export async function renderPayments(container, user) {
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover">
-        <thead><tr><th>Sodnik</th><th>Tekmovanje</th><th>Znesek (€)</th><th>Način</th><th>Status</th><th>Datum</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
-        <tbody id="payments-body"><tr><td colspan="${isAdmin ? 7 : 6}">Nalagam…</td></tr></tbody>
+        <thead class="text-center"><tr><th>Sodnik</th><th>Tekmovanje</th><th>Znesek (€)</th><th>Način</th><th>Status</th><th>Datum</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
+        <tbody id="payments-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 7 : 6}">Nalagam…</td></tr></tbody>
       </table>
     </div>
   `;
@@ -37,6 +37,11 @@ export async function renderPayments(container, user) {
     competitions = await window.api?.competitions?.list() ?? [];
     const officialSelect = container.querySelector('#filter-official');
     const competitionSelect = container.querySelector('#filter-competition');
+    
+    // Clear existing options (keep only the first "Vsi"/"Vsa" option)
+    officialSelect.innerHTML = '<option value="">Vsi</option>';
+    competitionSelect.innerHTML = '<option value="">Vsa</option>';
+    
     officials.forEach(o => {
       const opt = document.createElement('option');
       opt.value = o.id;
@@ -51,6 +56,18 @@ export async function renderPayments(container, user) {
     });
   }
   
+  function formatPaymentMethod(method) {
+    const methodMap = {
+      'gotovina': 'Gotovina',
+      'nakazilo': 'Nakazilo',
+      'cash': 'Gotovina',
+      'bank_transfer': 'Nakazilo',
+      'check': 'Nakazilo',
+      'other': 'Nakazilo'
+    };
+    return methodMap[method] || method || '';
+  }
+
   async function loadPayments(filters = {}) {
     try {
       const list = await window.api?.payments?.list(filters);
@@ -61,9 +78,9 @@ export async function renderPayments(container, user) {
             <td>${p.official_name ?? ''}</td>
             <td>${p.competition_name ?? ''}</td>
             <td class="text-end">${(p.amount ?? 0).toFixed(2)}</td>
-            <td>${p.method ?? ''}</td>
+            <td>${formatPaymentMethod(p.method)}</td>
             <td><span class="badge bg-${p.status === 'paid' ? 'success' : 'warning'}">${p.status === 'paid' ? 'Plačano' : 'Dolguje'}</span></td>
-            <td>${p.date ?? ''}</td>
+            <td>${window.formatDate(p.date)}</td>
             ${isAdmin ? `<td>
               <button class="btn btn-sm btn-outline-primary edit-payment" data-id="${p.id}"><i class="bi bi-pencil"></i></button>
               ${p.status !== 'paid' ? `<button class="btn btn-sm btn-outline-success mark-paid" data-id="${p.id}">Označi plačano</button>` : ''}
@@ -80,10 +97,12 @@ export async function renderPayments(container, user) {
       if (isAdmin) {
         container.querySelectorAll('.delete-payment').forEach(btn => {
           btn.onclick = async () => {
-            // Removed confirm dialog - it blocks keyboard events in Electron
             const id = parseInt(btn.dataset.id);
-            await window.api?.payments?.delete(id);
-            loadPayments(filters);
+            const confirmed = await window.confirmDialog('Ali ste prepričani, da želite izbrisati to izplačilo?', 'Izbriši izplačilo');
+            if (confirmed) {
+              await window.api?.payments?.delete(id);
+              loadPayments(filters);
+            }
           };
         });
         container.querySelectorAll('.mark-paid').forEach(btn => {
@@ -128,10 +147,8 @@ export async function renderPayments(container, user) {
             <div class="mb-2"><label class="form-label">Znesek (€)</label><input type="number" step="0.01" id="f-amount" class="form-control" value="${payment?.amount ?? ''}"></div>
             <div class="mb-2"><label class="form-label">Datum</label><input type="date" id="f-date" class="form-control" value="${payment?.date ?? ''}"></div>
             <div class="mb-2"><label class="form-label">Način plačila</label><select id="f-method" class="form-select">
-              <option value="cash" ${payment?.method === 'cash' ? 'selected' : ''}>Gotovina</option>
-              <option value="bank_transfer" ${payment?.method === 'bank_transfer' ? 'selected' : ''}>Bančno nakazilo</option>
-              <option value="check" ${payment?.method === 'check' ? 'selected' : ''}>Ček</option>
-              <option value="other" ${payment?.method === 'other' ? 'selected' : ''}>Drugo</option>
+              <option value="gotovina" ${payment?.method === 'gotovina' || payment?.method === 'cash' ? 'selected' : ''}>Gotovina</option>
+              <option value="nakazilo" ${payment?.method === 'nakazilo' || payment?.method === 'bank_transfer' ? 'selected' : ''}>Nakazilo</option>
             </select></div>
             <div class="mb-2"><label class="form-label">Status</label><select id="f-status" class="form-select">
               <option value="owed" ${payment?.status === 'owed' ? 'selected' : ''}>Dolguje</option>

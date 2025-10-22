@@ -45,7 +45,7 @@ export async function renderDashboard(container) {
           <div class="p-4">
             <h3 class="h5 mb-3">Neplačana izplačila</h3>
             <table class="table table-hover mb-0">
-              <thead>
+              <thead class="text-center">
                 <tr>
                   <th>SODNIK</th>
                   <th>TEKMOVANJE</th>
@@ -53,7 +53,7 @@ export async function renderDashboard(container) {
                   <th>DATUM</th>
                 </tr>
               </thead>
-              <tbody id="unpaid-payments">
+              <tbody id="unpaid-payments" class="align-middle text-center">
                 <tr><td colspan="4" class="text-center text-muted">Nalaganje...</td></tr>
               </tbody>
             </table>
@@ -88,7 +88,7 @@ export async function renderDashboard(container) {
           <td>${p.official_name || "N/A"}</td>
           <td>${p.competition_name || "N/A"}</td>
           <td><strong>${p.amount.toFixed(2)} €</strong></td>
-          <td>${p.date}</td>
+          <td>${window.formatDate(p.date)}</td>
         </tr>
       `
         )

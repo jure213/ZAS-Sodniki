@@ -123,10 +123,10 @@ export class DatabaseManager {
     if (payCount.c === 0) {
       db.prepare(
         'INSERT INTO payments (official_id, competition_id, amount, date, method, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(1, 1, 200.00, '2024-06-15', 'bank_transfer', 'paid', 'Plačilo za 8 ur');
+      ).run(1, 1, 200.00, '2024-06-15', 'nakazilo', 'paid', 'Plačilo za 8 ur');
       db.prepare(
         'INSERT INTO payments (official_id, competition_id, amount, date, method, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(2, 1, 144.00, '2024-06-15', 'cash', 'owed', 'Plačilo za 8 ur');
+      ).run(2, 1, 144.00, '2024-06-15', 'gotovina', 'owed', 'Plačilo za 8 ur');
     }
   }
 
@@ -337,6 +337,24 @@ export class DatabaseManager {
     };
   }
 
+  // Clear all data from database but keep structure
+  clearAllData(): boolean {
+    if (!this.db) return false;
+    try {
+      // Delete all data from tables (in correct order due to foreign keys)
+      this.db.prepare('DELETE FROM payments').run();
+      this.db.prepare('DELETE FROM competition_officials').run();
+      this.db.prepare('DELETE FROM competitions').run();
+      this.db.prepare('DELETE FROM officials').run();
+      this.db.prepare('DELETE FROM users WHERE username != ?').run('admin'); // Keep admin user
+      // Don't delete settings - keep roles configuration
+      return true;
+    } catch (error) {
+      console.error('Error clearing database:', error);
+      return false;
+    }
+  }
+
   // Role management helpers
   checkRoleUsage(roleName: string): Array<{ competition_id: number; competition_name: string; official_id: number; official_name: string }> {
     if (!this.db) return [];
@@ -358,5 +376,93 @@ export class DatabaseManager {
     const stmt = this.db.prepare('DELETE FROM competition_officials WHERE role = ?');
     const info = stmt.run(roleName);
     return info.changes;
+  }
+
+  // Competition Officials Management
+  listCompetitionOfficials(competitionId: number): Array<{ id: number; competition_id: number; official_id: number; official_name: string; role: string; hours: number; notes: string }> {
+    if (!this.db) return [];
+    return this.db.prepare(`
+      SELECT co.*, o.name as official_name 
+      FROM competition_officials co
+      LEFT JOIN officials o ON co.official_id = o.id
+      WHERE co.competition_id = ?
+      ORDER BY o.name
+    `).all(competitionId) as any[];
+  }
+
+  addCompetitionOfficial(data: { competition_id: number; official_id: number; role: string; hours: number; notes?: string }): number {
+    if (!this.db) return -1;
+    const stmt = this.db.prepare('INSERT INTO competition_officials (competition_id, official_id, role, hours, notes) VALUES (?, ?, ?, ?, ?)');
+    const info = stmt.run(data.competition_id, data.official_id, data.role, data.hours, data.notes ?? '');
+    return info.lastInsertRowid as number;
+  }
+
+  updateCompetitionOfficial(id: number, data: { role: string; hours: number; notes: string }): boolean {
+    if (!this.db) return false;
+    const stmt = this.db.prepare('UPDATE competition_officials SET role=?, hours=?, notes=? WHERE id=?');
+    const info = stmt.run(data.role, data.hours, data.notes, id);
+    return info.changes > 0;
+  }
+
+  deleteCompetitionOfficial(id: number): boolean {
+    if (!this.db) return false;
+    const stmt = this.db.prepare('DELETE FROM competition_officials WHERE id=?');
+    const info = stmt.run(id);
+    return info.changes > 0;
+  }
+
+  // Generate payments from competition officials
+  generatePaymentsForCompetition(competitionId: number): { created: number; errors: string[] } {
+    if (!this.db) return { created: 0, errors: [] };
+    
+    const roles = this.getSetting<Array<{ id: number; name: string; hourlyRate: number }>>('official_roles') ?? [];
+    const competition = this.db.prepare('SELECT * FROM competitions WHERE id = ?').get(competitionId) as any;
+    const officials = this.listCompetitionOfficials(competitionId);
+    
+    if (!competition) {
+      return { created: 0, errors: ['Competition not found'] };
+    }
+
+    let created = 0;
+    const errors: string[] = [];
+
+    for (const official of officials) {
+      const role = roles.find(r => r.name === official.role);
+      if (!role) {
+        errors.push(`Role "${official.role}" not found for ${official.official_name}`);
+        continue;
+      }
+
+      const amount = role.hourlyRate * official.hours;
+
+      // Check if payment already exists
+      const existing = this.db.prepare(
+        'SELECT id FROM payments WHERE competition_id = ? AND official_id = ?'
+      ).get(competitionId, official.official_id);
+
+      if (existing) {
+        errors.push(`Payment already exists for ${official.official_name}`);
+        continue;
+      }
+
+      // Create payment
+      const paymentId = this.addPayment({
+        official_id: official.official_id,
+        competition_id: competitionId,
+        amount: amount,
+        date: competition.date,
+        method: 'nakazilo',
+        status: 'owed',
+        notes: `${role.name} - ${official.hours}h @ €${role.hourlyRate}/h`
+      });
+
+      if (paymentId > 0) {
+        created++;
+      } else {
+        errors.push(`Failed to create payment for ${official.official_name}`);
+      }
+    }
+
+    return { created, errors };
   }
 }

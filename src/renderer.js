@@ -11,6 +11,17 @@ function qs(id) {
   return document.getElementById(id);
 }
 
+// Global function to format date to dd.mm.yyyy
+window.formatDate = function(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString; // Return original if invalid
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+};
+
 // Global function to clean up all modals and restore body state
 window.cleanupModals = function() {
   // Remove all modal elements
@@ -20,6 +31,48 @@ window.cleanupModals = function() {
   document.body.classList.remove('modal-open');
   document.body.style.overflow = '';
   document.body.style.paddingRight = '';
+};
+
+// Global in-app confirmation dialog (no Windows popups)
+window.confirmDialog = function(message, title = 'Potrditev') {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'modal show d-block';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modal.style.zIndex = '2000';
+    modal.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">${title}</h5>
+            <button type="button" class="btn-close" data-action="cancel"></button>
+          </div>
+          <div class="modal-body">
+            <p>${message}</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-action="cancel">Prekliči</button>
+            <button type="button" class="btn btn-primary" data-action="confirm">Potrdi</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const cleanup = () => modal.remove();
+
+    modal.querySelectorAll('[data-action="cancel"]').forEach(btn => {
+      btn.onclick = () => {
+        cleanup();
+        resolve(false);
+      };
+    });
+
+    modal.querySelector('[data-action="confirm"]').onclick = () => {
+      cleanup();
+      resolve(true);
+    };
+  });
 };
 
 const pageTitles = {
@@ -50,7 +103,8 @@ function showApp(user) {
   
   // Quit handler
   qs('quitBtn').onclick = async () => {
-    if (confirm('Ali ste prepričani, da želite zapreti aplikacijo?')) {
+    const confirmed = await window.confirmDialog('Ali ste prepričani, da želite zapreti aplikacijo?', 'Zapri aplikacijo');
+    if (confirmed) {
       try {
         await window.api?.quit();
       } catch (e) {

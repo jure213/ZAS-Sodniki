@@ -17,17 +17,23 @@
     "build:linux": "tsc && electron-builder --linux",
     "build:win": "tsc && electron-builder --win"
   },
-  "keywords": ["electron", "sqlite", "athletics", "payments"],
+  "keywords": [
+    "electron",
+    "sqlite",
+    "athletics",
+    "payments"
+  ],
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^11.0.0"
+    "better-sqlite3": "^11.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "electron": "^28.1.0",
-    "typescript": "^5.3.3",
-    "electron-builder": "^24.9.1",
     "@types/better-sqlite3": "^7.6.8",
-    "@types/node": "^20.10.6"
+    "@types/node": "^20.10.6",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "typescript": "^5.3.3"
   },
   "build": {
     "appId": "com.zas.sodniki",
@@ -44,12 +50,17 @@
       "node_modules/better-sqlite3/**/*"
     ],
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "category": "Office",
       "maintainer": "ZAS <info@zas.si>"
     },
     "win": {
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     }
   }
 }

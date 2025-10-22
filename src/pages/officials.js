@@ -3,12 +3,17 @@ export async function renderOfficials(container, user) {
   container.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-2">
       <h2 class="h5 m-0">Sodniki</h2>
-      ${isAdmin ? '<button id="add-official" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj sodnika</button>' : ''}
+      ${isAdmin ? `
+        <div>
+          <button id="import-excel" class="btn btn-success btn-sm me-2"><i class="bi bi-file-earmark-excel me-1"></i> Uvozi iz Excel</button>
+          <button id="add-official" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj sodnika</button>
+        </div>
+      ` : ''}
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover">
-        <thead><tr><th>Ime</th><th>Email</th><th>Telefon</th><th>Licenca</th><th>Status</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
-        <tbody id="officials-body"><tr><td colspan="${isAdmin ? 6 : 5}">Nalagam…</td></tr></tbody>
+        <thead class="text-center"><tr><th>Ime</th><th>Email</th><th>Telefon</th><th>Licenca</th><th>Status</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
+        <tbody id="officials-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 6 : 5}">Nalagam…</td></tr></tbody>
       </table>
     </div>
   `;
@@ -41,10 +46,12 @@ export async function renderOfficials(container, user) {
       if (isAdmin) {
         container.querySelectorAll('.delete-official').forEach(btn => {
           btn.onclick = async () => {
-            // Removed confirm dialog - it blocks keyboard events in Electron
             const id = parseInt(btn.dataset.id);
-            await window.api?.officials?.delete(id);
-            loadOfficials();
+            const confirmed = await window.confirmDialog('Ali ste prepričani, da želite izbrisati tega sodnika?', 'Izbriši sodnika');
+            if (confirmed) {
+              await window.api?.officials?.delete(id);
+              loadOfficials();
+            }
           };
         });
         container.querySelectorAll('.toggle-active').forEach(btn => {
@@ -128,8 +135,53 @@ export async function renderOfficials(container, user) {
     };
   }
   
+  function showNotification(message, type = 'info') {
+    // Remove any existing notifications
+    const existing = container.querySelector('.import-notification');
+    if (existing) existing.remove();
+    
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show import-notification`;
+    notification.style.position = 'relative';
+    notification.style.marginTop = '10px';
+    notification.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const firstChild = container.querySelector('.table-responsive');
+    firstChild.parentNode.insertBefore(notification, firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.remove();
+      }
+    }, 5000);
+  }
+  
   if (isAdmin) {
     container.querySelector('#add-official').onclick = () => showEditForm();
+    
+    container.querySelector('#import-excel').onclick = async () => {
+      try {
+        const result = await window.api?.officials?.importExcel();
+        if (result.ok) {
+          let message = `<strong>Uvoz uspešen!</strong><br>Uvoženih: ${result.imported} | Preskočenih: ${result.skipped} | Skupaj: ${result.total}`;
+          if (result.errors && result.errors.length > 0) {
+            message += `<br><small>Napake: ${result.errors.join(', ')}</small>`;
+            showNotification(message, 'warning');
+          } else {
+            showNotification(message, 'success');
+          }
+          loadOfficials();
+        } else {
+          showNotification(`<strong>Napaka:</strong> ${result.message || 'Neznana napaka'}`, 'danger');
+        }
+      } catch (e) {
+        showNotification(`<strong>Napaka pri uvozu:</strong> ${String(e)}`, 'danger');
+      }
+    };
   }
   
   await loadOfficials();

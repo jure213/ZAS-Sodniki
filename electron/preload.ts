@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('api', {
     setRoles: (roles: any) => ipcRenderer.invoke('settings:setRoles', roles),
     checkRoleUsage: (roleName: string) => ipcRenderer.invoke('settings:checkRoleUsage', roleName),
     deleteRoleReferences: (roleName: string) => ipcRenderer.invoke('settings:deleteRoleReferences', roleName),
+    clearDatabase: () => ipcRenderer.invoke('settings:clearDatabase'),
   },
   // Officials
   officials: {
@@ -29,6 +30,7 @@ contextBridge.exposeInMainWorld('api', {
     update: (id: number, data: any) => ipcRenderer.invoke('official:update', { id, data }),
     delete: (id: number) => ipcRenderer.invoke('official:delete', id),
     setActive: (id: number, active: number) => ipcRenderer.invoke('official:setActive', { id, active }),
+    importExcel: () => ipcRenderer.invoke('official:importExcel'),
   },
   // Competitions
   competitions: {
@@ -36,6 +38,11 @@ contextBridge.exposeInMainWorld('api', {
     create: (data: any) => ipcRenderer.invoke('competition:create', data),
     update: (id: number, data: any) => ipcRenderer.invoke('competition:update', { id, data }),
     delete: (id: number) => ipcRenderer.invoke('competition:delete', id),
+    listOfficials: (competitionId: number) => ipcRenderer.invoke('competition:listOfficials', competitionId),
+    addOfficial: (data: any) => ipcRenderer.invoke('competition:addOfficial', data),
+    updateOfficial: (id: number, data: any) => ipcRenderer.invoke('competition:updateOfficial', { id, data }),
+    deleteOfficial: (id: number) => ipcRenderer.invoke('competition:deleteOfficial', id),
+    generatePayments: (competitionId: number) => ipcRenderer.invoke('competition:generatePayments', competitionId),
   },
   // Payments
   payments: {
