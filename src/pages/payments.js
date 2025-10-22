@@ -1,16 +1,12 @@
 export async function renderPayments(container, user) {
   const isAdmin = user?.role === 'admin';
   container.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h2 class="h5 m-0">Izplačila</h2>
-      ${isAdmin ? '<button id="add-payment" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj izplačilo</button>' : ''}
-    </div>
     <div class="card mb-3">
       <div class="card-body">
         <div class="row g-2">
           <div class="col-md-3"><label class="form-label small">Sodnik</label><select id="filter-official" class="form-select form-select-sm"><option value="">Vsi</option></select></div>
           <div class="col-md-3"><label class="form-label small">Tekmovanje</label><select id="filter-competition" class="form-select form-select-sm"><option value="">Vsa</option></select></div>
-          <div class="col-md-2"><label class="form-label small">Status</label><select id="filter-status" class="form-select form-select-sm"><option value="">Vsi</option><option value="owed">Dolguje</option><option value="paid">Plačano</option></select></div>
+          <div class="col-md-2"><label class="form-label small">Status</label><select id="filter-status" class="form-select form-select-sm"><option value="">Vsi</option><option value="owed">Ni plačano</option><option value="paid">Plačano</option></select></div>
           <div class="col-md-2"><label class="form-label small">Datum od</label><input type="date" id="filter-date-from" class="form-control form-control-sm"></div>
           <div class="col-md-2"><label class="form-label small">Datum do</label><input type="date" id="filter-date-to" class="form-control form-control-sm"></div>
         </div>
@@ -21,9 +17,12 @@ export async function renderPayments(container, user) {
         </div>
       </div>
     </div>
+    <div class="d-flex justify-content-end align-items-center mb-2">
+      ${isAdmin ? '<button id="add-payment" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj izplačilo</button>' : ''}
+    </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover">
-        <thead class="text-center"><tr><th>Sodnik</th><th>Tekmovanje</th><th>Znesek (€)</th><th>Način</th><th>Status</th><th>Datum</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
+        <thead class="text-center"><tr><th>Sodnik</th><th>Tekmovanje</th><th class="text-center">Znesek</th><th>Način</th><th>Status</th><th>Datum</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
         <tbody id="payments-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 7 : 6}">Nalagam…</td></tr></tbody>
       </table>
     </div>
@@ -77,9 +76,9 @@ export async function renderPayments(container, user) {
           (p) => `<tr>
             <td>${p.official_name ?? ''}</td>
             <td>${p.competition_name ?? ''}</td>
-            <td class="text-end">${(p.amount ?? 0).toFixed(2)}</td>
+            <td class="text-center">${(p.amount ?? 0).toFixed(2)} €</td>
             <td>${formatPaymentMethod(p.method)}</td>
-            <td><span class="badge bg-${p.status === 'paid' ? 'success' : 'warning'}">${p.status === 'paid' ? 'Plačano' : 'Dolguje'}</span></td>
+            <td><span class="badge bg-${p.status === 'paid' ? 'success' : 'warning'}">${p.status === 'paid' ? 'Plačano' : 'Ni plačano'}</span></td>
             <td>${window.formatDate(p.date)}</td>
             ${isAdmin ? `<td>
               <button class="btn btn-sm btn-outline-primary edit-payment" data-id="${p.id}"><i class="bi bi-pencil"></i></button>
@@ -151,7 +150,7 @@ export async function renderPayments(container, user) {
               <option value="nakazilo" ${payment?.method === 'nakazilo' || payment?.method === 'bank_transfer' ? 'selected' : ''}>Nakazilo</option>
             </select></div>
             <div class="mb-2"><label class="form-label">Status</label><select id="f-status" class="form-select">
-              <option value="owed" ${payment?.status === 'owed' ? 'selected' : ''}>Dolguje</option>
+              <option value="owed" ${payment?.status === 'owed' ? 'selected' : ''}>Ni plačano</option>
               <option value="paid" ${payment?.status === 'paid' ? 'selected' : ''}>Plačano</option>
             </select></div>
             <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${payment?.notes ?? ''}</textarea></div>

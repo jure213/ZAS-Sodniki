@@ -6,8 +6,7 @@ export async function renderUsers(container, user) {
   }
 
   container.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h2 class="h5 m-0">Uporabniki</h2>
+    <div class="d-flex justify-content-end align-items-center mb-2">
       <button id="add-user" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj uporabnika</button>
     </div>
     <div class="table-responsive">

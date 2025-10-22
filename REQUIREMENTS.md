@@ -108,7 +108,7 @@ Desktop aplikacija za upravljanje plačil atletskih sodnikov. SQLite baza podatk
   - Skupno število sodnikov
   - Število aktivnih tekmovanj
   - Skupna vrednost izplačil
-  - Status plačil (dolguje vs. plačano)s
+  - Status plačil (Ni plačano vs. plačano)s
 - Pregled zadnjih aktivnosti
 - Grafi/vizualizacije (opcijsko)
 
@@ -173,7 +173,7 @@ Desktop aplikacija za upravljanje plačil atletskih sodnikov. SQLite baza podatk
 - ✅ **Filtri:**
   - Po sodniku (dropdown)
   - Po tekmovanju (dropdown)
-  - Po statusu (dolguje/plačano)
+  - Po statusu (Ni plačano/plačano)
   - Po datumu (od-do)
   - Števec rezultatov ("Prikazujem X od Y")
   - Gumb "Počisti filtre"

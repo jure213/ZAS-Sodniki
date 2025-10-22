@@ -1,6 +1,6 @@
-# ZAS Sodniki (Vanilla TypeScript + Electron)
+# ZAS Sodniki
 
-Namizna aplikacija za vodenje izplačil atletskih sodnikov. Vanilla HTML/JS na renderer strani in TypeScript v Electron main procesu. SQLite (better-sqlite3) kot vgrajena baza.
+Namizna aplikacija za vodenje izplačil atletskih sodnikov. 
 
 ## Hitri zagon
 
@@ -12,7 +12,7 @@ npm install
 npm run dev
 ```
 
-- Privzeti admin uporabnik: `admin` / `admin123`
+- Privzeti admin uporabnik: `admin` / `123`
 - Baza se ustvari v: `$XDG_CONFIG_HOME/zas-sodniki-vanilla/zas-sodniki.db` (na Linuxu običajno `~/.config/...`).
 
 ## Gradnja paketov

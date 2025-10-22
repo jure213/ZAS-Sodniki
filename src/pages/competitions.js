@@ -1,8 +1,7 @@
 export async function renderCompetitions(container, user) {
   const isAdmin = user?.role === 'admin';
   container.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h2 class="h5 m-0">Tekmovanja</h2>
+    <div class="d-flex justify-content-end align-items-center mb-2">
       ${isAdmin ? '<button id="add-competition" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj tekmovanje</button>' : ''}
     </div>
     <div class="table-responsive">
@@ -23,7 +22,7 @@ export async function renderCompetitions(container, user) {
             <td>${c.name ?? ''}</td>
             <td>${window.formatDate(c.date)}</td>
             <td>${c.location ?? ''}</td>
-            <td><span class="badge bg-${c.status === 'completed' ? 'success' : c.status === 'planned' ? 'info' : 'secondary'}">${c.status}</span></td>
+            <td><span class="badge bg-${c.status === 'completed' ? 'success' : c.status === 'planned' ? 'warning' : 'danger'}">${c.status === 'completed' ? 'Zaključeno' : c.status === 'planned' ? 'Načrtovano' : 'Preklicano'}</span></td>
             ${isAdmin ? `<td>
               <button class="btn btn-sm btn-outline-info manage-officials" data-id="${c.id}" title="Dodeli sodnike"><i class="bi bi-people"></i></button>
               <button class="btn btn-sm btn-outline-primary edit-competition" data-id="${c.id}"><i class="bi bi-pencil"></i></button>
@@ -325,8 +324,8 @@ export async function renderCompetitions(container, user) {
             <div class="row">
               <div class="col-md-6">
                 <h6>Razpoložljivi sodniki</h6>
-                <div style="max-height: 500px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;">
-                  ${allOfficials.filter(o => !assignedIds.has(o.id)).map(o => `
+                <div id="available-officials-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;">
+                  ${allOfficials.filter(o => !assignedIds.has(o.id) && o.active).map(o => `
                     <div class="d-flex align-items-center justify-content-between mb-2 p-2 border rounded official-item" data-id="${o.id}">
                       <span>${o.name}</span>
                       <button class="btn btn-sm btn-success add-official-btn" data-id="${o.id}" data-name="${o.name}">
@@ -334,7 +333,7 @@ export async function renderCompetitions(container, user) {
                       </button>
                     </div>
                   `).join('')}
-                  ${allOfficials.filter(o => !assignedIds.has(o.id)).length === 0 ? '<p class="text-muted">Vsi sodniki so že dodeljeni</p>' : ''}
+                  ${allOfficials.filter(o => !assignedIds.has(o.id) && o.active).length === 0 ? '<p class="text-muted">Vsi aktivni sodniki so že dodeljeni</p>' : ''}
                 </div>
               </div>
               <div class="col-md-6">
@@ -354,21 +353,60 @@ export async function renderCompetitions(container, user) {
     `;
     document.body.appendChild(subModal);
 
+    const availableContainer = subModal.querySelector('#available-officials-container');
     const selectedContainer = subModal.querySelector('#selected-officials-container');
     const emptyMessage = subModal.querySelector('#empty-message');
     const saveBtn = subModal.querySelector('#save-bulk-assign');
     const countBadge = subModal.querySelector('#selected-count');
 
+    function updateAvailableDisplay() {
+      const availableOfficials = allOfficials.filter(o => !assignedIds.has(o.id) && o.active && !selectedOfficials.has(o.id));
+      
+      if (availableOfficials.length === 0) {
+        availableContainer.innerHTML = '<p class="text-muted">Vsi aktivni sodniki so že dodeljeni ali izbrani</p>';
+      } else {
+        availableContainer.innerHTML = availableOfficials.map(o => `
+          <div class="d-flex align-items-center justify-content-between mb-2 p-2 border rounded official-item" data-id="${o.id}">
+            <span>${o.name}</span>
+            <button class="btn btn-sm btn-success add-official-btn" data-id="${o.id}" data-name="${o.name}">
+              <i class="bi bi-plus-circle"></i> Dodaj
+            </button>
+          </div>
+        `).join('');
+
+        // Rebind events for add buttons
+        availableContainer.querySelectorAll('.add-official-btn').forEach(btn => {
+          btn.onclick = () => {
+            const id = parseInt(btn.dataset.id);
+            const name = btn.dataset.name;
+            
+            if (!selectedOfficials.has(id)) {
+              selectedOfficials.set(id, {
+                name: name,
+                role: roles[0]?.name ?? '',
+                hours: 8
+              });
+              updateAvailableDisplay();
+              updateSelectedDisplay();
+              updateCount();
+            }
+          };
+        });
+      }
+    }
+
     function updateSelectedDisplay() {
       if (selectedOfficials.size === 0) {
-        emptyMessage.classList.remove('d-none');
+        emptyMessage.style.display = '';
         saveBtn.disabled = true;
+        selectedContainer.innerHTML = '';
+        selectedContainer.appendChild(emptyMessage);
       } else {
-        emptyMessage.classList.add('d-none');
+        emptyMessage.style.display = 'none';
         saveBtn.disabled = false;
         
         selectedContainer.innerHTML = Array.from(selectedOfficials.entries()).map(([id, data]) => `
-          <div class="card mb-2">
+          <div class="card mb-2" data-card-id="${id}">
             <div class="card-body p-2">
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <strong>${data.name}</strong>
@@ -397,6 +435,7 @@ export async function renderCompetitions(container, user) {
           btn.onclick = () => {
             const id = parseInt(btn.dataset.id);
             selectedOfficials.delete(id);
+            updateAvailableDisplay();
             updateSelectedDisplay();
             updateCount();
           };
@@ -432,24 +471,6 @@ export async function renderCompetitions(container, user) {
       countBadge.textContent = selectedOfficials.size;
     }
 
-    // Add official to selection
-    subModal.querySelectorAll('.add-official-btn').forEach(btn => {
-      btn.onclick = () => {
-        const id = parseInt(btn.dataset.id);
-        const name = btn.dataset.name;
-        
-        if (!selectedOfficials.has(id)) {
-          selectedOfficials.set(id, {
-            name: name,
-            role: roles[0]?.name ?? '',
-            hours: 8
-          });
-          updateSelectedDisplay();
-          updateCount();
-        }
-      };
-    });
-
     subModal.querySelectorAll('[data-dismiss-sub="modal"]').forEach(btn => {
       btn.onclick = () => subModal.remove();
     });
@@ -474,6 +495,7 @@ export async function renderCompetitions(container, user) {
       showManageOfficials(competition);
     };
 
+    updateAvailableDisplay();
     updateSelectedDisplay();
     updateCount();
   }
@@ -550,7 +572,7 @@ export async function renderCompetitions(container, user) {
             <div class="mt-3">
               <small class="text-muted">
                 <i class="bi bi-info-circle"></i> Datum izplačila bo: ${window.formatDate(competition.date)}<br>
-                <i class="bi bi-info-circle"></i> Status bo: Dolguje (owed)<br>
+                <i class="bi bi-info-circle"></i> Status bo: Ni plačano (owed)<br>
                 <i class="bi bi-info-circle"></i> Način: Nakazilo
               </small>
             </div>

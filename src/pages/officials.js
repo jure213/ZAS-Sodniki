@@ -1,8 +1,7 @@
 export async function renderOfficials(container, user) {
   const isAdmin = user?.role === 'admin';
   container.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h2 class="h5 m-0">Sodniki</h2>
+    <div class="d-flex justify-content-end align-items-center mb-2">
       ${isAdmin ? `
         <div>
           <button id="import-excel" class="btn btn-success btn-sm me-2"><i class="bi bi-file-earmark-excel me-1"></i> Uvozi iz Excel</button>

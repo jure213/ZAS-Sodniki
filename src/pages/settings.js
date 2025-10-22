@@ -10,25 +10,25 @@ export async function renderSettings(container, user) {
 
   const settingsContent = document.createElement("div");
   settingsContent.innerHTML = `
-    <h2 class="h5 mb-3">Nastavitve</h2>
-    <div class="card mb-3">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Vloge sodnikov</span>
-        <button id="add-role" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj vlogo</button>
-      </div>
-      <div class="card-body p-0">
-        <!-- Header Row -->
-        <div class="d-flex border-bottom bg-light px-3 py-2 fw-semibold text-uppercase small text-muted align-items-center">
-          <div style="width: 33.33%; text-align: center;">IME VLOGE</div>
-          <div style="width: 33.33%; text-align: center;">URNA POSTAVKA</div>
-          <div style="width: 33.33%; text-align: center;">AKCIJE</div>
-        </div>
-        <!-- Roles Container -->
-        <div id="roles-body">
-          <div class="px-3 py-2 text-muted">Nalagam…</div>
-        </div>
-      </div>
+    <div class="d-flex justify-content-end align-items-center mb-2">
+      <button id="add-role" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj vlogo</button>
     </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover">
+        <thead class="text-center">
+          <tr>
+            <th>IME VLOGE</th>
+            <th>URNA POSTAVKA</th>
+            <th>AKCIJE</th>
+          </tr>
+        </thead>
+        <tbody id="roles-body" class="align-middle text-center">
+          <tr><td colspan="3">Nalagam…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="mt-4">
     
     <div class="card border-danger">
       <div class="card-header bg-danger text-white">
@@ -69,23 +69,23 @@ export async function renderSettings(container, user) {
       rolesBody.innerHTML = validRoles
         .map(
           (r) => `
-          <div class="d-flex align-items-center border-bottom px-3 py-3">
-            <div style="width: 33.33%; text-align: center;">${r.name}</div>
-            <div style="width: 33.33%; text-align: center;">${(r.hourlyRate || 0).toFixed(2)} €</div>
-            <div style="width: 33.33%; text-align: center;">
+          <tr>
+            <td>${r.name}</td>
+            <td>${(r.hourlyRate || 0).toFixed(2)} €</td>
+            <td>
               <button class="btn btn-sm btn-outline-primary edit-role me-1" data-id="${
                 r.id
               }" data-name="${r.name}" data-rate="${r.hourlyRate}"><i class="bi bi-pencil"></i></button>
               <button class="btn btn-sm btn-outline-danger delete-role" data-id="${
                 r.id
               }" data-name="${r.name}"><i class="bi bi-trash"></i></button>
-            </div>
-          </div>`
+            </td>
+          </tr>`
         )
         .join("");
       if (!validRoles || validRoles.length === 0) {
         rolesBody.innerHTML =
-          '<div class="px-3 py-3 text-muted">Ni podatkov</div>';
+          '<tr><td colspan="3" class="text-muted">Ni podatkov</td></tr>';
       }
 
       // Clean up corrupted data if found
@@ -96,7 +96,7 @@ export async function renderSettings(container, user) {
     } catch (e) {
       const rolesBody = settingsContent.querySelector("#roles-body");
       if (rolesBody) {
-        rolesBody.innerHTML = `<div class="px-3 py-3 text-danger">Napaka: ${String(e)}</div>`;
+        rolesBody.innerHTML = `<tr><td colspan="3" class="text-danger">Napaka: ${String(e)}</td></tr>`;
       }
     }
   }

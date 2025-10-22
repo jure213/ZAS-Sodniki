@@ -33,7 +33,7 @@ export async function renderDashboard(container) {
           <div class="stat-icon" style="background: linear-gradient(135deg, #ee0d0dff 0%, #be6363ff 100%); color: white;">
             <i class="bi bi-exclamation-circle-fill"></i>
           </div>
-          <div class="stat-label">Skupaj dolguje</div>
+          <div class="stat-label">Skupaj ni plačano</div>
           <div class="stat-value" id="stat-owed">–</div>
         </div>
       </div>
