@@ -359,6 +359,85 @@ export async function renderCompetitions(container, user) {
     const saveBtn = subModal.querySelector('#save-bulk-assign');
     const countBadge = subModal.querySelector('#selected-count');
 
+    function showQuickAssignPopup(officialId, officialName) {
+      const quickModal = document.createElement('div');
+      quickModal.className = 'modal show d-block';
+      quickModal.style.backgroundColor = 'rgba(0,0,0,0.7)';
+      quickModal.style.zIndex = '1070';
+      quickModal.innerHTML = `
+        <div class="modal-dialog modal-sm">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h6 class="modal-title">${officialName}</h6>
+              <button type="button" class="btn-close" data-dismiss-quick="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-2">
+                <label class="form-label">Vloga</label>
+                <select id="quick-role" class="form-select" autofocus>
+                  ${roles.map(r => `<option value="${r.name}">${r.name} (€${r.hourlyRate}/h)</option>`).join('')}
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Število ur</label>
+                <input type="number" step="0.5" id="quick-hours" class="form-control" value="8">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary btn-sm" data-dismiss-quick="modal">Prekliči</button>
+              <button type="button" class="btn btn-primary btn-sm" id="confirm-quick-assign">Dodaj</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(quickModal);
+
+      // Focus on role select
+      setTimeout(() => {
+        quickModal.querySelector('#quick-role')?.focus();
+      }, 100);
+
+      quickModal.querySelectorAll('[data-dismiss-quick="modal"]').forEach(btn => {
+        btn.onclick = () => quickModal.remove();
+      });
+
+      quickModal.querySelector('#confirm-quick-assign').onclick = () => {
+        const role = quickModal.querySelector('#quick-role').value;
+        const hours = parseFloat(quickModal.querySelector('#quick-hours').value);
+
+        selectedOfficials.set(officialId, {
+          name: officialName,
+          role: role,
+          hours: hours
+        });
+
+        quickModal.remove();
+        updateAvailableDisplay();
+        updateSelectedDisplay();
+        updateCount();
+
+        // Focus on role dropdown of newly added official
+        setTimeout(() => {
+          const newCard = selectedContainer.querySelector(`[data-card-id="${officialId}"]`);
+          if (newCard) {
+            const roleSelect = newCard.querySelector('.role-select');
+            if (roleSelect) {
+              roleSelect.focus();
+              // Scroll to the new card
+              newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }
+        }, 100);
+      };
+
+      // Allow Enter key to confirm
+      quickModal.querySelector('#quick-hours').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          quickModal.querySelector('#confirm-quick-assign').click();
+        }
+      });
+    }
+
     function updateAvailableDisplay() {
       const availableOfficials = allOfficials.filter(o => !assignedIds.has(o.id) && o.active && !selectedOfficials.has(o.id));
       
@@ -381,14 +460,8 @@ export async function renderCompetitions(container, user) {
             const name = btn.dataset.name;
             
             if (!selectedOfficials.has(id)) {
-              selectedOfficials.set(id, {
-                name: name,
-                role: roles[0]?.name ?? '',
-                hours: 8
-              });
-              updateAvailableDisplay();
-              updateSelectedDisplay();
-              updateCount();
+              // Show quick popup for role and hours selection
+              showQuickAssignPopup(id, name);
             }
           };
         });

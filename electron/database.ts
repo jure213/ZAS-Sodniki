@@ -86,17 +86,6 @@ export class DatabaseManager {
       ).run({ username: 'admin', password: 'admin123', name: 'Administrator', role: 'admin' });
     }
 
-    // seed one official for demo
-    const offCount = db.prepare('SELECT COUNT(*) as c FROM officials').get() as { c: number };
-    if (offCount.c === 0) {
-      db.prepare(
-        'INSERT INTO officials (name, email, phone, license_number, active) VALUES (@name, @email, @phone, @license, 1)'
-      ).run({ name: 'Janez Novak', email: 'janez@example.com', phone: '+38640111222', license: 'LIC-001' });
-      db.prepare(
-        'INSERT INTO officials (name, email, phone, license_number, active) VALUES (@name, @email, @phone, @license, 1)'
-      ).run({ name: 'Marija Kovač', email: 'marija@example.com', phone: '+38640333444', license: 'LIC-002' });
-    }
-
     // seed default roles
     const roles = this.getSetting('official_roles');
     if (!roles) {
@@ -105,28 +94,6 @@ export class DatabaseManager {
         { id: 2, name: 'Pomožni sodnik', hourlyRate: 18 },
         { id: 3, name: 'Časomerilec', hourlyRate: 15 }
       ]);
-    }
-
-    // seed demo competitions
-    const compCount = db.prepare('SELECT COUNT(*) as c FROM competitions').get() as { c: number };
-    if (compCount.c === 0) {
-      db.prepare(
-        'INSERT INTO competitions (name, date, location, type, status, notes) VALUES (?, ?, ?, ?, ?, ?)'
-      ).run('Državno prvenstvo 2024', '2024-06-15', 'Ljubljana', 'outdoor', 'completed', 'Poletno državno prvenstvo');
-      db.prepare(
-        'INSERT INTO competitions (name, date, location, type, status, notes) VALUES (?, ?, ?, ?, ?, ?)'
-      ).run('Zimski cross 2025', '2025-01-20', 'Maribor', 'cross_country', 'planned', '');
-    }
-
-    // seed demo payments
-    const payCount = db.prepare('SELECT COUNT(*) as c FROM payments').get() as { c: number };
-    if (payCount.c === 0) {
-      db.prepare(
-        'INSERT INTO payments (official_id, competition_id, amount, date, method, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(1, 1, 200.00, '2024-06-15', 'nakazilo', 'paid', 'Plačilo za 8 ur');
-      db.prepare(
-        'INSERT INTO payments (official_id, competition_id, amount, date, method, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(2, 1, 144.00, '2024-06-15', 'gotovina', 'owed', 'Plačilo za 8 ur');
     }
   }
 
