@@ -244,6 +244,17 @@ export async function renderCompetitions(container, user) {
     const allOfficials = await window.api?.officials?.list() ?? [];
     const roles = await window.api?.settings?.getRoles() ?? [];
 
+    // Function to format role label
+    function formatRoleLabel(role) {
+      if (role.rates && role.rates.length > 0) {
+        const rateLabels = role.rates.map(r => `€${r.rate}`).join('/');
+        return `${role.name} (${rateLabels})`;
+      } else if (role.hourlyRate) {
+        return `${role.name} (€${role.hourlyRate}/h)`;
+      }
+      return role.name;
+    }
+
     const subModal = document.createElement('div');
     subModal.className = 'modal show d-block';
     subModal.style.backgroundColor = 'rgba(0,0,0,0.6)';
@@ -260,7 +271,7 @@ export async function renderCompetitions(container, user) {
               ${allOfficials.map(o => `<option value="${o.id}" ${compOfficial?.official_id === o.id ? 'selected' : ''}>${o.name}</option>`).join('')}
             </select></div>
             <div class="mb-2"><label class="form-label">Vloga</label><select id="f-role" class="form-select">
-              ${roles.map(r => `<option value="${r.name}" ${compOfficial?.role === r.name ? 'selected' : ''}>${r.name} (€${r.hourlyRate}/h)</option>`).join('')}
+              ${roles.map(r => `<option value="${r.name}" ${compOfficial?.role === r.name ? 'selected' : ''}>${formatRoleLabel(r)}</option>`).join('')}
             </select></div>
             <div class="mb-2"><label class="form-label">Število ur</label><input type="number" step="0.5" id="f-hours" class="form-control" value="${compOfficial?.hours ?? '8'}"></div>
             <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${compOfficial?.notes ?? ''}</textarea></div>
@@ -360,6 +371,17 @@ export async function renderCompetitions(container, user) {
     const countBadge = subModal.querySelector('#selected-count');
 
     function showQuickAssignPopup(officialId, officialName) {
+      // Function to format role label
+      function formatRoleLabel(role) {
+        if (role.rates && role.rates.length > 0) {
+          const rateLabels = role.rates.map(r => `€${r.rate}`).join('/');
+          return `${role.name} (${rateLabels})`;
+        } else if (role.hourlyRate) {
+          return `${role.name} (€${role.hourlyRate}/h)`;
+        }
+        return role.name;
+      }
+
       const quickModal = document.createElement('div');
       quickModal.className = 'modal show d-block';
       quickModal.style.backgroundColor = 'rgba(0,0,0,0.7)';
@@ -375,7 +397,7 @@ export async function renderCompetitions(container, user) {
               <div class="mb-2">
                 <label class="form-label">Vloga</label>
                 <select id="quick-role" class="form-select" autofocus>
-                  ${roles.map(r => `<option value="${r.name}">${r.name} (€${r.hourlyRate}/h)</option>`).join('')}
+                  ${roles.map(r => `<option value="${r.name}">${formatRoleLabel(r)}</option>`).join('')}
                 </select>
               </div>
               <div class="mb-2">
@@ -469,6 +491,17 @@ export async function renderCompetitions(container, user) {
     }
 
     function updateSelectedDisplay() {
+      // Function to format role label
+      function formatRoleLabel(role) {
+        if (role.rates && role.rates.length > 0) {
+          const rateLabels = role.rates.map(r => `€${r.rate}`).join('/');
+          return `${role.name} (${rateLabels})`;
+        } else if (role.hourlyRate) {
+          return `${role.name} (€${role.hourlyRate}/h)`;
+        }
+        return role.name;
+      }
+
       if (selectedOfficials.size === 0) {
         emptyMessage.style.display = '';
         saveBtn.disabled = true;
@@ -491,7 +524,7 @@ export async function renderCompetitions(container, user) {
                 <div class="col-md-7">
                   <label class="form-label small">Vloga</label>
                   <select class="form-select form-select-sm role-select" data-id="${id}">
-                    ${roles.map(r => `<option value="${r.name}" ${data.role === r.name ? 'selected' : ''}>${r.name} (€${r.hourlyRate}/h)</option>`).join('')}
+                    ${roles.map(r => `<option value="${r.name}" ${data.role === r.name ? 'selected' : ''}>${formatRoleLabel(r)}</option>`).join('')}
                   </select>
                 </div>
                 <div class="col-md-5">
@@ -582,15 +615,79 @@ export async function renderCompetitions(container, user) {
       return;
     }
 
+    // Function to calculate amount with tier-based fixed rates
+    function calculateAmount(role, hours) {
+      if (!role) return 0;
+
+      // New tier-based fixed rate system
+      if (role.rates && role.rates.length > 0) {
+        let matchedTier = null;
+        
+        for (const tier of role.rates) {
+          if (hours >= tier.from && hours < tier.to) {
+            matchedTier = tier;
+            break;
+          }
+          // Handle the last tier (8+ hours, where to=999)
+          if (hours >= tier.from && tier.to === 999) {
+            matchedTier = tier;
+            break;
+          }
+        }
+        
+        return matchedTier ? matchedTier.rate : 0;
+      } 
+      // Backward compatibility - simple hourly rate
+      else if (role.hourlyRate) {
+        return role.hourlyRate * hours;
+      }
+      
+      return 0;
+    }
+
+    // Function to get rate breakdown text
+    function getRateBreakdown(role, hours) {
+      if (!role) return '-';
+
+      // New tier-based fixed rate system
+      if (role.rates && role.rates.length > 0) {
+        let matchedTier = null;
+        
+        for (const tier of role.rates) {
+          if (hours >= tier.from && hours < tier.to) {
+            matchedTier = tier;
+            break;
+          }
+          if (hours >= tier.from && tier.to === 999) {
+            matchedTier = tier;
+            break;
+          }
+        }
+        
+        if (matchedTier) {
+          const toDisplay = matchedTier.to === 999 ? '∞' : matchedTier.to;
+          return `${matchedTier.from}-${toDisplay}h = €${matchedTier.rate}`;
+        }
+        return '-';
+      }
+      // Backward compatibility
+      else if (role.hourlyRate) {
+        return `€${role.hourlyRate}/h`;
+      }
+      
+      return '-';
+    }
+
     const previewData = officials.map(o => {
       const role = roles.find(r => r.name === o.role);
-      const hourlyRate = role?.hourlyRate ?? 0;
-      const amount = hourlyRate * o.hours;
+      const amount = calculateAmount(role, o.hours);
+      const rateInfo = getRateBreakdown(role, o.hours);
+      
       return {
         officialName: o.official_name,
         role: o.role,
         hours: o.hours,
-        hourlyRate: hourlyRate,
+        rateInfo: rateInfo,
         amount: amount,
         hasRole: !!role
       };
@@ -619,7 +716,7 @@ export async function renderCompetitions(container, user) {
                     <th>Sodnik</th>
                     <th>Vloga</th>
                     <th>Ure</th>
-                    <th>€/h</th>
+                    <th>Postavka</th>
                     <th>Skupaj (€)</th>
                   </tr>
                 </thead>
@@ -629,7 +726,7 @@ export async function renderCompetitions(container, user) {
                       <td>${item.officialName}</td>
                       <td>${item.role} ${!item.hasRole ? '<span class="badge bg-danger">Vloga ne obstaja</span>' : ''}</td>
                       <td>${item.hours.toFixed(1)}</td>
-                      <td>${item.hourlyRate.toFixed(2)}</td>
+                      <td><small>${item.rateInfo}</small></td>
                       <td><strong>€${item.amount.toFixed(2)}</strong></td>
                     </tr>
                   `).join('')}

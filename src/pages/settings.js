@@ -77,29 +77,32 @@ export async function renderSettings(container, user) {
       const allRoles = (await window.api?.settings?.getRoles()) ?? [];
       const rolesBody = settingsContent.querySelector("#roles-body");
 
-      // Filter out corrupted roles and ensure valid data
+      // Filter valid roles (support both old and new format)
       const validRoles = allRoles.filter(
-        (r) =>
-          r &&
-          r.id &&
-          r.name &&
-          r.hourlyRate !== null &&
-          r.hourlyRate !== undefined
+        (r) => r && r.id && r.name && (r.rates || r.hourlyRate !== null)
       );
+
+      // Function to format rate display
+      function formatRateDisplay(role) {
+        if (role.rates && role.rates.length > 0) {
+          return role.rates.map(tier => 
+            `${tier.from}-${tier.to === 999 ? '∞' : tier.to}h: €${tier.rate}`
+          ).join('<br>');
+        } else if (role.hourlyRate) {
+          return `€${role.hourlyRate.toFixed(2)}`;
+        }
+        return '-';
+      }
 
       rolesBody.innerHTML = validRoles
         .map(
           (r) => `
           <tr>
             <td>${r.name}</td>
-            <td>${(r.hourlyRate || 0).toFixed(2)} €</td>
+            <td><small>${formatRateDisplay(r)}</small></td>
             <td>
-              <button class="btn btn-sm btn-outline-primary edit-role me-1" data-id="${
-                r.id
-              }" data-name="${r.name}" data-rate="${r.hourlyRate}"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-sm btn-outline-danger delete-role" data-id="${
-                r.id
-              }" data-name="${r.name}"><i class="bi bi-trash"></i></button>
+              <button class="btn btn-sm btn-outline-primary edit-role me-1" data-id="${r.id}"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger delete-role" data-id="${r.id}" data-name="${r.name}"><i class="bi bi-trash"></i></button>
             </td>
           </tr>`
         )
@@ -183,23 +186,65 @@ export async function renderSettings(container, user) {
       window.cleanupModals();
     }
     
+    // Default rates structure if creating new role
+    const defaultRates = [
+      { from: 0, to: 6, rate: 30 },
+      { from: 6, to: 8, rate: 35 },
+      { from: 8, to: 999, rate: 40 }
+    ];
+    
+    const currentRates = role?.rates || defaultRates;
+    
     const modal = document.createElement("div");
     modal.className = "modal show d-block";
     modal.style.backgroundColor = "rgba(0,0,0,0.5)";
     modal.innerHTML = `
-      <div class="modal-dialog">
+      <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">${role ? "Uredi vlogo" : "Dodaj vlogo"}</h5>
             <button type="button" class="btn-close" data-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div class="mb-2"><label class="form-label">Ime vloge</label><input id="f-name" class="form-control" value="${
-              role?.name ?? ""
-            }"></div>
-            <div class="mb-2"><label class="form-label">Urna postavka (€)</label><input type="number" step="0.01" id="f-rate" class="form-control" value="${
-              role?.hourlyRate ?? ""
-            }"></div>
+            <div class="mb-3">
+              <label class="form-label">Ime vloge</label>
+              <input id="f-name" class="form-control" value="${role?.name ?? ""}">
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label fw-bold">Fiksne postavke po razponih ur</label>
+              <small class="text-muted d-block mb-2">Določite fiksno ceno za posamezen razpon ur (ne urna postavka)</small>
+              
+              <div id="rate-tiers-container">
+                ${currentRates.map((tier, index) => `
+                  <div class="card mb-2 rate-tier" data-index="${index}">
+                    <div class="card-body p-2">
+                      <div class="row g-2 align-items-center">
+                        <div class="col-3">
+                          <label class="form-label small mb-0">Od (h)</label>
+                          <input type="number" step="0.5" class="form-control form-control-sm tier-from" value="${tier.from}" ${index === 0 ? 'readonly' : ''}>
+                        </div>
+                        <div class="col-3">
+                          <label class="form-label small mb-0">Do (h)</label>
+                          <input type="number" step="0.5" class="form-control form-control-sm tier-to" value="${tier.to === 999 ? '' : tier.to}" placeholder="∞">
+                        </div>
+                        <div class="col-4">
+                          <label class="form-label small mb-0">Cena (€)</label>
+                          <input type="number" step="0.01" class="form-control form-control-sm tier-rate" value="${tier.rate}">
+                        </div>
+                        <div class="col-2 text-center">
+                          ${currentRates.length > 1 ? `<button type="button" class="btn btn-sm btn-outline-danger remove-tier-btn mt-3"><i class="bi bi-trash"></i></button>` : ''}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+              
+              <button type="button" class="btn btn-sm btn-outline-primary" id="add-tier-btn">
+                <i class="bi bi-plus-circle me-1"></i> Dodaj stopnjo
+              </button>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Prekliči</button>
@@ -209,6 +254,70 @@ export async function renderSettings(container, user) {
       </div>
     `;
     document.body.appendChild(modal);
+    
+    const container = modal.querySelector("#rate-tiers-container");
+    
+    // Function to rebind remove buttons
+    function rebindRemoveButtons() {
+      container.querySelectorAll('.remove-tier-btn').forEach(btn => {
+        btn.onclick = () => {
+          const card = btn.closest('.rate-tier');
+          card.remove();
+          renumberTiers();
+        };
+      });
+    }
+    
+    // Function to renumber tiers after add/remove
+    function renumberTiers() {
+      const tiers = container.querySelectorAll('.rate-tier');
+      tiers.forEach((tier, index) => {
+        tier.dataset.index = index;
+        const fromInput = tier.querySelector('.tier-from');
+        if (index === 0) {
+          fromInput.value = 0;
+          fromInput.readOnly = true;
+        } else {
+          fromInput.readOnly = false;
+        }
+      });
+    }
+    
+    rebindRemoveButtons();
+    
+    // Add tier button
+    modal.querySelector("#add-tier-btn").onclick = () => {
+      const currentTierCount = container.querySelectorAll('.rate-tier').length;
+      const lastTier = container.querySelector('.rate-tier:last-child');
+      const lastTo = lastTier ? parseFloat(lastTier.querySelector('.tier-to').value) || 8 : 8;
+      
+      const newTierHTML = `
+        <div class="card mb-2 rate-tier" data-index="${currentTierCount}">
+          <div class="card-body p-2">
+            <div class="row g-2 align-items-center">
+              <div class="col-3">
+                <label class="form-label small mb-0">Od (h)</label>
+                <input type="number" step="0.5" class="form-control form-control-sm tier-from" value="${lastTo}">
+              </div>
+              <div class="col-3">
+                <label class="form-label small mb-0">Do (h)</label>
+                <input type="number" step="0.5" class="form-control form-control-sm tier-to" placeholder="∞">
+              </div>
+              <div class="col-4">
+                <label class="form-label small mb-0">Postavka (€/h)</label>
+                <input type="number" step="0.01" class="form-control form-control-sm tier-rate" value="20">
+              </div>
+              <div class="col-2 text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-tier-btn mt-3"><i class="bi bi-trash"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', newTierHTML);
+      rebindRemoveButtons();
+      renumberTiers();
+    };
     
     // Focus first input
     setTimeout(() => {
@@ -225,19 +334,39 @@ export async function renderSettings(container, user) {
 
     modal.querySelector("#save-role").onclick = async () => {
       const name = modal.querySelector("#f-name").value;
-      const hourlyRate = parseFloat(modal.querySelector("#f-rate").value);
+      
+      if (!name.trim()) {
+        alert("Prosim vnesite ime vloge");
+        return;
+      }
+      
+      // Collect all rate tiers
+      const rates = [];
+      const tiers = modal.querySelectorAll('.rate-tier');
+      
+      tiers.forEach((tier) => {
+        const from = parseFloat(tier.querySelector('.tier-from').value) || 0;
+        const toValue = tier.querySelector('.tier-to').value;
+        const to = toValue ? parseFloat(toValue) : 999;
+        const rate = parseFloat(tier.querySelector('.tier-rate').value) || 0;
+        
+        rates.push({ from, to, rate });
+      });
+      
+      // Sort rates by 'from' value
+      rates.sort((a, b) => a.from - b.from);
 
       let newRoles;
       if (role) {
         newRoles = currentRoles.map((r) =>
-          r.id === role.id ? { id: role.id, name, hourlyRate } : r
+          r.id === role.id ? { id: role.id, name, rates } : r
         );
       } else {
         const maxId =
           currentRoles.length > 0
             ? Math.max(...currentRoles.map((r) => r.id))
             : 0;
-        newRoles = [...currentRoles, { id: maxId + 1, name, hourlyRate }];
+        newRoles = [...currentRoles, { id: maxId + 1, name, rates }];
       }
 
       await window.api?.settings?.setRoles(newRoles);

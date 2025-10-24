@@ -90,9 +90,33 @@ export class DatabaseManager {
     const roles = this.getSetting('official_roles');
     if (!roles) {
       this.setSetting('official_roles', [
-        { id: 1, name: 'Glavni sodnik', hourlyRate: 25 },
-        { id: 2, name: 'Pomožni sodnik', hourlyRate: 18 },
-        { id: 3, name: 'Časomerilec', hourlyRate: 15 }
+        { 
+          id: 1, 
+          name: 'Glavni sodnik', 
+          rates: [
+            { from: 0, to: 6, rate: 30 },
+            { from: 6, to: 8, rate: 35 },
+            { from: 8, to: 999, rate: 40 }
+          ]
+        },
+        { 
+          id: 2, 
+          name: 'Pomožni sodnik', 
+          rates: [
+            { from: 0, to: 6, rate: 25 },
+            { from: 6, to: 8, rate: 30 },
+            { from: 8, to: 999, rate: 35 }
+          ]
+        },
+        { 
+          id: 3, 
+          name: 'Časomerilec', 
+          rates: [
+            { from: 0, to: 6, rate: 20 },
+            { from: 6, to: 8, rate: 25 },
+            { from: 8, to: 999, rate: 30 }
+          ]
+        }
       ]);
     }
   }
@@ -382,7 +406,12 @@ export class DatabaseManager {
   generatePaymentsForCompetition(competitionId: number): { created: number; errors: string[] } {
     if (!this.db) return { created: 0, errors: [] };
     
-    const roles = this.getSetting<Array<{ id: number; name: string; hourlyRate: number }>>('official_roles') ?? [];
+    const roles = this.getSetting<Array<{ 
+      id: number; 
+      name: string; 
+      rates?: Array<{ from: number; to: number; rate: number }>;
+      hourlyRate?: number; // backward compatibility
+    }>>('official_roles') ?? [];
     const competition = this.db.prepare('SELECT * FROM competitions WHERE id = ?').get(competitionId) as any;
     const officials = this.listCompetitionOfficials(competitionId);
     
@@ -400,7 +429,40 @@ export class DatabaseManager {
         continue;
       }
 
-      const amount = role.hourlyRate * official.hours;
+      // Calculate amount using tier-based fixed rates
+      let amount = 0;
+      let breakdown = '';
+
+      if (role.rates && role.rates.length > 0) {
+        // New tier-based fixed rate system
+        // Find which tier the hours fall into
+        let matchedTier = null;
+        
+        for (const tier of role.rates) {
+          if (official.hours >= tier.from && official.hours < tier.to) {
+            matchedTier = tier;
+            break;
+          }
+          // Handle the last tier (8+ hours, where to=999)
+          if (official.hours >= tier.from && tier.to === 999) {
+            matchedTier = tier;
+            break;
+          }
+        }
+        
+        if (matchedTier) {
+          amount = matchedTier.rate;
+          const toDisplay = matchedTier.to === 999 ? '∞' : matchedTier.to;
+          breakdown = `${official.hours}h (${matchedTier.from}-${toDisplay}h tier) = €${matchedTier.rate}`;
+        } else {
+          errors.push(`No rate tier found for ${official.hours}h for ${official.official_name}`);
+          continue;
+        }
+      } else if (role.hourlyRate) {
+        // Backward compatibility - simple hourly rate
+        amount = role.hourlyRate * official.hours;
+        breakdown = `${official.hours}h @ €${role.hourlyRate}/h`;
+      }
 
       // Check if payment already exists
       const existing = this.db.prepare(
@@ -420,7 +482,7 @@ export class DatabaseManager {
         date: competition.date,
         method: 'nakazilo',
         status: 'owed',
-        notes: `${role.name} - ${official.hours}h @ €${role.hourlyRate}/h`
+        notes: `${role.name} - ${breakdown}`
       });
 
       if (paymentId > 0) {
