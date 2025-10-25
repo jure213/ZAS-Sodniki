@@ -4,7 +4,13 @@ import { DatabaseManager } from '../database';
 export function setupSettingsHandlers(db: DatabaseManager) {
   ipcMain.handle('settings:get', async () => {
     const roles = db.getSetting('official_roles') ?? [];
-    return { language: 'sl', theme: 'light', roles };
+    const appSettings = db.getSetting('app_settings') || {};
+    return { 
+      language: 'sl', 
+      theme: 'light', 
+      roles,
+      ...appSettings
+    };
   });
 
   ipcMain.handle('settings:setRoles', async (_event, roles: Array<{ id: number; name: string; hourlyRate: number }>) => {
@@ -28,6 +34,11 @@ export function setupSettingsHandlers(db: DatabaseManager) {
 
   ipcMain.handle('settings:clearDatabase', async () => {
     db.clearAllData();
+    return { ok: true };
+  });
+
+  ipcMain.handle('settings:updateAppSetting', async (_event, key: string, value: any) => {
+    db.updateAppSetting(key, value);
     return { ok: true };
   });
 }

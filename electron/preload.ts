@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('api', {
     checkRoleUsage: (roleName: string) => ipcRenderer.invoke('settings:checkRoleUsage', roleName),
     deleteRoleReferences: (roleName: string) => ipcRenderer.invoke('settings:deleteRoleReferences', roleName),
     clearDatabase: () => ipcRenderer.invoke('settings:clearDatabase'),
+    updateAppSetting: (key: string, value: any) => ipcRenderer.invoke('settings:updateAppSetting', key, value),
   },
   // Officials
   officials: {

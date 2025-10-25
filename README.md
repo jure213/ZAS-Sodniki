@@ -1,6 +1,6 @@
 # ZAS Sodniki
 
-Namizna aplikacija za vodenje izplačil atletskih sodnikov. 
+Namizna aplikacija za vodenje izplačil atletskih sodnikov.
 
 ## Hitri zagon
 
@@ -25,7 +25,7 @@ npm run build:linux
 npm run build:win
 ```
 
-Artefakti bodo v mapi `release/`.
+Datoteke za nastavitev v posameznem sisetmu bodo v mapi `release/`.
 
 ## Struktura
 

@@ -435,16 +435,16 @@ export class DatabaseManager {
 
       if (role.rates && role.rates.length > 0) {
         // New tier-based fixed rate system
-        // Find which tier the hours fall into
+        // Find which tier the hours fall into (min < hours <= max)
         let matchedTier = null;
         
         for (const tier of role.rates) {
-          if (official.hours >= tier.from && official.hours < tier.to) {
+          if (official.hours > tier.from && official.hours <= tier.to) {
             matchedTier = tier;
             break;
           }
           // Handle the last tier (8+ hours, where to=999)
-          if (official.hours >= tier.from && tier.to === 999) {
+          if (official.hours > tier.from && tier.to === 999) {
             matchedTier = tier;
             break;
           }
@@ -474,13 +474,16 @@ export class DatabaseManager {
         continue;
       }
 
+      // Get default payment method from settings
+      const defaultPaymentMethod = this.getAppSetting('defaultPaymentMethod') || 'nakazilo';
+
       // Create payment
       const paymentId = this.addPayment({
         official_id: official.official_id,
         competition_id: competitionId,
         amount: amount,
         date: competition.date,
-        method: 'nakazilo',
+        method: defaultPaymentMethod,
         status: 'owed',
         notes: `${role.name} - ${breakdown}`
       });
@@ -493,5 +496,17 @@ export class DatabaseManager {
     }
 
     return { created, errors };
+  }
+
+  // App settings helpers
+  getAppSetting(key: string): any {
+    const settings = this.getSetting<Record<string, any>>('app_settings') || {};
+    return settings[key];
+  }
+
+  updateAppSetting(key: string, value: any): void {
+    const settings = this.getSetting<Record<string, any>>('app_settings') || {};
+    settings[key] = value;
+    this.setSetting('app_settings', settings);
   }
 }

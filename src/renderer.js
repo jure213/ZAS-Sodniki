@@ -116,7 +116,7 @@ function showApp(user) {
   
   // Render sidebar
   const sidebar = qs('appNav');
-  renderSidebar(sidebar, { user, onNavigate: () => route(user) });
+  renderSidebar(sidebar, { user });
   
   // Route
   route(user);

@@ -619,17 +619,17 @@ export async function renderCompetitions(container, user) {
     function calculateAmount(role, hours) {
       if (!role) return 0;
 
-      // New tier-based fixed rate system
+      // New tier-based fixed rate system (min < hours <= max)
       if (role.rates && role.rates.length > 0) {
         let matchedTier = null;
         
         for (const tier of role.rates) {
-          if (hours >= tier.from && hours < tier.to) {
+          if (hours > tier.from && hours <= tier.to) {
             matchedTier = tier;
             break;
           }
           // Handle the last tier (8+ hours, where to=999)
-          if (hours >= tier.from && tier.to === 999) {
+          if (hours > tier.from && tier.to === 999) {
             matchedTier = tier;
             break;
           }
@@ -649,16 +649,16 @@ export async function renderCompetitions(container, user) {
     function getRateBreakdown(role, hours) {
       if (!role) return '-';
 
-      // New tier-based fixed rate system
+      // New tier-based fixed rate system (min < hours <= max)
       if (role.rates && role.rates.length > 0) {
         let matchedTier = null;
         
         for (const tier of role.rates) {
-          if (hours >= tier.from && hours < tier.to) {
+          if (hours > tier.from && hours <= tier.to) {
             matchedTier = tier;
             break;
           }
-          if (hours >= tier.from && tier.to === 999) {
+          if (hours > tier.from && tier.to === 999) {
             matchedTier = tier;
             break;
           }

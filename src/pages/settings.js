@@ -10,8 +10,10 @@ export async function renderSettings(container, user) {
 
   const settingsContent = document.createElement("div");
   
-  // Get current "remember me" setting
+  // Get current settings
   const rememberMe = localStorage.getItem('rememberMe') === 'true';
+  const appSettings = await window.api?.settings?.get() || {};
+  const defaultPaymentMethod = appSettings.defaultPaymentMethod || 'nakazilo';
   
   settingsContent.innerHTML = `
     <div class="card mb-4">
@@ -19,15 +21,30 @@ export async function renderSettings(container, user) {
         <i class="bi bi-gear-fill me-2"></i>Splošne nastavitve
       </div>
       <div class="card-body">
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="rememberMeSwitch" ${rememberMe ? 'checked' : ''}>
-          <label class="form-check-label" for="rememberMeSwitch">
-            Ostani prijavljen (shrani prijavo med sejami)
-          </label>
+        <div class="mb-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="rememberMeSwitch" ${rememberMe ? 'checked' : ''}>
+            <label class="form-check-label" for="rememberMeSwitch">
+              Ostani prijavljen (shrani prijavo med sejami)
+            </label>
+          </div>
+          <small class="text-muted d-block mt-1">
+            <i class="bi bi-info-circle"></i> Ko je ta možnost vključena, boste ostali prijavljeni tudi po ponovnem zagonu aplikacije.
+          </small>
         </div>
-        <small class="text-muted d-block mt-2">
-          <i class="bi bi-info-circle"></i> Ko je ta možnost vključena, boste ostali prijavljeni tudi po ponovnem zagonu aplikacije.
-        </small>
+
+        <hr>
+
+        <div class="mb-3">
+          <label class="form-label">Privzeti način plačila</label>
+          <select id="defaultPaymentMethod" class="form-select">
+            <option value="nakazilo" ${defaultPaymentMethod === 'nakazilo' ? 'selected' : ''}>Nakazilo</option>
+            <option value="gotovina" ${defaultPaymentMethod === 'gotovina' ? 'selected' : ''}>Gotovina</option>
+          </select>
+          <small class="text-muted d-block mt-1">
+            <i class="bi bi-info-circle"></i> Ta način plačila bo privzeto izbran pri generiranju plačil.
+          </small>
+        </div>
       </div>
     </div>
   
@@ -391,6 +408,26 @@ export async function renderSettings(container, user) {
     toast.innerHTML = `
       <i class="bi bi-check-circle-fill me-2"></i>
       <strong>Nastavitev shranjena!</strong> ${isChecked ? 'Ostali boste prijavljeni med sejami.' : 'Prijava ne bo shranjena med sejami.'}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  };
+
+  // Handle default payment method
+  settingsContent.querySelector("#defaultPaymentMethod").onchange = async (e) => {
+    await window.api?.settings?.updateAppSetting('defaultPaymentMethod', e.target.value);
+    
+    // Show confirmation toast
+    const toast = document.createElement("div");
+    toast.className = "alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
+    toast.style.zIndex = "9999";
+    toast.innerHTML = `
+      <i class="bi bi-check-circle-fill me-2"></i>
+      <strong>Privzeti način plačila shranjen!</strong>
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
     document.body.appendChild(toast);

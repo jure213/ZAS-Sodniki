@@ -1,4 +1,4 @@
-export function renderSidebar(container, { onNavigate, user }) {
+export function renderSidebar(container, { user }) {
   const currentHash = window.location.hash || '#/dashboard';
   
   container.innerHTML = `
@@ -37,7 +37,7 @@ export function renderSidebar(container, { onNavigate, user }) {
       a.classList.add('active');
       const href = a.getAttribute('href');
       window.location.hash = href;
-      onNavigate?.(href);
+      // No need to call onNavigate - hashchange event will trigger route()
     });
   });
 }
