@@ -1,10 +1,9 @@
 import { ipcMain } from 'electron';
-import { DatabaseManager } from '../database';
 
-export function setupSettingsHandlers(db: DatabaseManager) {
+export function setupSettingsHandlers(db: any) {
   ipcMain.handle('settings:get', async () => {
-    const roles = db.getSetting('official_roles') ?? [];
-    const appSettings = db.getSetting('app_settings') || {};
+    const roles = await db.getSetting('official_roles') ?? [];
+    const appSettings = await db.getSetting('app_settings') || {};
     return { 
       language: 'sl', 
       theme: 'light', 
@@ -14,31 +13,31 @@ export function setupSettingsHandlers(db: DatabaseManager) {
   });
 
   ipcMain.handle('settings:setRoles', async (_event, roles: Array<{ id: number; name: string; hourlyRate: number }>) => {
-    db.setSetting('official_roles', roles);
+    await db.setSetting('official_roles', roles);
     return { ok: true };
   });
 
   ipcMain.handle('settings:getRoles', async () => {
-    return db.getSetting('official_roles') ?? [];
+    return await db.getSetting('official_roles') ?? [];
   });
 
   ipcMain.handle('settings:checkRoleUsage', async (_event, roleName: string) => {
-    const usage = db.checkRoleUsage(roleName);
+    const usage = await db.checkRoleUsage(roleName);
     return usage;
   });
 
   ipcMain.handle('settings:deleteRoleReferences', async (_event, roleName: string) => {
-    const deletedCount = db.deleteRoleReferences(roleName);
+    const deletedCount = await db.deleteRoleReferences(roleName);
     return { deletedCount };
   });
 
   ipcMain.handle('settings:clearDatabase', async () => {
-    db.clearAllData();
+    await db.clearAllData();
     return { ok: true };
   });
 
   ipcMain.handle('settings:updateAppSetting', async (_event, key: string, value: any) => {
-    db.updateAppSetting(key, value);
+    await db.updateAppSetting(key, value);
     return { ok: true };
   });
 }

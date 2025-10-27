@@ -128,3 +128,7 @@ Thumbs.db
 *.swo
 *.sublime-workspace
 *.sublime-project
+
+# supabase
+
+supabase.md

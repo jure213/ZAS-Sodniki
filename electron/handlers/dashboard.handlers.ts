@@ -1,8 +1,7 @@
 import { ipcMain } from 'electron';
-import { DatabaseManager } from '../database';
 
-export function setupDashboardHandlers(db: DatabaseManager) {
+export function setupDashboardHandlers(db: any) {
   ipcMain.handle('dashboard:getStats', async () => {
-    return db.getDashboardStats();
+    return await db.getDashboardStats();
   });
 }

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
 import * as path from 'path';
-import { DatabaseManager } from './database';
+import { SupabaseDatabaseManager } from './supabase';
 import { setupOfficialHandlers } from './handlers/official.handlers';
 import { setupCompetitionHandlers } from './handlers/competition.handlers';
 import { setupPaymentHandlers } from './handlers/payment.handlers';
@@ -11,7 +11,7 @@ import { setupUserHandlers } from './handlers/user.handlers';
 import { setupDashboardHandlers } from './handlers/dashboard.handlers';
 
 let mainWindow: BrowserWindow | null = null;
-let db: DatabaseManager;
+let db: SupabaseDatabaseManager;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -44,20 +44,17 @@ function createWindow() {
 // Initialize database and IPC handlers
 async function initializeApp() {
   try {
-    const userDataPath = app.getPath('userData');
-    const dbPath = path.join(userDataPath, 'zas-sodniki.db');
-    
-    db = new DatabaseManager(dbPath);
-    console.log('Database initialized at:', dbPath);
+    db = new SupabaseDatabaseManager();
+    console.log('Supabase database initialized');
 
     // Set up IPC handlers
-    setupAuthHandlers(db);
-    setupSettingsHandlers(db);
-    setupOfficialHandlers(db);
-    setupCompetitionHandlers(db);
-    setupPaymentHandlers(db);
-    setupUserHandlers(db);
-    setupDashboardHandlers(db);
+    setupAuthHandlers(db as any);
+    setupSettingsHandlers(db as any);
+    setupOfficialHandlers(db as any);
+    setupCompetitionHandlers(db as any);
+    setupPaymentHandlers(db as any);
+    setupUserHandlers(db as any);
+    setupDashboardHandlers(db as any);
 
     console.log('IPC handlers registered');
   } catch (error) {

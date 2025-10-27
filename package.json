@@ -1,7 +1,7 @@
 {
   "name": "zas-sodniki-vanilla",
   "version": "1.0.0",
-  "description": "Athletic Officials Payment Tracker - Vanilla TypeScript",
+  "description": "Athletic Officials Payment Tracker - Cloud-based with Supabase",
   "main": "dist-electron/main.js",
   "homepage": "https://github.com/zas/sodniki",
   "author": {
@@ -19,17 +19,16 @@
   },
   "keywords": [
     "electron",
-    "sqlite",
+    "supabase",
     "athletics",
     "payments"
   ],
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^11.0.0",
+    "@supabase/supabase-js": "^2.76.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.8",
     "@types/node": "^20.10.6",
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
@@ -43,11 +42,7 @@
     },
     "files": [
       "dist-electron/**/*",
-      "src/**/*",
-      "node_modules/better-sqlite3/**/*"
-    ],
-    "asarUnpack": [
-      "node_modules/better-sqlite3/**/*"
+      "src/**/*"
     ],
     "linux": {
       "target": [

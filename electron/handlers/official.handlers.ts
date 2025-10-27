@@ -1,30 +1,29 @@
 import { ipcMain, dialog } from 'electron';
-import { DatabaseManager } from '../database';
 import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 
-export function setupOfficialHandlers(db: DatabaseManager) {
+export function setupOfficialHandlers(db: any) {
   ipcMain.handle('official:list', async () => {
-    return db.listOfficials();
+    return await db.listOfficials();
   });
 
   ipcMain.handle('official:create', async (_event, data: { name: string; email: string; phone: string; license_number: string; active?: number }) => {
-    const id = db.addOfficial(data);
+    const id = await db.addOfficial(data);
     return { ok: id > 0, id };
   });
 
   ipcMain.handle('official:update', async (_event, { id, data }: { id: number; data: { name: string; email: string; phone: string; license_number: string; active: number } }) => {
-    const success = db.updateOfficial(id, data);
+    const success = await db.updateOfficial(id, data);
     return { ok: success };
   });
 
   ipcMain.handle('official:delete', async (_event, id: number) => {
-    const success = db.deleteOfficial(id);
+    const success = await db.deleteOfficial(id);
     return { ok: success };
   });
 
   ipcMain.handle('official:setActive', async (_event, { id, active }: { id: number; active: number }) => {
-    const success = db.setOfficialActive(id, active);
+    const success = await db.setOfficialActive(id, active);
     return { ok: success };
   });
 
@@ -84,7 +83,8 @@ export function setupOfficialHandlers(db: DatabaseManager) {
 
         try {
           // Check if official already exists (by name)
-          const existing = db.listOfficials().find(o => 
+          const existingOfficials = await db.listOfficials();
+          const existing = existingOfficials.find((o: any) => 
             o.name.toLowerCase().trim() === name.toString().toLowerCase().trim()
           );
 
@@ -94,7 +94,7 @@ export function setupOfficialHandlers(db: DatabaseManager) {
           }
 
           // Add the official
-          const id = db.addOfficial({
+          const id = await db.addOfficial({
             name: name.toString().trim(),
             email: email ? email.toString().trim() : '',
             phone: phone ? phone.toString().trim() : '',
