@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import * as path from 'path';
 import { SupabaseDatabaseManager } from './supabase';
 import { setupOfficialHandlers } from './handlers/official.handlers';
@@ -67,6 +68,22 @@ async function initializeApp() {
 app.whenReady().then(async () => {
   await initializeApp();
   createWindow();
+
+  // Check for updates (skip in development mode)
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdatesAndNotify();
+    
+    // Optional: Log update events
+    autoUpdater.on('update-available', () => {
+      console.log('Update available');
+    });
+    
+    autoUpdater.on('update-downloaded', () => {
+      console.log('Update downloaded - will install on restart');
+    });
+  } else {
+    console.log('Running in development - skipping auto-update check');
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

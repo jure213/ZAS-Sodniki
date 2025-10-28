@@ -1,6 +1,6 @@
 {
   "name": "zas-sodniki-vanilla",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Athletic Officials Payment Tracker - Cloud-based with Supabase",
   "main": "dist-electron/main.js",
   "homepage": "https://github.com/zas/sodniki",
@@ -26,6 +26,7 @@
   "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.76.1",
+    "electron-updater": "^6.1.7",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -44,6 +45,11 @@
       "dist-electron/**/*",
       "src/**/*"
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "jure213",
+      "repo": "ZAS-Sodniki"
+    },
     "linux": {
       "target": [
         "AppImage",

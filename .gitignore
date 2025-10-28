@@ -130,5 +130,6 @@ Thumbs.db
 *.sublime-project
 
 # supabase
-
 supabase.md
+supabase-fix-policies.sql
+supabase-migration.sql

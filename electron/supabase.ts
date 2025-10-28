@@ -346,10 +346,13 @@ export class SupabaseDatabaseManager {
     return !error;
   }
 
-  async markPaymentAsPaid(id: number): Promise<boolean> {
+  async markPaymentAsPaid(id: number, datePaid?: string): Promise<boolean> {
     const { error } = await this.supabase
       .from("payments")
-      .update({ status: "paid" })
+      .update({ 
+        status: "paid",
+        date_paid: datePaid || new Date().toISOString().split('T')[0] // Use provided date or today
+      })
       .eq("id", id);
 
     return !error;

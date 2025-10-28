@@ -143,62 +143,62 @@ CREATE POLICY "Allow anyone to manage users"
   USING (true)
   WITH CHECK (true);
 
--- Officials policies (everyone can read, only authenticated can modify)
+-- Officials policies (allow anon for app usage)
 CREATE POLICY "Allow public read access to officials"
   ON officials FOR SELECT
   TO anon, authenticated
   USING (true);
 
-CREATE POLICY "Allow authenticated users to manage officials"
+CREATE POLICY "Allow anyone to manage officials"
   ON officials FOR ALL
-  TO authenticated
+  TO anon, authenticated
   USING (true)
   WITH CHECK (true);
 
--- Competitions policies
+-- Competitions policies (allow anon for app usage)
 CREATE POLICY "Allow public read access to competitions"
   ON competitions FOR SELECT
   TO anon, authenticated
   USING (true);
 
-CREATE POLICY "Allow authenticated users to manage competitions"
+CREATE POLICY "Allow anyone to manage competitions"
   ON competitions FOR ALL
-  TO authenticated
+  TO anon, authenticated
   USING (true)
   WITH CHECK (true);
 
--- Competition Officials policies
+-- Competition Officials policies (allow anon for app usage)
 CREATE POLICY "Allow public read access to competition_officials"
   ON competition_officials FOR SELECT
   TO anon, authenticated
   USING (true);
 
-CREATE POLICY "Allow authenticated users to manage competition_officials"
+CREATE POLICY "Allow anyone to manage competition_officials"
   ON competition_officials FOR ALL
-  TO authenticated
+  TO anon, authenticated
   USING (true)
   WITH CHECK (true);
 
--- Payments policies
+-- Payments policies (allow anon for app usage)
 CREATE POLICY "Allow public read access to payments"
   ON payments FOR SELECT
   TO anon, authenticated
   USING (true);
 
-CREATE POLICY "Allow authenticated users to manage payments"
+CREATE POLICY "Allow anyone to manage payments"
   ON payments FOR ALL
-  TO authenticated
+  TO anon, authenticated
   USING (true)
   WITH CHECK (true);
 
--- Settings policies (read-only for most, admins can write)
+-- Settings policies (allow anon for app usage)
 CREATE POLICY "Allow public read access to settings"
   ON settings FOR SELECT
   TO anon, authenticated
   USING (true);
 
-CREATE POLICY "Allow authenticated users to manage settings"
+CREATE POLICY "Allow anyone to manage settings"
   ON settings FOR ALL
-  TO authenticated
+  TO anon, authenticated
   USING (true)
   WITH CHECK (true);
