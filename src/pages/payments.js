@@ -22,8 +22,8 @@ export async function renderPayments(container, user) {
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover">
-        <thead class="text-center"><tr><th>Sodnik</th><th>Tekmovanje</th><th class="text-center">Znesek</th><th>Način</th><th>Status</th><th>Datum</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
-        <tbody id="payments-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 7 : 6}">Nalagam…</td></tr></tbody>
+        <thead class="text-center"><tr><th>Sodnik</th><th>Tekmovanje</th><th class="text-center">Znesek</th><th>Način</th><th>Status</th><th>Datum tekmovanja</th><th>Datum plačila</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
+        <tbody id="payments-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 8 : 7}">Nalagam…</td></tr></tbody>
       </table>
     </div>
   `;
@@ -80,6 +80,7 @@ export async function renderPayments(container, user) {
             <td>${formatPaymentMethod(p.method)}</td>
             <td><span class="badge bg-${p.status === 'paid' ? 'success' : 'danger'}">${p.status === 'paid' ? 'Plačano' : 'Ni plačano'}</span></td>
             <td>${window.formatDate(p.date)}</td>
+            <td>${p.date_paid ? window.formatDate(p.date_paid) : '<span class="text-muted">-</span>'}</td>
             ${isAdmin ? `<td>
               <button class="btn btn-sm btn-outline-primary edit-payment" data-id="${p.id}"><i class="bi bi-pencil"></i></button>
               ${p.status !== 'paid' ? `<button class="btn btn-sm btn-outline-success mark-paid" data-id="${p.id}">Označi plačano</button>` : ''}
@@ -89,7 +90,7 @@ export async function renderPayments(container, user) {
         )
         .join('');
       if (!list || list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${isAdmin ? 7 : 6}" class="text-muted">Ni podatkov</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-muted">Ni podatkov</td></tr>`;
       }
       container.querySelector('#filter-count').textContent = `Prikazujem ${list.length} rezultatov`;
       
@@ -107,8 +108,44 @@ export async function renderPayments(container, user) {
         container.querySelectorAll('.mark-paid').forEach(btn => {
           btn.onclick = async () => {
             const id = parseInt(btn.dataset.id);
-            await window.api?.payments?.markPaid(id);
-            loadPayments(filters);
+            
+            // Show dialog to ask for payment date
+            const modal = document.createElement('div');
+            modal.className = 'modal show d-block';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            modal.innerHTML = `
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Označi kot plačano</h5>
+                    <button type="button" class="btn-close" data-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="mb-2">
+                      <label class="form-label">Datum plačila</label>
+                      <input type="date" id="date-paid-input" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+                      <div class="form-text">Vnesite datum, ko je bilo plačilo izvršeno</div>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Prekliči</button>
+                    <button type="button" class="btn btn-success" id="confirm-paid">Potrdi</button>
+                  </div>
+                </div>
+              </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.querySelectorAll('[data-dismiss="modal"]').forEach(closeBtn => {
+              closeBtn.onclick = () => modal.remove();
+            });
+            
+            modal.querySelector('#confirm-paid').onclick = async () => {
+              const datePaid = modal.querySelector('#date-paid-input').value;
+              await window.api?.payments?.markPaid({ id, datePaid });
+              modal.remove();
+              loadPayments(filters);
+            };
           };
         });
         container.querySelectorAll('.edit-payment').forEach(btn => {
@@ -120,7 +157,7 @@ export async function renderPayments(container, user) {
         });
       }
     } catch (e) {
-      container.querySelector('#payments-body').innerHTML = `<tr><td colspan="${isAdmin ? 7 : 6}" class="text-danger">Napaka: ${String(e)}</td></tr>`;
+      container.querySelector('#payments-body').innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-danger">Napaka: ${String(e)}</td></tr>`;
     }
   }
   
