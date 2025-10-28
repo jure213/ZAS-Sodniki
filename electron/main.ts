@@ -3,6 +3,8 @@ import type { IpcMainInvokeEvent } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import * as path from 'path';
 import { SupabaseDatabaseManager } from './supabase';
+
+// Configure logging
 import { setupOfficialHandlers } from './handlers/official.handlers';
 import { setupCompetitionHandlers } from './handlers/competition.handlers';
 import { setupPaymentHandlers } from './handlers/payment.handlers';
@@ -66,6 +68,11 @@ async function initializeApp() {
 
 // App lifecycle
 app.whenReady().then(async () => {
+  console.log('=== APP STARTED ===');
+  console.log('Is packaged:', app.isPackaged);
+  console.log('Version:', app.getVersion());
+  console.log('Path:', app.getAppPath());
+  
   await initializeApp();
   createWindow();
 
