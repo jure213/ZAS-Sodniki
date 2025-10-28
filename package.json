@@ -1,6 +1,6 @@
 {
   "name": "zas-sodniki",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Athletic Officials Payment Tracker - Cloud-based with Supabase",
   "main": "dist-electron/main.js",
   "homepage": "https://github.com/jure213/ZAS-Sodniki",
@@ -62,7 +62,7 @@
       "target": [
         "nsis"
       ],
-      "artifactName": "${productName}.Setup.${version}.${ext}"
+      "artifactName": "ZAS.Sodniki.Setup.${version}.${ext}"
     }
   }
 }
