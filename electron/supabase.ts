@@ -82,7 +82,14 @@ export class SupabaseDatabaseManager {
       .eq("key", key)
       .single();
 
-    if (error || !data) return undefined;
+    if (error) {
+      console.error(`Error getting setting '${key}':`, error);
+      return undefined;
+    }
+    if (!data) {
+      console.warn(`Setting '${key}' not found in database`);
+      return undefined;
+    }
     return data.value as T;
   }
 
@@ -346,13 +353,20 @@ export class SupabaseDatabaseManager {
     return !error;
   }
 
-  async markPaymentAsPaid(id: number, datePaid?: string): Promise<boolean> {
+  async markPaymentAsPaid(id: number, datePaid?: string, method?: string): Promise<boolean> {
+    const updateData: any = {
+      status: "paid",
+      date_paid: datePaid || new Date().toISOString().split('T')[0] // Use provided date or today
+    };
+    
+    // Only update method if provided
+    if (method) {
+      updateData.method = method;
+    }
+    
     const { error } = await this.supabase
       .from("payments")
-      .update({ 
-        status: "paid",
-        date_paid: datePaid || new Date().toISOString().split('T')[0] // Use provided date or today
-      })
+      .update(updateData)
       .eq("id", id);
 
     return !error;

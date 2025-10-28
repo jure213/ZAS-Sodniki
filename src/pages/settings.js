@@ -9,12 +9,10 @@ export async function renderSettings(container, user) {
   container.innerHTML = "";
 
   const settingsContent = document.createElement("div");
-  
+
   // Get current settings
   const rememberMe = localStorage.getItem('rememberMe') === 'true';
-  const appSettings = await window.api?.settings?.get() || {};
-  const defaultPaymentMethod = appSettings.defaultPaymentMethod || 'nakazilo';
-  
+
   settingsContent.innerHTML = `
     <div class="card mb-4">
       <div class="card-header">
@@ -30,19 +28,6 @@ export async function renderSettings(container, user) {
           </div>
           <small class="text-muted d-block mt-1">
             <i class="bi bi-info-circle"></i> Ko je ta možnost vključena, boste ostali prijavljeni tudi po ponovnem zagonu aplikacije.
-          </small>
-        </div>
-
-        <hr>
-
-        <div class="mb-3">
-          <label class="form-label">Privzeti način plačila</label>
-          <select id="defaultPaymentMethod" class="form-select">
-            <option value="nakazilo" ${defaultPaymentMethod === 'nakazilo' ? 'selected' : ''}>Nakazilo</option>
-            <option value="gotovina" ${defaultPaymentMethod === 'gotovina' ? 'selected' : ''}>Gotovina</option>
-          </select>
-          <small class="text-muted d-block mt-1">
-            <i class="bi bi-info-circle"></i> Ta način plačila bo privzeto izbran pri generiranju plačil.
           </small>
         </div>
       </div>
@@ -70,7 +55,7 @@ export async function renderSettings(container, user) {
     
     <div class="card border-danger">
       <div class="card-header bg-danger text-white">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>Nevarno območje
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>IZBRIS PODATKOV IZ BAZE
       </div>
       <div class="card-body">
         <h6 class="card-title">Počisti bazo podatkov</h6>
@@ -102,7 +87,7 @@ export async function renderSettings(container, user) {
       // Function to format rate display
       function formatRateDisplay(role) {
         if (role.rates && role.rates.length > 0) {
-          return role.rates.map(tier => 
+          return role.rates.map(tier =>
             `${tier.from}-${tier.to === 999 ? '∞' : tier.to}h: €${tier.rate}`
           ).join('<br>');
         } else if (role.hourlyRate) {
@@ -155,12 +140,12 @@ export async function renderSettings(container, user) {
 
         // Check if role is being used
         const usage = (await window.api?.settings?.checkRoleUsage(roleName)) ?? [];
-        
+
         let confirmMessage = `Ali ste prepričani, da želite izbrisati vlogo "${roleName}"?`;
         if (usage.length > 0) {
           confirmMessage += `\n\nVloga je v uporabi pri ${usage.length} dodelitvi(-ah). Te dodelitve bodo odstranjene.`;
         }
-        
+
         const confirmed = await window.confirmDialog(confirmMessage, 'Izbriši vlogo');
         if (!confirmed) return;
 
@@ -173,7 +158,7 @@ export async function renderSettings(container, user) {
         const allRoles = (await window.api?.settings?.getRoles()) ?? [];
         const newRoles = allRoles.filter((r) => r.id !== id);
         await window.api?.settings?.setRoles(newRoles);
-        
+
         // Reload the roles table
         await loadRoles();
       } catch (err) {
@@ -202,16 +187,16 @@ export async function renderSettings(container, user) {
     if (window.cleanupModals) {
       window.cleanupModals();
     }
-    
+
     // Default rates structure if creating new role
     const defaultRates = [
       { from: 0, to: 6, rate: 30 },
       { from: 6, to: 8, rate: 35 },
       { from: 8, to: 999, rate: 40 }
     ];
-    
+
     const currentRates = role?.rates || defaultRates;
-    
+
     const modal = document.createElement("div");
     modal.className = "modal show d-block";
     modal.style.backgroundColor = "rgba(0,0,0,0.5)";
@@ -271,9 +256,9 @@ export async function renderSettings(container, user) {
       </div>
     `;
     document.body.appendChild(modal);
-    
+
     const container = modal.querySelector("#rate-tiers-container");
-    
+
     // Function to rebind remove buttons
     function rebindRemoveButtons() {
       container.querySelectorAll('.remove-tier-btn').forEach(btn => {
@@ -284,7 +269,7 @@ export async function renderSettings(container, user) {
         };
       });
     }
-    
+
     // Function to renumber tiers after add/remove
     function renumberTiers() {
       const tiers = container.querySelectorAll('.rate-tier');
@@ -299,15 +284,15 @@ export async function renderSettings(container, user) {
         }
       });
     }
-    
+
     rebindRemoveButtons();
-    
+
     // Add tier button
     modal.querySelector("#add-tier-btn").onclick = () => {
       const currentTierCount = container.querySelectorAll('.rate-tier').length;
       const lastTier = container.querySelector('.rate-tier:last-child');
       const lastTo = lastTier ? parseFloat(lastTier.querySelector('.tier-to').value) || 8 : 8;
-      
+
       const newTierHTML = `
         <div class="card mb-2 rate-tier" data-index="${currentTierCount}">
           <div class="card-body p-2">
@@ -335,7 +320,7 @@ export async function renderSettings(container, user) {
       rebindRemoveButtons();
       renumberTiers();
     };
-    
+
     // Focus first input
     setTimeout(() => {
       modal.querySelector("#f-name")?.focus();
@@ -351,25 +336,25 @@ export async function renderSettings(container, user) {
 
     modal.querySelector("#save-role").onclick = async () => {
       const name = modal.querySelector("#f-name").value;
-      
+
       if (!name.trim()) {
         alert("Prosim vnesite ime vloge");
         return;
       }
-      
+
       // Collect all rate tiers
       const rates = [];
       const tiers = modal.querySelectorAll('.rate-tier');
-      
+
       tiers.forEach((tier) => {
         const from = parseFloat(tier.querySelector('.tier-from').value) || 0;
         const toValue = tier.querySelector('.tier-to').value;
         const to = toValue ? parseFloat(toValue) : 999;
         const rate = parseFloat(tier.querySelector('.tier-rate').value) || 0;
-        
+
         rates.push({ from, to, rate });
       });
-      
+
       // Sort rates by 'from' value
       rates.sort((a, b) => a.from - b.from);
 
@@ -390,7 +375,7 @@ export async function renderSettings(container, user) {
       if (window.cleanupModals) {
         window.cleanupModals();
       }
-      
+
       // Just reload the roles table, no full restart
       await loadRoles();
     };
@@ -400,7 +385,7 @@ export async function renderSettings(container, user) {
   settingsContent.querySelector("#rememberMeSwitch").onchange = (e) => {
     const isChecked = e.target.checked;
     localStorage.setItem('rememberMe', isChecked.toString());
-    
+
     // Show confirmation
     const toast = document.createElement("div");
     toast.className = "alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
@@ -411,27 +396,7 @@ export async function renderSettings(container, user) {
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
     document.body.appendChild(toast);
-    
-    setTimeout(() => {
-      toast.remove();
-    }, 3000);
-  };
 
-  // Handle default payment method
-  settingsContent.querySelector("#defaultPaymentMethod").onchange = async (e) => {
-    await window.api?.settings?.updateAppSetting('defaultPaymentMethod', e.target.value);
-    
-    // Show confirmation toast
-    const toast = document.createElement("div");
-    toast.className = "alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
-    toast.style.zIndex = "9999";
-    toast.innerHTML = `
-      <i class="bi bi-check-circle-fill me-2"></i>
-      <strong>Privzeti način plačila shranjen!</strong>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(toast);
-    
     setTimeout(() => {
       toast.remove();
     }, 3000);
@@ -470,7 +435,7 @@ export async function renderSettings(container, user) {
 
     try {
       await window.api?.settings?.clearDatabase();
-      
+
       // Show success message
       const successDiv = document.createElement("div");
       successDiv.className = "alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
@@ -480,7 +445,7 @@ export async function renderSettings(container, user) {
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       `;
       document.body.appendChild(successDiv);
-      
+
       setTimeout(() => {
         successDiv.remove();
       }, 5000);

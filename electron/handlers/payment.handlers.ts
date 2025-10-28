@@ -20,8 +20,8 @@ export function setupPaymentHandlers(db: any) {
     return { ok: success };
   });
 
-  ipcMain.handle('payment:markPaid', async (_event, { id, datePaid }: { id: number; datePaid?: string }) => {
-    const success = await db.markPaymentAsPaid(id, datePaid);
+  ipcMain.handle('payment:markPaid', async (_event, { id, datePaid, method }: { id: number; datePaid?: string; method?: string }) => {
+    const success = await db.markPaymentAsPaid(id, datePaid, method);
     return { ok: success };
   });
 }

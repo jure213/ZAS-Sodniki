@@ -108,8 +108,9 @@ export async function renderPayments(container, user) {
         container.querySelectorAll('.mark-paid').forEach(btn => {
           btn.onclick = async () => {
             const id = parseInt(btn.dataset.id);
+            const payment = list.find(p => p.id === id);
             
-            // Show dialog to ask for payment date
+            // Show dialog to ask for payment date and method
             const modal = document.createElement('div');
             modal.className = 'modal show d-block';
             modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
@@ -121,10 +122,17 @@ export async function renderPayments(container, user) {
                     <button type="button" class="btn-close" data-dismiss="modal"></button>
                   </div>
                   <div class="modal-body">
-                    <div class="mb-2">
+                    <div class="mb-3">
                       <label class="form-label">Datum plačila</label>
                       <input type="date" id="date-paid-input" class="form-control" value="${new Date().toISOString().split('T')[0]}">
                       <div class="form-text">Vnesite datum, ko je bilo plačilo izvršeno</div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Način plačila</label>
+                      <select id="payment-method-input" class="form-select">
+                        <option value="gotovina" ${payment?.method === 'gotovina' || payment?.method === 'cash' ? 'selected' : ''}>Gotovina</option>
+                        <option value="nakazilo" ${payment?.method === 'nakazilo' || payment?.method === 'bank_transfer' ? 'selected' : ''}>Nakazilo</option>
+                      </select>
                     </div>
                   </div>
                   <div class="modal-footer">
@@ -142,7 +150,8 @@ export async function renderPayments(container, user) {
             
             modal.querySelector('#confirm-paid').onclick = async () => {
               const datePaid = modal.querySelector('#date-paid-input').value;
-              await window.api?.payments?.markPaid({ id, datePaid });
+              const method = modal.querySelector('#payment-method-input').value;
+              await window.api?.payments?.markPaid({ id, datePaid, method });
               modal.remove();
               loadPayments(filters);
             };

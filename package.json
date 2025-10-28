@@ -1,6 +1,6 @@
 {
   "name": "zas-sodniki-vanilla",
-  "version": "1.0.1",
+  "version": "v1.0.1",
   "description": "Athletic Officials Payment Tracker - Cloud-based with Supabase",
   "main": "dist-electron/main.js",
   "homepage": "https://github.com/zas/sodniki",
