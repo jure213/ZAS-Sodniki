@@ -71,16 +71,52 @@ app.whenReady().then(async () => {
 
   // Check for updates (skip in development mode)
   if (app.isPackaged) {
+    console.log('=== AUTO-UPDATER ENABLED ===');
+    console.log('Current version:', app.getVersion());
+    
+    // Configure auto-updater
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    
+    autoUpdater.on('checking-for-update', () => {
+      console.log('Checking for updates...');
+    });
+    
+    autoUpdater.on('update-available', (info) => {
+      console.log('Update available:', info.version);
+      console.log('Release notes:', info.releaseNotes);
+    });
+    
+    autoUpdater.on('update-not-available', (info) => {
+      console.log('Update not available. Current version is', info.version);
+    });
+    
+    autoUpdater.on('error', (err) => {
+      console.error('Error in auto-updater:', err);
+    });
+    
+    autoUpdater.on('download-progress', (progressObj) => {
+      console.log(`Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`);
+    });
+    
+    autoUpdater.on('update-downloaded', (info) => {
+      console.log('Update downloaded:', info.version);
+      console.log('Will install on app restart');
+      
+      // Optionally show dialog to user
+      if (mainWindow) {
+        mainWindow.webContents.send('update-downloaded');
+      }
+    });
+    
+    // Start checking for updates
     autoUpdater.checkForUpdatesAndNotify();
     
-    // Optional: Log update events
-    autoUpdater.on('update-available', () => {
-      console.log('Update available');
-    });
+    // Check every 10 minutes
+    setInterval(() => {
+      autoUpdater.checkForUpdates();
+    }, 10 * 60 * 1000);
     
-    autoUpdater.on('update-downloaded', () => {
-      console.log('Update downloaded - will install on restart');
-    });
   } else {
     console.log('Running in development - skipping auto-update check');
   }
