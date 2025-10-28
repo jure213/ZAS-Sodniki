@@ -741,9 +741,7 @@ export async function renderCompetitions(container, user) {
             </div>
             <div class="mt-3">
               <small class="text-muted">
-                <i class="bi bi-info-circle"></i> Datum izplačila bo: ${window.formatDate(competition.date)}<br>
-                <i class="bi bi-info-circle"></i> Status bo: Ni plačano (owed)<br>
-                <i class="bi bi-info-circle"></i> Način: Nakazilo
+                <i class="bi bi-info-circle"></i> Status bo: Ni plačano<br>
               </small>
             </div>
           </div>

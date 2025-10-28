@@ -45,6 +45,7 @@
       "dist-electron/**/*",
       "src/**/*"
     ],
+    "icon": "electron/zas_ikona.ico",
     "publish": {
       "provider": "github",
       "owner": "jure213",

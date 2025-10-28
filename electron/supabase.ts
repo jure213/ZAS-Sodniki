@@ -442,11 +442,11 @@ export class SupabaseDatabaseManager {
 
   // Dashboard stats
   async getDashboardStats(): Promise<any> {
-    const { data: officialsCount } = await this.supabase
+    const { count: officialsCount } = await this.supabase
       .from("officials")
       .select("*", { count: "exact", head: true });
 
-    const { data: activeComps } = await this.supabase
+    const { count: activeComps } = await this.supabase
       .from("competitions")
       .select("*", { count: "exact", head: true })
       .in("status", ["planned", "completed"]);
