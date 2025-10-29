@@ -281,14 +281,16 @@ export class SupabaseDatabaseManager {
     const { data: officials } = await this.supabase
       .from("officials")
       .select("id, name");
-    
+
     const { data: competitions } = await this.supabase
       .from("competitions")
       .select("id, name");
 
     // Create lookup maps for faster access
-    const officialsMap = new Map(officials?.map(o => [o.id, o.name]) || []);
-    const competitionsMap = new Map(competitions?.map(c => [c.id, c.name]) || []);
+    const officialsMap = new Map(officials?.map((o) => [o.id, o.name]) || []);
+    const competitionsMap = new Map(
+      competitions?.map((c) => [c.id, c.name]) || []
+    );
 
     // Transform data to include names
     return data.map((p: any) => ({
@@ -362,17 +364,21 @@ export class SupabaseDatabaseManager {
     return !error;
   }
 
-  async markPaymentAsPaid(id: number, datePaid?: string, method?: string): Promise<boolean> {
+  async markPaymentAsPaid(
+    id: number,
+    datePaid?: string,
+    method?: string
+  ): Promise<boolean> {
     const updateData: any = {
       status: "paid",
-      date_paid: datePaid || new Date().toISOString().split('T')[0] // Use provided date or today
+      date_paid: datePaid || new Date().toISOString().split("T")[0], // Use provided date or today
     };
-    
+
     // Only update method if provided
     if (method) {
       updateData.method = method;
     }
-    
+
     const { error } = await this.supabase
       .from("payments")
       .update(updateData)
@@ -519,13 +525,15 @@ export class SupabaseDatabaseManager {
     const { data: officials } = await this.supabase
       .from("officials")
       .select("id, name");
-    
+
     const { data: competitions } = await this.supabase
       .from("competitions")
       .select("id, name");
 
-    const officialsMap = new Map(officials?.map(o => [o.id, o.name]) || []);
-    const competitionsMap = new Map(competitions?.map(c => [c.id, c.name]) || []);
+    const officialsMap = new Map(officials?.map((o) => [o.id, o.name]) || []);
+    const competitionsMap = new Map(
+      competitions?.map((c) => [c.id, c.name]) || []
+    );
 
     return data.map((item: any) => ({
       competition_id: item.competition_id,
@@ -568,7 +576,7 @@ export class SupabaseDatabaseManager {
       .from("officials")
       .select("id, name");
 
-    const officialsMap = new Map(officials?.map(o => [o.id, o.name]) || []);
+    const officialsMap = new Map(officials?.map((o) => [o.id, o.name]) || []);
 
     return data.map((item: any) => ({
       ...item,
