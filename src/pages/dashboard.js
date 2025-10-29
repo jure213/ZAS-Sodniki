@@ -3,7 +3,7 @@ export async function renderDashboard(container) {
     <div class="row g-4 mb-4">
       <div class="col-md-3">
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #0c3d22 0%, #350097 100%); color: white;">
             <i class="bi bi-people-fill"></i>
           </div>
           <div class="stat-label">Število sodnikov</div>
@@ -50,7 +50,7 @@ export async function renderDashboard(container) {
                   <th>SODNIK</th>
                   <th>TEKMOVANJE</th>
                   <th>ZNESEK</th>
-                  <th>DATUM</th>
+                  <th>DATUM TEKMOVANJA</th>
                 </tr>
               </thead>
               <tbody id="unpaid-payments" class="align-middle text-center">

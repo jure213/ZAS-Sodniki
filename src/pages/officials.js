@@ -16,7 +16,7 @@ export async function renderOfficials(container, user) {
       </table>
     </div>
   `;
-  
+
   async function loadOfficials() {
     try {
       const list = await window.api?.officials?.list();
@@ -40,7 +40,7 @@ export async function renderOfficials(container, user) {
       if (!list || list.length === 0) {
         tbody.innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}" class="text-muted">Ni podatkov</td></tr>`;
       }
-      
+
       // Bind events for admin
       if (isAdmin) {
         container.querySelectorAll('.delete-official').forEach(btn => {
@@ -73,13 +73,13 @@ export async function renderOfficials(container, user) {
       container.querySelector('#officials-body').innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}" class="text-danger">Napaka: ${String(e)}</td></tr>`;
     }
   }
-  
+
   function showEditForm(official = null) {
     // Clean up any existing modals first
     if (window.cleanupModals) {
       window.cleanupModals();
     }
-    
+
     const modal = document.createElement('div');
     modal.className = 'modal show d-block';
     modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
@@ -105,7 +105,7 @@ export async function renderOfficials(container, user) {
       </div>
     `;
     document.body.appendChild(modal);
-    
+
     modal.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
       btn.onclick = () => {
         if (window.cleanupModals) {
@@ -113,7 +113,7 @@ export async function renderOfficials(container, user) {
         }
       };
     });
-    
+
     modal.querySelector('#save-official').onclick = async () => {
       const data = {
         name: modal.querySelector('#f-name').value,
@@ -133,12 +133,12 @@ export async function renderOfficials(container, user) {
       loadOfficials();
     };
   }
-  
+
   function showNotification(message, type = 'info') {
     // Remove any existing notifications
     const existing = container.querySelector('.import-notification');
     if (existing) existing.remove();
-    
+
     const notification = document.createElement('div');
     notification.className = `alert alert-${type} alert-dismissible fade show import-notification`;
     notification.style.position = 'relative';
@@ -147,10 +147,10 @@ export async function renderOfficials(container, user) {
       ${message}
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
+
     const firstChild = container.querySelector('.table-responsive');
     firstChild.parentNode.insertBefore(notification, firstChild);
-    
+
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
       if (notification.parentNode) {
@@ -158,10 +158,10 @@ export async function renderOfficials(container, user) {
       }
     }, 5000);
   }
-  
+
   if (isAdmin) {
     container.querySelector('#add-official').onclick = () => showEditForm();
-    
+
     container.querySelector('#import-excel').onclick = async () => {
       try {
         const result = await window.api?.officials?.importExcel();
@@ -182,6 +182,6 @@ export async function renderOfficials(container, user) {
       }
     };
   }
-  
+
   await loadOfficials();
 }

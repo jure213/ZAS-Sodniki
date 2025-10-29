@@ -408,52 +408,106 @@ export async function renderSettings(container, user) {
   };
 
   settingsContent.querySelector("#clear-database").onclick = async () => {
-    const confirmed = await window.confirmDialog(
-      "Ali ste POPOLNOMA prepričani, da želite izbrisati VSE podatke iz baze?\n\n" +
-      "To bo izbrisalo:\n" +
-      "• Vse sodnike\n" +
-      "• Vsa tekmovanja\n" +
-      "• Vse dodelitve sodnikov\n" +
-      "• Vsa plačila\n" +
-      "• Vse uporabnike razen administratorja\n\n" +
-      "Ohranilo bo:\n" +
-      "• Administratorski račun\n" +
-      "• Nastavitve vlog\n\n" +
-      "TA AKCIJA JE NEPOVRATNA!",
-      "Počisti bazo podatkov"
-    );
+    // Create custom modal for better formatting
+    const modal = document.createElement("div");
+    modal.className = "modal show d-block";
+    modal.style.backgroundColor = "rgba(0,0,0,0.5)";
+    modal.innerHTML = `
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Počisti bazo podatkov</h5>
+            <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="fw-bold">Ali ste POPOLNOMA prepričani?</p>
+            <p>To bo <strong>izbrisalo</strong>:</p>
+            <ul>
+              <li>Vse sodnike</li>
+              <li>Vsa tekmovanja</li>
+              <li>Vse dodelitve sodnikov</li>
+              <li>Vsa plačila</li>
+              <li>Vse uporabnike razen administratorja</li>
+            </ul>
+            <p>To bo <strong>ohranilo</strong>:</p>
+            <ul>
+              <li>Administratorski račun</li>
+              <li>Nastavitve vlog</li>
+            </ul>
+            <p class="text-danger fw-bold mt-3">
+              <i class="bi bi-exclamation-circle me-1"></i>TA AKCIJA JE NEPOVRATNA!
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Prekliči</button>
+            <button type="button" class="btn btn-danger" id="confirm-clear">Izbriši vse podatke</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
 
-    if (!confirmed) return;
+    modal.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
+      btn.onclick = () => modal.remove();
+    });
 
-    // Double confirmation
-    const doubleConfirmed = await window.confirmDialog(
-      "Zadnje opozorilo!\n\nRes želite izbrisati vse podatke?\n\nTo dejanje ni mogoče razveljaviti.",
-      "Potrdite brisanje"
-    );
+    modal.querySelector("#confirm-clear").onclick = async () => {
+      modal.remove();
 
-    if (!doubleConfirmed) return;
-
-    try {
-      await window.api?.settings?.clearDatabase();
-
-      // Show success message
-      const successDiv = document.createElement("div");
-      successDiv.className = "alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
-      successDiv.style.zIndex = "9999";
-      successDiv.innerHTML = `
-        <strong>Uspeh!</strong> Baza podatkov je bila počiščena. Vsi podatki so bili izbrisani.
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      // Second confirmation
+      const modal2 = document.createElement("div");
+      modal2.className = "modal show d-block";
+      modal2.style.backgroundColor = "rgba(0,0,0,0.5)";
+      modal2.innerHTML = `
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Zadnje opozorilo!</h5>
+              <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <p class="fw-bold">Res želite izbrisati vse podatke?</p>
+              <p class="text-danger">To dejanje ni mogoče razveljaviti.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Ne, prekliči</button>
+              <button type="button" class="btn btn-danger" id="final-confirm">Da, izbriši vse</button>
+            </div>
+          </div>
+        </div>
       `;
-      document.body.appendChild(successDiv);
+      document.body.appendChild(modal2);
 
-      setTimeout(() => {
-        successDiv.remove();
-      }, 5000);
+      modal2.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
+        btn.onclick = () => modal2.remove();
+      });
 
-    } catch (err) {
-      console.error("Error clearing database:", err);
-      alert(`Napaka pri čiščenju baze: ${err.message || err}`);
-    }
+      modal2.querySelector("#final-confirm").onclick = async () => {
+        modal2.remove();
+
+        try {
+          await window.api?.settings?.clearDatabase();
+
+          // Show success message
+          const successDiv = document.createElement("div");
+          successDiv.className = "alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
+          successDiv.style.zIndex = "9999";
+          successDiv.innerHTML = `
+            <strong>Uspeh!</strong> Baza podatkov je bila počiščena. Vsi podatki so bili izbrisani.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          `;
+          document.body.appendChild(successDiv);
+
+          setTimeout(() => {
+            successDiv.remove();
+          }, 5000);
+
+        } catch (err) {
+          console.error("Error clearing database:", err);
+          alert(`Napaka pri čiščenju baze: ${err.message || err}`);
+        }
+      };
+    };
   };
 
   await loadRoles();

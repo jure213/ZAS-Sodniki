@@ -251,11 +251,7 @@ export class SupabaseDatabaseManager {
     dateFrom?: string;
     dateTo?: string;
   }): Promise<Array<any>> {
-    let query = this.supabase.from("payments").select(`
-        *,
-        official:officials(name),
-        competition:competitions(name)
-      `);
+    let query = this.supabase.from("payments").select("*");
 
     if (filters?.officialId) {
       query = query.eq("official_id", filters.officialId);
@@ -281,11 +277,24 @@ export class SupabaseDatabaseManager {
 
     if (error || !data) return [];
 
-    // Transform data to match SQLite format
+    // Fetch all officials and competitions separately
+    const { data: officials } = await this.supabase
+      .from("officials")
+      .select("id, name");
+    
+    const { data: competitions } = await this.supabase
+      .from("competitions")
+      .select("id, name");
+
+    // Create lookup maps for faster access
+    const officialsMap = new Map(officials?.map(o => [o.id, o.name]) || []);
+    const competitionsMap = new Map(competitions?.map(c => [c.id, c.name]) || []);
+
+    // Transform data to include names
     return data.map((p: any) => ({
       ...p,
-      official_name: p.official?.name,
-      competition_name: p.competition?.name,
+      official_name: officialsMap.get(p.official_id) || null,
+      competition_name: competitionsMap.get(p.competition_id) || null,
     }));
   }
 
@@ -501,24 +510,28 @@ export class SupabaseDatabaseManager {
   > {
     const { data, error } = await this.supabase
       .from("competition_officials")
-      .select(
-        `
-        id,
-        competition_id,
-        official_id,
-        competition:competitions(name),
-        official:officials(name)
-      `
-      )
+      .select("*")
       .eq("role", roleName);
 
     if (error || !data) return [];
 
+    // Fetch officials and competitions separately
+    const { data: officials } = await this.supabase
+      .from("officials")
+      .select("id, name");
+    
+    const { data: competitions } = await this.supabase
+      .from("competitions")
+      .select("id, name");
+
+    const officialsMap = new Map(officials?.map(o => [o.id, o.name]) || []);
+    const competitionsMap = new Map(competitions?.map(c => [c.id, c.name]) || []);
+
     return data.map((item: any) => ({
       competition_id: item.competition_id,
-      competition_name: item.competition?.name || "",
+      competition_name: competitionsMap.get(item.competition_id) || "",
       official_id: item.official_id,
-      official_name: item.official?.name || "",
+      official_name: officialsMap.get(item.official_id) || "",
     }));
   }
 
@@ -545,19 +558,21 @@ export class SupabaseDatabaseManager {
   > {
     const { data, error } = await this.supabase
       .from("competition_officials")
-      .select(
-        `
-        *,
-        official:officials(name)
-      `
-      )
+      .select("*")
       .eq("competition_id", competitionId);
 
     if (error || !data) return [];
 
+    // Fetch officials separately
+    const { data: officials } = await this.supabase
+      .from("officials")
+      .select("id, name");
+
+    const officialsMap = new Map(officials?.map(o => [o.id, o.name]) || []);
+
     return data.map((item: any) => ({
       ...item,
-      official_name: item.official?.name || "",
+      official_name: officialsMap.get(item.official_id) || "",
     }));
   }
 
