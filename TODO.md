@@ -1,12 +1,11 @@
-dashboard plačano za koledarsko leto do danes
-dodajanje sodnikov -> opombe, popravek
+<!-- dashboard plačano za koledarsko leto do danes -->
 
-vnos sodnika -> izbira discipline, potni stroški (default 0)
+<!-- vnos sodnika -> izbira discipline, potni stroški (default 0) 
                         |
                         ˇ
-                        seznam, dropdown
+                        seznam, dropdown -->
 
-po dodelitvi možnost custom zneska vnos
+po dodelitvi možnost custom zneska vnos !!
 
 info o sodniku, kje je že bil
 

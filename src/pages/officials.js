@@ -11,7 +11,7 @@ export async function renderOfficials(container, user) {
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover">
-        <thead class="text-center"><tr><th>Ime</th><th>Email</th><th>Telefon</th><th>Licenca</th><th>Status</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
+        <thead class="text-center"><tr><th>Ime</th><th>Email</th><th>Telefon</th><th>Rang</th><th>Status</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
         <tbody id="officials-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 6 : 5}">Nalagam…</td></tr></tbody>
       </table>
     </div>
@@ -27,7 +27,7 @@ export async function renderOfficials(container, user) {
             <td>${o.name ?? ''}</td>
             <td>${o.email ?? ''}</td>
             <td>${o.phone ?? ''}</td>
-            <td>${o.license_number ?? ''}</td>
+            <td>${o.rank ?? ''}</td>
             <td><span class="badge bg-${o.active ? 'success' : 'secondary'}">${o.active ? 'Aktiven' : 'Neaktiven'}</span></td>
             ${isAdmin ? `<td>
               <button class="btn btn-sm btn-outline-primary edit-official" data-id="${o.id}"><i class="bi bi-pencil"></i></button>
@@ -94,7 +94,7 @@ export async function renderOfficials(container, user) {
             <div class="mb-2"><label class="form-label">Ime</label><input id="f-name" class="form-control" value="${official?.name ?? ''}"></div>
             <div class="mb-2"><label class="form-label">Email</label><input id="f-email" class="form-control" value="${official?.email ?? ''}"></div>
             <div class="mb-2"><label class="form-label">Telefon</label><input id="f-phone" class="form-control" value="${official?.phone ?? ''}"></div>
-            <div class="mb-2"><label class="form-label">Licenčna številka</label><input id="f-license" class="form-control" value="${official?.license_number ?? ''}"></div>
+            <div class="mb-2"><label class="form-label">Rang (1, 2, 3)</label><input id="f-rank" class="form-control" value="${official?.rank ?? ''}"></div>
             <div class="mb-2"><label class="form-check-label"><input type="checkbox" id="f-active" class="form-check-input" ${official?.active ? 'checked' : ''}> Aktiven</label></div>
           </div>
           <div class="modal-footer">
@@ -119,7 +119,7 @@ export async function renderOfficials(container, user) {
         name: modal.querySelector('#f-name').value,
         email: modal.querySelector('#f-email').value,
         phone: modal.querySelector('#f-phone').value,
-        license_number: modal.querySelector('#f-license').value,
+        rank: modal.querySelector('#f-rank').value,
         active: modal.querySelector('#f-active').checked ? 1 : 0
       };
       if (official) {

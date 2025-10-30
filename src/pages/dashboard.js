@@ -24,7 +24,7 @@ export async function renderDashboard(container) {
           <div class="stat-icon" style="background: linear-gradient(135deg, #196905ff 0%, #82e2a2ff 100%); color: white;">
             <i class="bi bi-check-circle-fill"></i>
           </div>
-          <div class="stat-label">Skupaj plačano</div>
+          <div class="stat-label">Skupaj plačano (${new Date().getFullYear()})</div>
           <div class="stat-value" id="stat-paid">–</div>
         </div>
       </div>
