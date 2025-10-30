@@ -1,6 +1,6 @@
 {
   "name": "zas-sodniki",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Athletic Officials Payment Tracker",
   "main": "dist-electron/main.js",
   "author": {
@@ -56,7 +56,8 @@
       "target": [
         "nsis"
       ],
-      "artifactName": "ZAS.Sodniki.Setup.${version}.${ext}"
+      "artifactName": "ZAS.Sodniki.Setup.${version}.${ext}",
+      "signAndEditExecutable": false
     }
   },
   "repository": "https://github.com/jure213/ZAS-Sodniki",
