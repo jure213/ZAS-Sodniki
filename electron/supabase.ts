@@ -62,13 +62,13 @@ export class SupabaseDatabaseManager {
       name: string;
       email: string;
       phone: string;
-      license_number: string;
+      rank: string;
       active: number;
     }>
   > {
     const { data, error } = await this.supabase
       .from("officials")
-      .select("id, name, email, phone, license_number, active")
+      .select("id, name, email, phone, rank, active")
       .order("name");
 
     if (error || !data) return [];
@@ -103,7 +103,7 @@ export class SupabaseDatabaseManager {
     name: string;
     email: string;
     phone: string;
-    license_number: string;
+    rank: string;
     active?: number;
   }): Promise<number> {
     const { data: result, error } = await this.supabase
@@ -112,7 +112,7 @@ export class SupabaseDatabaseManager {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        license_number: data.license_number,
+        rank: data.rank,
         active: data.active ?? 1,
       })
       .select("id")
@@ -128,7 +128,7 @@ export class SupabaseDatabaseManager {
       name: string;
       email: string;
       phone: string;
-      license_number: string;
+      rank: string;
       active: number;
     }
   ): Promise<boolean> {
@@ -138,7 +138,7 @@ export class SupabaseDatabaseManager {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        license_number: data.license_number,
+        rank: data.rank,
         active: data.active,
       })
       .eq("id", id);
@@ -466,25 +466,34 @@ export class SupabaseDatabaseManager {
       .select("*", { count: "exact", head: true })
       .in("status", ["planned", "completed"]);
 
-    const { data: payments } = await this.supabase
-      .from("payments")
-      .select("amount, status");
+    // Get current year boundaries for paid payments
+    const currentYear = new Date().getFullYear();
+    const startOfYear = `${currentYear}-01-01`;
+    const endOfYear = `${currentYear}-12-31`;
 
-    const totalPayments =
-      payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
-    const owedPayments =
-      payments
-        ?.filter((p) => p.status === "owed")
-        .reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+    // Get paid payments for current year only
+    const { data: paidPaymentsData } = await this.supabase
+      .from("payments")
+      .select("amount")
+      .eq("status", "paid")
+      .gte("date", startOfYear)
+      .lte("date", endOfYear);
+
+    // Get owed payments for all time
+    const { data: owedPaymentsData } = await this.supabase
+      .from("payments")
+      .select("amount")
+      .eq("status", "owed");
+
     const paidPayments =
-      payments
-        ?.filter((p) => p.status === "paid")
-        .reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+      paidPaymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+    const owedPayments =
+      owedPaymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
 
     return {
       totalOfficials: officialsCount || 0,
       activeCompetitions: activeComps || 0,
-      totalPayments,
+      totalPayments: paidPayments + owedPayments,
       owedPayments,
       paidPayments,
     };
@@ -561,6 +570,8 @@ export class SupabaseDatabaseManager {
       official_name: string;
       role: string;
       hours: number;
+      kilometers: number;
+      discipline: string;
       notes: string;
     }>
   > {
@@ -589,6 +600,8 @@ export class SupabaseDatabaseManager {
     official_id: number;
     role: string;
     hours: number;
+    kilometers?: number;
+    discipline?: string;
     notes?: string;
   }): Promise<number> {
     const { data: result, error } = await this.supabase
@@ -598,6 +611,8 @@ export class SupabaseDatabaseManager {
         official_id: data.official_id,
         role: data.role,
         hours: data.hours,
+        kilometers: data.kilometers ?? 0,
+        discipline: data.discipline ?? "",
         notes: data.notes ?? "",
       })
       .select("id")
@@ -609,13 +624,15 @@ export class SupabaseDatabaseManager {
 
   async updateCompetitionOfficial(
     id: number,
-    data: { role: string; hours: number; notes: string }
+    data: { role: string; hours: number; kilometers?: number; discipline?: string; notes: string }
   ): Promise<boolean> {
     const { error } = await this.supabase
       .from("competition_officials")
       .update({
         role: data.role,
         hours: data.hours,
+        kilometers: data.kilometers ?? 0,
+        discipline: data.discipline ?? "",
         notes: data.notes,
       })
       .eq("id", id);
@@ -698,6 +715,15 @@ export class SupabaseDatabaseManager {
         // Backward compatibility - simple hourly rate
         amount = role.hourlyRate * official.hours;
         breakdown = `${official.hours}h @ €${role.hourlyRate}/h`;
+      }
+
+      // Add travel costs
+      const kilometers = official.kilometers || 0;
+      const travelCost = kilometers * 0.37;
+      amount += travelCost;
+      
+      if (kilometers > 0) {
+        breakdown += ` + potni stroški (${kilometers}km × €0.37 = €${travelCost.toFixed(2)})`;
       }
 
       // Check if payment already exists

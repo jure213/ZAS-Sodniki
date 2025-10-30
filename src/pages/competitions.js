@@ -148,15 +148,14 @@ export async function renderCompetitions(container, user) {
           </div>
           <div class="modal-body">
             <div class="mb-3">
-              <button id="add-official-to-comp" class="btn btn-sm btn-success"><i class="bi bi-plus-circle me-1"></i> Dodaj sodnika</button>
-              <button id="bulk-assign-officials" class="btn btn-sm btn-info ms-2"><i class="bi bi-people-fill me-1"></i> Množična dodelitev</button>
+              <button id="bulk-assign-officials" class="btn btn-sm btn-success"><i class="bi bi-people-fill me-1"></i> Dodaj sodnike</button>
               <button id="preview-payments" class="btn btn-sm btn-warning ms-2"><i class="bi bi-eye me-1"></i> Predogled izplačil</button>
               <button id="generate-payments" class="btn btn-sm btn-primary ms-2"><i class="bi bi-cash me-1"></i> Generiraj izplačila</button>
             </div>
             <div class="table-responsive">
               <table class="table table-sm">
-                <thead class="text-center"><tr><th>Sodnik</th><th>Vloga</th><th>Ure</th><th>Opombe</th><th>Akcije</th></tr></thead>
-                <tbody id="comp-officials-body" class="align-middle text-center"><tr><td colspan="5">Nalagam…</td></tr></tbody>
+                <thead class="text-center"><tr><th>Sodnik</th><th>Vloga</th><th>Disciplina</th><th>Ure</th><th>km</th><th>Akcije</th></tr></thead>
+                <tbody id="comp-officials-body" class="align-middle text-center"><tr><td colspan="6">Nalagam…</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -180,14 +179,15 @@ export async function renderCompetitions(container, user) {
       const officials = await window.api?.competitions?.listOfficials(competition.id) ?? [];
       const tbody = modal.querySelector('#comp-officials-body');
       if (officials.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Ni dodeljenih sodnikov</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Ni dodeljenih sodnikov</td></tr>';
       } else {
         tbody.innerHTML = officials.map(o => `
           <tr>
             <td>${o.official_name ?? ''}</td>
             <td>${o.role ?? ''}</td>
+            <td>${o.discipline ?? ''}</td>
             <td>${o.hours ?? 0}</td>
-            <td>${o.notes ?? ''}</td>
+            <td>${o.kilometers ?? 0}</td>
             <td>
               <button class="btn btn-sm btn-outline-primary edit-comp-official" data-id="${o.id}"><i class="bi bi-pencil"></i></button>
               <button class="btn btn-sm btn-outline-danger delete-comp-official" data-id="${o.id}"><i class="bi bi-trash"></i></button>
@@ -216,8 +216,6 @@ export async function renderCompetitions(container, user) {
       }
     }
 
-    modal.querySelector('#add-official-to-comp').onclick = () => showEditCompOfficial(competition);
-    
     modal.querySelector('#bulk-assign-officials').onclick = () => showBulkAssign(competition);
     
     modal.querySelector('#preview-payments').onclick = () => showPaymentPreview(competition);
@@ -271,9 +269,28 @@ export async function renderCompetitions(container, user) {
               ${allOfficials.map(o => `<option value="${o.id}" ${compOfficial?.official_id === o.id ? 'selected' : ''}>${o.name}</option>`).join('')}
             </select></div>
             <div class="mb-2"><label class="form-label">Vloga</label><select id="f-role" class="form-select">
-              ${roles.map(r => `<option value="${r.name}" ${compOfficial?.role === r.name ? 'selected' : ''}>${formatRoleLabel(r)}</option>`).join('')}
+              ${roles.map(r => `<option value="${r.name}" ${compOfficial?.role === r.name ? 'selected' : ''}>${r.name}</option>`).join('')}
+            </select></div>
+            <div class="mb-2"><label class="form-label">Disciplina</label><select id="f-discipline" class="form-select">
+              <option value="">-- Izberi disciplino --</option>
+                    <option value="Prijavnica" ${compOfficial?.discipline === 'Prijavnica' ? 'selected' : ''}>Prijavnica</option>
+                    <option value="Štart" ${compOfficial?.discipline === 'Štart' ? 'selected' : ''}>Štart</option>
+                    <option value="Cilj" ${compOfficial?.discipline === 'Cilj' ? 'selected' : ''}>Cilj</option>
+                    <option value="Steza" ${compOfficial?.discipline === 'Steza' ? 'selected' : ''}>Steza</option>
+                    <option value="Palica" ${compOfficial?.discipline === 'Palica' ? 'selected' : ''}>Palica</option>
+                    <option value="Višina" ${compOfficial?.discipline === 'Višina' ? 'selected' : ''}>Višina</option>
+                    <option value="Daljina" ${compOfficial?.discipline === 'Daljina' ? 'selected' : ''}>Daljina</option>
+                    <option value="Troskok" ${compOfficial?.discipline === 'Troskok' ? 'selected' : ''}>Troskok</option>
+                    <option value="Krogla" ${compOfficial?.discipline === 'Krogla' ? 'selected' : ''}>Krogla</option>
+                    <option value="Disk" ${compOfficial?.discipline === 'Disk' ? 'selected' : ''}>Disk</option>
+                    <option value="Kopje" ${compOfficial?.discipline === 'Kopje' ? 'selected' : ''}>Kopje</option>
+                    <option value="Kladivo" ${compOfficial?.discipline === 'Kladivo' ? 'selected' : ''}>Kladivo</option>
+                    <option value="Timing" ${compOfficial?.discipline === 'Timing' ? 'selected' : ''}>Timing</option>
+                    <option value="1 - Daljinski skoki" ${compOfficial?.discipline === '1 - Daljinski skoki' ? 'selected' : ''}>1 - Daljinski skoki</option>
+                    <option value="2 - Meti" ${compOfficial?.discipline === '2 - Meti' ? 'selected' : ''}>2 - Meti</option>
             </select></div>
             <div class="mb-2"><label class="form-label">Število ur</label><input type="number" step="0.5" id="f-hours" class="form-control" value="${compOfficial?.hours ?? '8'}"></div>
+            <div class="mb-2"><label class="form-label">Kilometri (potni stroški: €0.37/km)</label><input type="number" step="1" min="0" id="f-kilometers" class="form-control" value="${compOfficial?.kilometers ?? '0'}"></div>
             <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${compOfficial?.notes ?? ''}</textarea></div>
           </div>
           <div class="modal-footer">
@@ -293,6 +310,8 @@ export async function renderCompetitions(container, user) {
       const data = {
         role: subModal.querySelector('#f-role').value,
         hours: parseFloat(subModal.querySelector('#f-hours').value),
+        kilometers: parseFloat(subModal.querySelector('#f-kilometers').value) || 0,
+        discipline: subModal.querySelector('#f-discipline').value,
         notes: subModal.querySelector('#f-notes').value
       };
 
@@ -334,11 +353,11 @@ export async function renderCompetitions(container, user) {
           <div class="modal-body">
             <div class="row">
               <div class="col-md-6">
-                <h6>Razpoložljivi sodniki</h6>
-                <div id="available-officials-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;">
+                <h6>Razpoložljivi sodniki <span class="badge bg-secondary" id="available-count">0</span></h6>
+                <div id="available-officials-container" style="max-height: 75vh; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 6px;">
                   ${allOfficials.filter(o => !assignedIds.has(o.id) && o.active).map(o => `
-                    <div class="d-flex align-items-center justify-content-between mb-2 p-2 border rounded official-item" data-id="${o.id}">
-                      <span>${o.name}</span>
+                    <div class="d-flex align-items-center justify-content-between mb-1 p-1 border rounded official-item" data-id="${o.id}">
+                      <span class="small">${o.name}</span>
                       <button class="btn btn-sm btn-success add-official-btn" data-id="${o.id}" data-name="${o.name}">
                         <i class="bi bi-plus-circle"></i> Dodaj
                       </button>
@@ -349,7 +368,7 @@ export async function renderCompetitions(container, user) {
               </div>
               <div class="col-md-6">
                 <h6>Izbrani sodniki za dodelitev <span class="badge bg-primary" id="selected-count">0</span></h6>
-                <div id="selected-officials-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; min-height: 100px;">
+                <div id="selected-officials-container" style="max-height: 75vh; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 6px; min-height: 100px;">
                   <p class="text-muted" id="empty-message">Ni izbranih sodnikov</p>
                 </div>
               </div>
@@ -369,6 +388,11 @@ export async function renderCompetitions(container, user) {
     const emptyMessage = subModal.querySelector('#empty-message');
     const saveBtn = subModal.querySelector('#save-bulk-assign');
     const countBadge = subModal.querySelector('#selected-count');
+    const availableCountBadge = subModal.querySelector('#available-count');
+
+    // Initialize available count
+    const availableOfficials = allOfficials.filter(o => !assignedIds.has(o.id) && o.active);
+    availableCountBadge.textContent = availableOfficials.length;
 
     function showQuickAssignPopup(officialId, officialName) {
       // Function to format role label
@@ -397,12 +421,37 @@ export async function renderCompetitions(container, user) {
               <div class="mb-2">
                 <label class="form-label">Vloga</label>
                 <select id="quick-role" class="form-select" autofocus>
-                  ${roles.map(r => `<option value="${r.name}">${formatRoleLabel(r)}</option>`).join('')}
+                  ${roles.map(r => `<option value="${r.name}">${r.name}</option>`).join('')}
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Disciplina</label>
+                <select id="quick-discipline" class="form-select">
+                  <option value="">-- Izberi disciplino --</option>
+                  <option value="Prijavnica">Prijavnica</option>
+                  <option value="Štart">Štart</option>
+                  <option value="Cilj">Cilj</option>
+                  <option value="Steza">Steza</option>
+                  <option value="Palica">Palica</option>
+                  <option value="Višina">Višina</option>
+                  <option value="Daljina">Daljina</option>
+                  <option value="Troskok">Troskok</option>
+                  <option value="Krogla">Krogla</option>
+                  <option value="Disk">Disk</option>
+                  <option value="Kopje">Kopje</option>
+                  <option value="Kladivo">Kladivo</option>
+                  <option value="Timing">Timing</option>
+                  <option value="1 - Daljinski skoki">1 - Daljinski skoki</option>
+                  <option value="2 - Meti">2 - Meti</option>
                 </select>
               </div>
               <div class="mb-2">
                 <label class="form-label">Število ur</label>
                 <input type="number" step="0.5" id="quick-hours" class="form-control" value="8">
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Kilometri (€0.37/km)</label>
+                <input type="number" step="1" min="0" id="quick-kilometers" class="form-control" value="0">
               </div>
             </div>
             <div class="modal-footer">
@@ -426,11 +475,15 @@ export async function renderCompetitions(container, user) {
       quickModal.querySelector('#confirm-quick-assign').onclick = () => {
         const role = quickModal.querySelector('#quick-role').value;
         const hours = parseFloat(quickModal.querySelector('#quick-hours').value);
+        const kilometers = parseFloat(quickModal.querySelector('#quick-kilometers').value) || 0;
+        const discipline = quickModal.querySelector('#quick-discipline').value;
 
         selectedOfficials.set(officialId, {
           name: officialName,
           role: role,
-          hours: hours
+          hours: hours,
+          kilometers: kilometers,
+          discipline: discipline
         });
 
         quickModal.remove();
@@ -467,9 +520,9 @@ export async function renderCompetitions(container, user) {
         availableContainer.innerHTML = '<p class="text-muted">Vsi aktivni sodniki so že dodeljeni ali izbrani</p>';
       } else {
         availableContainer.innerHTML = availableOfficials.map(o => `
-          <div class="d-flex align-items-center justify-content-between mb-2 p-2 border rounded official-item" data-id="${o.id}">
-            <span>${o.name}</span>
-            <button class="btn btn-sm btn-success add-official-btn" data-id="${o.id}" data-name="${o.name}">
+          <div class="d-flex align-items-center justify-content-between mb-1 p-1 border rounded official-item" data-id="${o.id}">
+            <span class="small">${o.name}</span>
+            <button class="btn btn-sm btn-success add-official-btn" data-id="${o.id}" data-name="${o.name}" style="padding: 0.2rem 0.4rem; font-size: 0.75rem;">
               <i class="bi bi-plus-circle"></i> Dodaj
             </button>
           </div>
@@ -512,24 +565,49 @@ export async function renderCompetitions(container, user) {
         saveBtn.disabled = false;
         
         selectedContainer.innerHTML = Array.from(selectedOfficials.entries()).map(([id, data]) => `
-          <div class="card mb-2" data-card-id="${id}">
+          <div class="card mb-1" data-card-id="${id}" style="font-size: 0.85rem;">
             <div class="card-body p-2">
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <strong>${data.name}</strong>
-                <button class="btn btn-sm btn-outline-danger remove-official-btn" data-id="${id}">
+              <div class="d-flex justify-content-between align-items-start mb-1">
+                <strong class="small">${data.name}</strong>
+                <button class="btn btn-sm btn-outline-danger remove-official-btn" data-id="${id}" style="padding: 0.1rem 0.3rem; font-size: 0.75rem;">
                   <i class="bi bi-x-circle"></i>
                 </button>
               </div>
-              <div class="row g-2">
-                <div class="col-md-7">
-                  <label class="form-label small">Vloga</label>
-                  <select class="form-select form-select-sm role-select" data-id="${id}">
-                    ${roles.map(r => `<option value="${r.name}" ${data.role === r.name ? 'selected' : ''}>${formatRoleLabel(r)}</option>`).join('')}
+              <div class="row g-1">
+                <div class="col-md-12">
+                  <label class="form-label mb-0" style="font-size: 0.7rem;">Vloga</label>
+                  <select class="form-select form-select-sm role-select" data-id="${id}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                    ${roles.map(r => `<option value="${r.name}" ${data.role === r.name ? 'selected' : ''}>${r.name}</option>`).join('')}
                   </select>
                 </div>
-                <div class="col-md-5">
-                  <label class="form-label small">Ure</label>
-                  <input type="number" step="0.5" class="form-control form-control-sm hours-input" data-id="${id}" value="${data.hours}">
+                <div class="col-md-12">
+                  <label class="form-label mb-0" style="font-size: 0.7rem;">Disciplina</label>
+                  <select class="form-select form-select-sm discipline-select" data-id="${id}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                    <option value="">-- Izberi disciplino --</option>
+                    <option value="Prijavnica" ${data.discipline === 'Prijavnica' ? 'selected' : ''}>Prijavnica</option>
+                    <option value="Štart" ${data.discipline === 'Štart' ? 'selected' : ''}>Štart</option>
+                    <option value="Cilj" ${data.discipline === 'Cilj' ? 'selected' : ''}>Cilj</option>
+                    <option value="Steza" ${data.discipline === 'Steza' ? 'selected' : ''}>Steza</option>
+                    <option value="Palica" ${data.discipline === 'Palica' ? 'selected' : ''}>Palica</option>
+                    <option value="Višina" ${data.discipline === 'Višina' ? 'selected' : ''}>Višina</option>
+                    <option value="Daljina" ${data.discipline === 'Daljina' ? 'selected' : ''}>Daljina</option>
+                    <option value="Troskok" ${data.discipline === 'Troskok' ? 'selected' : ''}>Troskok</option>
+                    <option value="Krogla" ${data.discipline === 'Krogla' ? 'selected' : ''}>Krogla</option>
+                    <option value="Disk" ${data.discipline === 'Disk' ? 'selected' : ''}>Disk</option>
+                    <option value="Kopje" ${data.discipline === 'Kopje' ? 'selected' : ''}>Kopje</option>
+                    <option value="Kladivo" ${data.discipline === 'Kladivo' ? 'selected' : ''}>Kladivo</option>
+                    <option value="Timing" ${data.discipline === 'Timing' ? 'selected' : ''}>Timing</option>
+                    <option value="1 - Daljinski skoki" ${data.discipline === '1 - Daljinski skoki' ? 'selected' : ''}>1 - Daljinski skoki</option>
+                    <option value="2 - Meti" ${data.discipline === '2 - Meti' ? 'selected' : ''}>2 - Meti</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label mb-0" style="font-size: 0.7rem;">Ure</label>
+                  <input type="number" step="0.5" class="form-control form-control-sm hours-input" data-id="${id}" value="${data.hours}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label mb-0" style="font-size: 0.7rem;">Kilometri</label>
+                  <input type="number" step="1" min="0" class="form-control form-control-sm kilometers-input" data-id="${id}" value="${data.kilometers || 0}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
                 </div>
               </div>
             </div>
@@ -559,6 +637,30 @@ export async function renderCompetitions(container, user) {
           };
         });
 
+        // Rebind events for discipline selects
+        selectedContainer.querySelectorAll('.discipline-select').forEach(select => {
+          select.onchange = () => {
+            const id = parseInt(select.dataset.id);
+            const data = selectedOfficials.get(id);
+            if (data) {
+              data.discipline = select.value;
+              selectedOfficials.set(id, data);
+            }
+          };
+        });
+
+        // Rebind events for kilometers inputs
+        selectedContainer.querySelectorAll('.kilometers-input').forEach(input => {
+          input.onchange = () => {
+            const id = parseInt(input.dataset.id);
+            const data = selectedOfficials.get(id);
+            if (data) {
+              data.kilometers = parseFloat(input.value) || 0;
+              selectedOfficials.set(id, data);
+            }
+          };
+        });
+
         // Rebind events for hours inputs
         selectedContainer.querySelectorAll('.hours-input').forEach(input => {
           input.onchange = () => {
@@ -575,6 +677,9 @@ export async function renderCompetitions(container, user) {
 
     function updateCount() {
       countBadge.textContent = selectedOfficials.size;
+      // Update available count by counting remaining visible officials in the available container
+      const visibleAvailableOfficials = availableContainer.querySelectorAll('.official-item:not([style*="display: none"])');
+      availableCountBadge.textContent = visibleAvailableOfficials.length;
     }
 
     subModal.querySelectorAll('[data-dismiss-sub="modal"]').forEach(btn => {
@@ -591,6 +696,8 @@ export async function renderCompetitions(container, user) {
           official_id: officialId,
           role: data.role,
           hours: data.hours,
+          kilometers: data.kilometers || 0,
+          discipline: data.discipline || '',
           notes: ''
         });
         if (result.ok) added++;
@@ -682,18 +789,24 @@ export async function renderCompetitions(container, user) {
       const role = roles.find(r => r.name === o.role);
       const amount = calculateAmount(role, o.hours);
       const rateInfo = getRateBreakdown(role, o.hours);
+      const kilometers = o.kilometers || 0;
+      const travelCost = kilometers * 0.37;
+      const totalAmount = amount + travelCost;
       
       return {
         officialName: o.official_name,
         role: o.role,
         hours: o.hours,
+        kilometers: kilometers,
+        travelCost: travelCost,
         rateInfo: rateInfo,
         amount: amount,
+        totalAmount: totalAmount,
         hasRole: !!role
       };
     });
 
-    const totalAmount = previewData.reduce((sum, item) => sum + item.amount, 0);
+    const totalAmount = previewData.reduce((sum, item) => sum + item.totalAmount, 0);
     const hasErrors = previewData.some(item => !item.hasRole);
 
     const subModal = document.createElement('div');
@@ -716,7 +829,9 @@ export async function renderCompetitions(container, user) {
                     <th>Sodnik</th>
                     <th>Vloga</th>
                     <th>Ure</th>
+                    <th>km</th>
                     <th>Postavka</th>
+                    <th>Potni stroški</th>
                     <th>Skupaj (€)</th>
                   </tr>
                 </thead>
@@ -726,14 +841,16 @@ export async function renderCompetitions(container, user) {
                       <td>${item.officialName}</td>
                       <td>${item.role} ${!item.hasRole ? '<span class="badge bg-danger">Vloga ne obstaja</span>' : ''}</td>
                       <td>${item.hours.toFixed(1)}</td>
-                      <td><small>${item.rateInfo}</small></td>
-                      <td><strong>€${item.amount.toFixed(2)}</strong></td>
+                      <td>${item.kilometers}</td>
+                      <td><small>${item.rateInfo}</small><br><small>€${item.amount.toFixed(2)}</small></td>
+                      <td><small>${item.kilometers}km × €0.37</small><br><small>€${item.travelCost.toFixed(2)}</small></td>
+                      <td><strong>€${item.totalAmount.toFixed(2)}</strong></td>
                     </tr>
                   `).join('')}
                 </tbody>
                 <tfoot>
                   <tr class="table-primary">
-                    <th colspan="4" class="text-center">SKUPAJ:</th>
+                    <th colspan="6" class="text-center">SKUPAJ:</th>
                     <th class="text-center"><strong>€${totalAmount.toFixed(2)}</strong></th>
                   </tr>
                 </tfoot>

@@ -7,12 +7,12 @@ export function setupOfficialHandlers(db: any) {
     return await db.listOfficials();
   });
 
-  ipcMain.handle('official:create', async (_event, data: { name: string; email: string; phone: string; license_number: string; active?: number }) => {
+  ipcMain.handle('official:create', async (_event, data: { name: string; email: string; phone: string; rank: string; active?: number }) => {
     const id = await db.addOfficial(data);
     return { ok: id > 0, id };
   });
 
-  ipcMain.handle('official:update', async (_event, { id, data }: { id: number; data: { name: string; email: string; phone: string; license_number: string; active: number } }) => {
+  ipcMain.handle('official:update', async (_event, { id, data }: { id: number; data: { name: string; email: string; phone: string; rank: string; active: number } }) => {
     const success = await db.updateOfficial(id, data);
     return { ok: success };
   });
@@ -67,12 +67,12 @@ export function setupOfficialHandlers(db: any) {
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
         
-        // Expected columns: Name, Email, Phone, License Number (or similar variations)
+        // Expected columns: Name, Email, Phone, Rank (or similar variations)
         // Try to match different possible column names
         const name = row['Name'] || row['Ime'] || row['name'] || row['ime'] || '';
         const email = row['Email'] || row['E-mail'] || row['email'] || row['e-mail'] || '';
         const phone = row['Phone'] || row['Telefon'] || row['phone'] || row['telefon'] || '';
-        const license = row['License Number'] || row['License'] || row['Licenca'] || row['license_number'] || row['licenca'] || '';
+        const rank = row['Rank'] || row['Rang'] || row['rank'] || row['rang'] || '';
 
         // Validate required fields
         if (!name || name.toString().trim() === '') {
@@ -98,7 +98,7 @@ export function setupOfficialHandlers(db: any) {
             name: name.toString().trim(),
             email: email ? email.toString().trim() : '',
             phone: phone ? phone.toString().trim() : '',
-            license_number: license ? license.toString().trim() : '',
+            rank: rank ? rank.toString().trim() : '',
             active: 1
           });
 
