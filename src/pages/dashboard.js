@@ -3,7 +3,7 @@ export async function renderDashboard(container) {
     <div class="row g-4 mb-4">
       <div class="col-md-3">
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #0c3d22 0%, #350097 100%); color: white;">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #072b74ff 0%, #898dbbff 100%); color: white;">
             <i class="bi bi-people-fill"></i>
           </div>
           <div class="stat-label">Število sodnikov</div>

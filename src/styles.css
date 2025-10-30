@@ -17,7 +17,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #072b74ff 0%, #898dbbff 100%);
 }
 .login-card {
   background: white;
@@ -28,7 +28,7 @@ body {
   max-width: 420px;
 }
 .login-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #072b74ff 0%, #898dbbff 100%);
   color: white;
   padding: 2rem;
   text-align: center;
@@ -95,7 +95,7 @@ body {
 .nav-link.active {
   background: rgba(255, 255, 255, 0.15);
   color: white;
-  border-left-color: #3498db;
+  border-left-color: #015c99;
 }
 .nav-link i {
   font-size: 1.25rem;
@@ -118,7 +118,7 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0c3d22 0%, #350097 100%);
+  background: linear-gradient(135deg, #072b74ff 0%, #898dbbff 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -226,7 +226,7 @@ body {
   transition: all 0.2s;
 }
 .btn-primary {
-  background: linear-gradient(135deg, #0c3d22 0%, #350097 100%);
+  background: linear-gradient(135deg, #072b74ff 0%, #898dbbff 100%);
   border: none;
 }
 .btn-primary:hover {
