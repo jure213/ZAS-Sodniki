@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
-import { autoUpdater } from 'electron-updater';
+import { autoUpdater, AppUpdater } from 'electron-updater';
 import * as path from 'path';
 import { SupabaseDatabaseManager } from './supabase';
 
@@ -65,6 +65,10 @@ async function initializeApp() {
     app.quit();
   }
 }
+
+// auto-updater settings
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
 
 // App lifecycle
 app.whenReady().then(async () => {

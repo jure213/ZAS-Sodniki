@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Athletic Officials Payment Tracker",
   "main": "dist-electron/main.js",
-  "homepage": "https://github.com/jure213/ZAS-Sodniki",
   "author": {
     "name": "Jure Rus",
     "email": "jure.rus04@gmail.com"
@@ -26,13 +25,13 @@
   "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.76.1",
-    "electron-updater": "^6.1.7",
+    "electron-updater": "^6.6.2",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
     "electron": "^28.1.0",
-    "electron-builder": "^24.9.1",
+    "electron-builder": "^24.13.3",
     "typescript": "^5.3.3"
   },
   "build": {
@@ -46,11 +45,6 @@
       "src/**/*"
     ],
     "icon": "electron/zas_ikona.ico",
-    "publish": {
-      "provider": "github",
-      "owner": "jure213",
-      "repo": "ZAS-Sodniki"
-    },
     "linux": {
       "target": [
         "AppImage",
@@ -64,5 +58,10 @@
       ],
       "artifactName": "ZAS.Sodniki.Setup.${version}.${ext}"
     }
+  },
+  "repository": "https://github.com/jure213/ZAS-Sodniki",
+  "publish": {
+    "provider": "github",
+    "releaseType": "release"
   }
 }
