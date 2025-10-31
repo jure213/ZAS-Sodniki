@@ -18,6 +18,10 @@ export function renderSidebar(container, { user }) {
       <i class="bi bi-cash-coin"></i>
       <span>Izplačila</span>
     </a>
+    <a href="#/exports" class="nav-link ${currentHash === '#/exports' ? 'active' : ''}">
+      <i class="bi bi-file-earmark-excel"></i>
+      <span>Izpisi</span>
+    </a>
     ${user?.role === 'admin' ? `
     <a href="#/settings" class="nav-link ${currentHash === '#/settings' ? 'active' : ''}">
       <i class="bi bi-gear"></i>

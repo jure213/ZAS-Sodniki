@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld('api', {
     update: (id: number, data: any) => ipcRenderer.invoke('competition:update', { id, data }),
     delete: (id: number) => ipcRenderer.invoke('competition:delete', id),
     listOfficials: (competitionId: number) => ipcRenderer.invoke('competition:listOfficials', competitionId),
+    listAllOfficials: () => ipcRenderer.invoke('competition:listAllOfficials'),
     addOfficial: (data: any) => ipcRenderer.invoke('competition:addOfficial', data),
     updateOfficial: (id: number, data: any) => ipcRenderer.invoke('competition:updateOfficial', { id, data }),
     deleteOfficial: (id: number) => ipcRenderer.invoke('competition:deleteOfficial', id),
@@ -63,6 +64,10 @@ contextBridge.exposeInMainWorld('api', {
   // Dashboard
   dashboard: {
     getStats: () => ipcRenderer.invoke('dashboard:getStats'),
+  },
+  // Exports
+  exports: {
+    generateCompetitionReport: (competitionId: number) => ipcRenderer.invoke('export:generateCompetitionReport', competitionId),
   },
 });
 

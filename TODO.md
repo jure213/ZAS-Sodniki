@@ -7,7 +7,7 @@
 
 po dodelitvi možnost custom zneska vnos !!
 
-info o sodniku, kje je že bil
+<!-- info o sodniku, kje je že bil -->
 
 overall izpis...za neko obdobje, sodnik | vsa tekmovanja kjer je kdo bil
 

@@ -12,6 +12,7 @@ import { setupAuthHandlers } from './handlers/auth.handlers';
 import { setupSettingsHandlers } from './handlers/settings.handlers';
 import { setupUserHandlers } from './handlers/user.handlers';
 import { setupDashboardHandlers } from './handlers/dashboard.handlers';
+import { setupExportHandlers } from './handlers/export.handlers';
 
 let mainWindow: BrowserWindow | null = null;
 let db: SupabaseDatabaseManager;
@@ -58,6 +59,7 @@ async function initializeApp() {
     setupPaymentHandlers(db as any);
     setupUserHandlers(db as any);
     setupDashboardHandlers(db as any);
+    setupExportHandlers(db as any);
 
     console.log('IPC handlers registered');
   } catch (error) {
@@ -81,56 +83,6 @@ app.whenReady().then(async () => {
   createWindow();
 
   // Check for updates (skip in development mode)
-  if (app.isPackaged) {
-    console.log('=== AUTO-UPDATER ENABLED ===');
-    console.log('Current version:', app.getVersion());
-    
-    // Configure auto-updater
-    autoUpdater.autoDownload = true;
-    autoUpdater.autoInstallOnAppQuit = true;
-    
-    autoUpdater.on('checking-for-update', () => {
-      console.log('Checking for updates...');
-    });
-    
-    autoUpdater.on('update-available', (info) => {
-      console.log('Update available:', info.version);
-      console.log('Release notes:', info.releaseNotes);
-    });
-    
-    autoUpdater.on('update-not-available', (info) => {
-      console.log('Update not available. Current version is', info.version);
-    });
-    
-    autoUpdater.on('error', (err) => {
-      console.error('Error in auto-updater:', err);
-    });
-    
-    autoUpdater.on('download-progress', (progressObj) => {
-      console.log(`Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`);
-    });
-    
-    autoUpdater.on('update-downloaded', (info) => {
-      console.log('Update downloaded:', info.version);
-      console.log('Will install on app restart');
-      
-      // Optionally show dialog to user
-      if (mainWindow) {
-        mainWindow.webContents.send('update-downloaded');
-      }
-    });
-    
-    // Start checking for updates
-    autoUpdater.checkForUpdatesAndNotify();
-    
-    // Check every 10 minutes
-    setInterval(() => {
-      autoUpdater.checkForUpdates();
-    }, 10 * 60 * 1000);
-    
-  } else {
-    console.log('Running in development - skipping auto-update check');
-  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

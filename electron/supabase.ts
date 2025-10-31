@@ -595,6 +595,38 @@ export class SupabaseDatabaseManager {
     }));
   }
 
+  async listAllCompetitionOfficials(): Promise<
+    Array<{
+      id: number;
+      competition_id: number;
+      official_id: number;
+      official_name: string;
+      role: string;
+      hours: number;
+      kilometers: number;
+      discipline: string;
+      notes: string;
+    }>
+  > {
+    const { data, error } = await this.supabase
+      .from("competition_officials")
+      .select("*");
+
+    if (error || !data) return [];
+
+    // Fetch officials separately
+    const { data: officials } = await this.supabase
+      .from("officials")
+      .select("id, name");
+
+    const officialsMap = new Map(officials?.map((o) => [o.id, o.name]) || []);
+
+    return data.map((item: any) => ({
+      ...item,
+      official_name: officialsMap.get(item.official_id) || "",
+    }));
+  }
+
   async addCompetitionOfficial(data: {
     competition_id: number;
     official_id: number;
@@ -735,7 +767,7 @@ export class SupabaseDatabaseManager {
         .single();
 
       if (existing) {
-        errors.push(`Payment already exists for ${official.official_name}`);
+        errors.push(`Plačilo že obstaja za ${official.official_name}`);
         continue;
       }
 
@@ -780,5 +812,55 @@ export class SupabaseDatabaseManager {
       (await this.getSetting<Record<string, any>>("app_settings")) || {};
     settings[key] = value;
     await this.setSetting("app_settings", settings);
+  }
+
+  async getCompetitionReportData(competitionId: number): Promise<
+    Array<{
+      name: string;
+      rank: string;
+      discipline: string;
+      hours: number;
+      amount: number;
+      travelCost: number;
+      kilometers: number;
+    }>
+  > {
+    // Get competition officials
+    const competitionOfficials = await this.listCompetitionOfficials(competitionId);
+
+    if (!competitionOfficials || competitionOfficials.length === 0) {
+      return [];
+    }
+
+    // Get all officials
+    const { data: officials } = await this.supabase
+      .from("officials")
+      .select("id, name, rank");
+
+    // Get all payments for this competition
+    const { data: payments } = await this.supabase
+      .from("payments")
+      .select("official_id, amount")
+      .eq("competition_id", competitionId);
+
+    const officialsMap = new Map(officials?.map((o) => [o.id, o]) || []);
+    const paymentsMap = new Map(payments?.map((p) => [p.official_id, p.amount]) || []);
+
+    // Build report data
+    return competitionOfficials.map((co) => {
+      const official = officialsMap.get(co.official_id);
+      const paymentAmount = paymentsMap.get(co.official_id) || 0;
+      const travelCost = (co.kilometers || 0) * 0.37;
+
+      return {
+        name: official?.name || co.official_name || 'Neznano',
+        rank: official?.rank || '',
+        discipline: co.discipline || '',
+        hours: co.hours || 0,
+        amount: paymentAmount,
+        travelCost: travelCost,
+        kilometers: co.kilometers || 0,
+      };
+    });
   }
 }

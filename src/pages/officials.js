@@ -30,6 +30,7 @@ export async function renderOfficials(container, user) {
             <td>${o.rank ?? ''}</td>
             <td><span class="badge bg-${o.active ? 'success' : 'secondary'}">${o.active ? 'Aktiven' : 'Neaktiven'}</span></td>
             ${isAdmin ? `<td>
+              <button class="btn btn-sm btn-outline-info info-official" data-id="${o.id}" data-name="${o.name}"><i class="bi bi-info-circle"></i></button>
               <button class="btn btn-sm btn-outline-primary edit-official" data-id="${o.id}"><i class="bi bi-pencil"></i></button>
               <button class="btn btn-sm btn-outline-${o.active ? 'warning' : 'success'} toggle-active" data-id="${o.id}" data-active="${o.active}">${o.active ? 'Deaktiviraj' : 'Aktiviraj'}</button>
               <button class="btn btn-sm btn-outline-danger delete-official" data-id="${o.id}"><i class="bi bi-trash"></i></button>
@@ -43,6 +44,13 @@ export async function renderOfficials(container, user) {
 
       // Bind events for admin
       if (isAdmin) {
+        container.querySelectorAll('.info-official').forEach(btn => {
+          btn.onclick = async () => {
+            const id = parseInt(btn.dataset.id);
+            const name = btn.dataset.name;
+            await showOfficialInfo(id, name);
+          };
+        });
         container.querySelectorAll('.delete-official').forEach(btn => {
           btn.onclick = async () => {
             const id = parseInt(btn.dataset.id);
@@ -132,6 +140,88 @@ export async function renderOfficials(container, user) {
       }
       loadOfficials();
     };
+  }
+
+  async function showOfficialInfo(officialId, officialName) {
+    if (window.cleanupModals) {
+      window.cleanupModals();
+    }
+
+    // Fetch competition history
+    const competitions = await window.api?.competitions?.list();
+    const competitionOfficials = await window.api?.competitions?.listAllOfficials();
+    const payments = await window.api?.payments?.list();
+
+    // Filter to get only this official's competitions
+    const officialCompetitions = competitionOfficials.filter(co => co.official_id === officialId);
+    
+    // Build history data
+    const history = officialCompetitions.map(co => {
+      const comp = competitions.find(c => c.id === co.competition_id);
+      const payment = payments.find(p => p.competition_id === co.competition_id && p.official_id === officialId);
+      return {
+        name: comp?.name || 'Neznana tekma',
+        date: comp?.date || 'Ni datuma',
+        amount: payment?.amount || 0
+      };
+    });
+
+    // Calculate total
+    const total = history.reduce((sum, h) => sum + h.amount, 0);
+
+    const modal = document.createElement('div');
+    modal.className = 'modal show d-block';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modal.innerHTML = `
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Zgodovina sodnika: ${officialName}</h5>
+            <button type="button" class="btn-close" data-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            ${history.length === 0 ? '<p class="text-muted">Ni evidentirane zgodovine tekem.</p>' : `
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 40%">Tekma</th>
+                    <th style="width: 30%">Datum</th>
+                    <th style="width: 30%; text-align: right">Plačilo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${history.map(h => `
+                    <tr>
+                      <td>${h.name}</td>
+                      <td>${h.date}</td>
+                      <td style="text-align: right">${h.amount.toFixed(2)} €</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+                <tfoot class="table-light">
+                  <tr class="fw-bold">
+                    <td colspan="2">Skupaj:</td>
+                    <td style="text-align: right">${total.toFixed(2)} €</td>
+                  </tr>
+                </tfoot>
+              </table>
+            `}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Zapri</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
+      btn.onclick = () => {
+        if (window.cleanupModals) {
+          window.cleanupModals();
+        }
+      };
+    });
   }
 
   function showNotification(message, type = 'info') {

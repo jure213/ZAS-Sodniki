@@ -6,6 +6,7 @@ import { renderCompetitions } from './pages/competitions.js';
 import { renderPayments } from './pages/payments.js';
 import { renderSettings } from './pages/settings.js';
 import { renderUsers } from './pages/users.js';
+import { renderExports } from './pages/exports.js';
 
 function qs(id) {
   return document.getElementById(id);
@@ -142,6 +143,9 @@ async function route(user) {
       break;
     case '#/payments':
       await renderPayments(content, user);
+      break;
+    case '#/exports':
+      await renderExports(content, user);
       break;
     case '#/settings':
       if (user.role !== 'admin') {

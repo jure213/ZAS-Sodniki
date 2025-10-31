@@ -24,7 +24,7 @@ export async function renderCompetitions(container, user) {
             <td>${c.location ?? ''}</td>
             <td><span class="badge bg-${c.status === 'completed' ? 'success' : c.status === 'planned' ? 'warning' : 'danger'}">${c.status === 'completed' ? 'Zaključeno' : c.status === 'planned' ? 'Načrtovano' : 'Preklicano'}</span></td>
             ${isAdmin ? `<td>
-              <button class="btn btn-sm btn-outline-info manage-officials" data-id="${c.id}" title="Dodeli sodnike"><i class="bi bi-people"></i></button>
+              <button class="btn btn-sm btn-outline-dark manage-officials" data-id="${c.id}" title="Dodeli sodnike"><i class="bi bi-people"></i></button>
               <button class="btn btn-sm btn-outline-primary edit-competition" data-id="${c.id}"><i class="bi bi-pencil"></i></button>
               <button class="btn btn-sm btn-outline-danger delete-competition" data-id="${c.id}"><i class="bi bi-trash"></i></button>
             </td>` : ''}

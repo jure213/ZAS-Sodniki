@@ -26,6 +26,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.76.1",
     "electron-updater": "^6.6.2",
+    "exceljs": "^4.4.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
