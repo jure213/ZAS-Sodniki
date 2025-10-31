@@ -13,6 +13,7 @@ export async function renderPayments(container, user) {
         <div class="mt-2">
           <button id="apply-filters" class="btn btn-sm btn-outline-primary">Filtriraj</button>
           <button id="clear-filters" class="btn btn-sm btn-outline-secondary">Počisti</button>
+          <button id="export-filtered" class="btn btn-sm btn-success ms-2"><i class="bi bi-file-earmark-excel me-1"></i>Izvozi v Excel</button>
           <span id="filter-count" class="ms-3 text-muted small"></span>
         </div>
       </div>
@@ -30,6 +31,7 @@ export async function renderPayments(container, user) {
 
   let officials = [];
   let competitions = [];
+  let currentFilteredPayments = []; // Store currently displayed payments
   
   async function loadFilters() {
     officials = await window.api?.officials?.list() ?? [];
@@ -70,6 +72,7 @@ export async function renderPayments(container, user) {
   async function loadPayments(filters = {}) {
     try {
       const list = await window.api?.payments?.list(filters);
+      currentFilteredPayments = list; // Store for export
       const tbody = container.querySelector('#payments-body');
       tbody.innerHTML = list
         .map(
@@ -317,6 +320,43 @@ export async function renderPayments(container, user) {
     container.querySelector('#filter-date-from').value = '';
     container.querySelector('#filter-date-to').value = '';
     loadPayments();
+  };
+  
+  container.querySelector('#export-filtered').onclick = async () => {
+    if (!currentFilteredPayments || currentFilteredPayments.length === 0) {
+      alert('Ni podatkov za izvoz');
+      return;
+    }
+    
+    try {
+      const btn = container.querySelector('#export-filtered');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Izvažam...';
+      
+      const result = await window.api?.payments?.exportToExcel(currentFilteredPayments);
+      
+      if (result.ok) {
+        // Show success notification
+        const toast = document.createElement('div');
+        toast.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+          <i class="bi bi-check-circle-fill me-2"></i>
+          <strong>Uspešno izvoženo!</strong> Excel datoteka je bila ustvarjena.
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      } else {
+        alert('Napaka pri izvozu: ' + (result.message || 'Neznana napaka'));
+      }
+    } catch (e) {
+      alert('Napaka: ' + String(e));
+    } finally {
+      const btn = container.querySelector('#export-filtered');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-file-earmark-excel me-1"></i>Izvozi v Excel';
+    }
   };
   
   if (isAdmin) {

@@ -174,4 +174,184 @@ export function setupExportHandlers(db: any) {
       return { ok: false, message: error.message || 'Neznana napaka' };
     }
   });
+
+  ipcMain.handle('export:generateCompetitionsSummary', async (_event, competitionIds: number[], tariffType: string = 'official') => {
+    try {
+      if (!competitionIds || competitionIds.length === 0) {
+        return { ok: false, message: 'Nobena tekma ni bila izbrana' };
+      }
+
+      // Get all competitions
+      const competitions = await db.listCompetitions();
+      const selectedCompetitions = competitions.filter((c: any) => competitionIds.includes(c.id));
+
+      if (!selectedCompetitions || selectedCompetitions.length === 0) {
+        return { ok: false, message: 'Izbrane tekme niso bile najdene' };
+      }
+
+      // For each competition, get report data and calculate totals
+      const summaryData = [];
+      
+      for (const comp of selectedCompetitions) {
+        const reportData = await db.getCompetitionReportData(comp.id, tariffType);
+        
+        if (reportData && reportData.length > 0) {
+          let officialsTotal = 0;
+          let travelTotal = 0;
+          
+          reportData.forEach((row: any) => {
+            officialsTotal += (row.amount - row.travelCost); // Base amount without travel
+            travelTotal += row.travelCost;
+          });
+          
+          summaryData.push({
+            id: comp.id,
+            name: comp.name,
+            date: comp.date,
+            location: comp.location,
+            officialsTotal,
+            travelTotal,
+            grandTotal: officialsTotal + travelTotal
+          });
+        }
+      }
+
+      if (summaryData.length === 0) {
+        return { ok: false, message: 'Ni podatkov za izbrane tekme' };
+      }
+
+      // Format date to dd.mm.yyyy
+      const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}.${month}.${year}`;
+      };
+
+      // Create workbook with ExcelJS
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Pregled tekem');
+
+      // Add title row
+      const titleRow = worksheet.addRow(['PREGLED TEKEM - SKUPNI STROŠKI']);
+      worksheet.mergeCells(1, 1, 1, 6);
+      titleRow.font = { bold: true, size: 14 };
+      titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleRow.height = 25;
+
+      const titleCell = worksheet.getCell('A1');
+      titleCell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+
+      // Add header row
+      const headerRow = worksheet.addRow(['TEKMA', 'DATUM', 'LOKACIJA', 'SODNIKI', 'POTNI STROŠKI', 'SKUPAJ']);
+      headerRow.font = { bold: true };
+      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // Set column widths
+      worksheet.columns = [
+        { key: 'name', width: 35 },
+        { key: 'date', width: 12 },
+        { key: 'location', width: 20 },
+        { key: 'officials', width: 15 },
+        { key: 'travel', width: 18 },
+        { key: 'total', width: 15 },
+      ];
+
+      // Add data rows and calculate grand totals
+      let totalOfficials = 0;
+      let totalTravel = 0;
+      let grandTotal = 0;
+
+      summaryData.forEach((row: any) => {
+        totalOfficials += row.officialsTotal;
+        totalTravel += row.travelTotal;
+        grandTotal += row.grandTotal;
+
+        worksheet.addRow({
+          name: row.name,
+          date: formatDate(row.date),
+          location: row.location,
+          officials: row.officialsTotal.toFixed(2) + ' €',
+          travel: row.travelTotal.toFixed(2) + ' €',
+          total: row.grandTotal.toFixed(2) + ' €',
+        });
+      });
+
+      // Add total row
+      const totalRow = worksheet.addRow({
+        name: 'SKUPAJ',
+        date: '',
+        location: '',
+        officials: totalOfficials.toFixed(2) + ' €',
+        travel: totalTravel.toFixed(2) + ' €',
+        total: grandTotal.toFixed(2) + ' €',
+      });
+
+      totalRow.font = { bold: true };
+      totalRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // Apply borders to all cells
+      worksheet.eachRow((row, rowNumber) => {
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+      });
+
+      // Center align numeric columns
+      const numericColumns = [4, 5, 6]; // Officials, Travel, Total
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber > 2) { // Skip title and header
+          numericColumns.forEach(colNum => {
+            const cell = row.getCell(colNum);
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          });
+        }
+      });
+
+      // Save dialog
+      const tariffLabel = tariffType === 'invoice' ? 'racun' : 'sodniki';
+      const defaultFileName = `Pregled_tekem_${new Date().toISOString().split('T')[0]}_${tariffLabel}.xlsx`;
+
+      const result = await dialog.showSaveDialog({
+        title: 'Shrani pregled tekem',
+        defaultPath: path.join(require('os').homedir(), 'Downloads', defaultFileName),
+        filters: [
+          { name: 'Excel Files', extensions: ['xlsx'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      });
+
+      if (result.canceled || !result.filePath) {
+        return { ok: false, message: 'Shranjevanje preklicano' };
+      }
+
+      // Write file
+      await workbook.xlsx.writeFile(result.filePath);
+
+      return { ok: true, filePath: result.filePath };
+    } catch (error: any) {
+      console.error('Error generating competitions summary:', error);
+      return { ok: false, message: error.message || 'Neznana napaka' };
+    }
+  });
+
+  ipcMain.handle('export:getSummaryData', async (_event, competitionIds: number[]) => {
+    try {
+      return await db.getCompetitionsSummaryData(competitionIds);
+    } catch (error: any) {
+      console.error('Error getting summary data:', error);
+      return [];
+    }
+  });
 }

@@ -32,3 +32,22 @@ dodaj vlogo ^^ -->
 <!-- označi plačano -> možnost delnega plačila (plačil < dolg -> ostane med neplačanimi) -->
 
 <!-- uredi izplačilo -> opombe -> izračun, dodatno polje (opombe -> text) -->
+
+overwrite pri popravku
+
+sproti prikaz sodnik/račun -> generiraj to (možnost popravka)
+
+<!-- račun/sodniki za tekme -->
+
+<!-- nastavitev za potne stroške -->
+
+<!-- dashborad -> združenje sum po imenu -->
+
+<!-- urejanje po imenih v tabelah
+dashboard - imena -->
+
+<!-- export izplačil v excel -->
+
+pregled sodnikov -> pravi zneski
+
+<!-- opombe pri sodnikih -->

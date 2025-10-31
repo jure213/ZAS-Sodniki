@@ -12,6 +12,17 @@ export async function renderSettings(container, user) {
 
   // Get current settings
   const rememberMe = localStorage.getItem('rememberMe') === 'true';
+  let travelCostPerKm = 0.37; // Default value
+  
+  // Load travel cost setting from database
+  try {
+    const appSettings = await window.api?.settings?.get();
+    if (appSettings && appSettings.travelCostPerKm !== undefined) {
+      travelCostPerKm = appSettings.travelCostPerKm;
+    }
+  } catch (e) {
+    console.error('Failed to load travel cost setting:', e);
+  }
 
   settingsContent.innerHTML = `
     <div class="card mb-4">
@@ -28,6 +39,20 @@ export async function renderSettings(container, user) {
           </div>
           <small class="text-muted d-block mt-1">
             <i class="bi bi-info-circle"></i> Ko je ta možnost vključena, boste ostali prijavljeni tudi po ponovnem zagonu aplikacije.
+          </small>
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label" for="travelCostInput">
+            <i class="bi bi-car-front me-1"></i>Cena na kilometer (€/km)
+          </label>
+          <div class="input-group" style="max-width: 300px;">
+            <span class="input-group-text">€</span>
+            <input type="number" step="0.01" min="0" id="travelCostInput" class="form-control" value="${travelCostPerKm}">
+            <span class="input-group-text">/km</span>
+          </div>
+          <small class="text-muted d-block mt-1">
+            <i class="bi bi-info-circle"></i> Ta vrednost se uporablja za izračun potnih stroškov (kilometri × €/km)
           </small>
         </div>
       </div>
@@ -533,6 +558,41 @@ export async function renderSettings(container, user) {
     setTimeout(() => {
       toast.remove();
     }, 3000);
+  };
+
+  // Handle travel cost per km change
+  settingsContent.querySelector("#travelCostInput").onchange = async (e) => {
+    const value = parseFloat(e.target.value);
+    
+    if (isNaN(value) || value < 0) {
+      alert('Prosim vnesite veljavno pozitivno število');
+      e.target.value = travelCostPerKm;
+      return;
+    }
+
+    try {
+      await window.api?.settings?.updateAppSetting('travelCostPerKm', value);
+      travelCostPerKm = value;
+      
+      // Show confirmation
+      const toast = document.createElement("div");
+      toast.className = "alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
+      toast.style.zIndex = "9999";
+      toast.innerHTML = `
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <strong>Nastavitev shranjena!</strong> Cena na kilometer je nastavljena na €${value.toFixed(2)}/km
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to save travel cost setting:', error);
+      alert('Napaka pri shranjevanju nastavitve');
+      e.target.value = travelCostPerKm;
+    }
   };
 
   settingsContent.querySelector("#add-role").onclick = async () => {

@@ -11,8 +11,8 @@ export async function renderOfficials(container, user) {
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover">
-        <thead class="text-center"><tr><th>Ime</th><th>Email</th><th>Telefon</th><th>Rang</th><th>Status</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
-        <tbody id="officials-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 6 : 5}">Nalagam…</td></tr></tbody>
+        <thead class="text-center"><tr><th>Ime</th><th>Email</th><th>Telefon</th><th>Rang</th><th>Dodatni izpiti</th><th>Opombe</th><th>Status</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
+        <tbody id="officials-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 8 : 7}">Nalagam…</td></tr></tbody>
       </table>
     </div>
   `;
@@ -28,6 +28,8 @@ export async function renderOfficials(container, user) {
             <td>${o.email ?? ''}</td>
             <td>${o.phone ?? ''}</td>
             <td>${o.rank ?? ''}</td>
+            <td>${o.additional_exams ?? ''}</td>
+            <td>${o.notes ?? ''}</td>
             <td><span class="badge bg-${o.active ? 'success' : 'secondary'}">${o.active ? 'Aktiven' : 'Neaktiven'}</span></td>
             ${isAdmin ? `<td>
               <button class="btn btn-sm btn-outline-info info-official" data-id="${o.id}" data-name="${o.name}"><i class="bi bi-info-circle"></i></button>
@@ -39,7 +41,7 @@ export async function renderOfficials(container, user) {
         )
         .join('');
       if (!list || list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}" class="text-muted">Ni podatkov</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-muted">Ni podatkov</td></tr>`;
       }
 
       // Bind events for admin
@@ -78,7 +80,7 @@ export async function renderOfficials(container, user) {
         });
       }
     } catch (e) {
-      container.querySelector('#officials-body').innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}" class="text-danger">Napaka: ${String(e)}</td></tr>`;
+      container.querySelector('#officials-body').innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-danger">Napaka: ${String(e)}</td></tr>`;
     }
   }
 
@@ -103,6 +105,7 @@ export async function renderOfficials(container, user) {
             <div class="mb-2"><label class="form-label">Email</label><input id="f-email" class="form-control" value="${official?.email ?? ''}"></div>
             <div class="mb-2"><label class="form-label">Telefon</label><input id="f-phone" class="form-control" value="${official?.phone ?? ''}"></div>
             <div class="mb-2"><label class="form-label">Rang (1, 2, 3)</label><input id="f-rank" class="form-control" value="${official?.rank ?? ''}"></div>
+            <div class="mb-2"><label class="form-label">Dodatni izpiti</label><input id="f-additional-exams" class="form-control" value="${official?.additional_exams ?? ''}"><div class="form-text">Npr: Atletika, Gimnastika</div></div>
             <div class="mb-2"><label class="form-check-label"><input type="checkbox" id="f-active" class="form-check-input" ${official?.active ? 'checked' : ''}> Aktiven</label></div>
             <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control" rows="3">${official?.notes ?? ''}</textarea><div class="form-text">Dodatne opombe o sodniku</div></div>
           </div>
@@ -129,6 +132,7 @@ export async function renderOfficials(container, user) {
         email: modal.querySelector('#f-email').value,
         phone: modal.querySelector('#f-phone').value,
         rank: modal.querySelector('#f-rank').value,
+        additional_exams: modal.querySelector('#f-additional-exams').value,
         active: modal.querySelector('#f-active').checked ? 1 : 0,
         notes: modal.querySelector('#f-notes').value
       };

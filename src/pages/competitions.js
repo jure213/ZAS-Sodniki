@@ -1,6 +1,17 @@
 export async function renderCompetitions(container, user) {
   const isAdmin = user?.role === 'admin';
   
+  // Get travel cost per km from settings
+  let travelCostPerKm = 0.37; // Default value
+  try {
+    const appSettings = await window.api?.settings?.get();
+    if (appSettings && appSettings.travelCostPerKm !== undefined) {
+      travelCostPerKm = appSettings.travelCostPerKm;
+    }
+  } catch (e) {
+    console.error('Failed to load travel cost setting:', e);
+  }
+  
   // Helper function to format status badge
   function getStatusBadge(status) {
     const statusMap = {
@@ -306,7 +317,7 @@ export async function renderCompetitions(container, user) {
                     <option value="2 - Meti" ${compOfficial?.discipline === '2 - Meti' ? 'selected' : ''}>2 - Meti</option>
             </select></div>
             <div class="mb-2"><label class="form-label">Število ur</label><input type="number" step="0.5" id="f-hours" class="form-control" value="${compOfficial?.hours ?? '4'}"></div>
-            <div class="mb-2"><label class="form-label">Kilometri (potni stroški: €0.37/km)</label><input type="number" step="1" min="0" id="f-kilometers" class="form-control" value="${compOfficial?.kilometers ?? '0'}"></div>
+            <div class="mb-2"><label class="form-label">Kilometri (potni stroški: €${travelCostPerKm.toFixed(2)}/km)</label><input type="number" step="1" min="0" id="f-kilometers" class="form-control" value="${compOfficial?.kilometers ?? '0'}"></div>
             <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${compOfficial?.notes ?? ''}</textarea></div>
           </div>
           <div class="modal-footer">
@@ -500,7 +511,7 @@ export async function renderCompetitions(container, user) {
                 <input type="number" step="0.5" id="quick-hours" class="form-control" value="4">
               </div>
               <div class="mb-2">
-                <label class="form-label">Kilometri (€0.37/km)</label>
+                <label class="form-label">Kilometri (€${travelCostPerKm.toFixed(2)}/km)</label>
                 <input type="number" step="1" min="0" id="quick-kilometers" class="form-control" value="0">
               </div>
             </div>
@@ -872,7 +883,7 @@ export async function renderCompetitions(container, user) {
       const amount = calculateAmount(role, o.hours);
       const rateInfo = getRateBreakdown(role, o.hours);
       const kilometers = o.kilometers || 0;
-      const travelCost = kilometers * 0.37;
+      const travelCost = kilometers * travelCostPerKm;
       const totalAmount = amount + travelCost;
       
       return {
@@ -925,7 +936,7 @@ export async function renderCompetitions(container, user) {
                       <td>${item.hours.toFixed(1)}</td>
                       <td>${item.kilometers}</td>
                       <td><small>${item.rateInfo}</small><br><small>€${item.amount.toFixed(2)}</small></td>
-                      <td><small>${item.kilometers}km × €0.37</small><br><small>€${item.travelCost.toFixed(2)}</small></td>
+                      <td><small>${item.kilometers}km × €${travelCostPerKm.toFixed(2)}</small><br><small>€${item.travelCost.toFixed(2)}</small></td>
                       <td><strong>€${item.totalAmount.toFixed(2)}</strong></td>
                     </tr>
                   `).join('')}

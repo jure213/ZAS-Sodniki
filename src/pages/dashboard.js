@@ -43,18 +43,16 @@ export async function renderDashboard(container) {
       <div class="col-12">
         <div class="table-container">
           <div class="p-4">
-            <h3 class="h5 mb-3">Neplačana izplačila</h3>
+            <h3 class="h5 mb-3">Neplačana izplačila po sodnikih</h3>
             <table class="table table-hover mb-0">
               <thead class="text-center">
                 <tr>
-                  <th>SODNIK</th>
-                  <th>TEKMOVANJE</th>
-                  <th>ZNESEK</th>
-                  <th>DATUM TEKMOVANJA</th>
+                  <th style="width: 50%;">SODNIK</th>
+                  <th style="width: 50%;">SKUPNI ZNESEK</th>
                 </tr>
               </thead>
               <tbody id="unpaid-payments" class="align-middle text-center">
-                <tr><td colspan="4" class="text-center text-muted">Nalaganje...</td></tr>
+                <tr><td colspan="2" class="text-center text-muted">Nalaganje...</td></tr>
               </tbody>
             </table>
           </div>
@@ -80,22 +78,33 @@ export async function renderDashboard(container) {
     const payments = await window.api?.payments?.list({ status: "owed" });
     const tbody = document.getElementById("unpaid-payments");
     if (payments?.length) {
-      tbody.innerHTML = payments
-        .slice(0, 10)
+      // Group payments by official and sum amounts
+      const groupedPayments = payments.reduce((acc, p) => {
+        const officialName = p.official_name || "N/A";
+        if (!acc[officialName]) {
+          acc[officialName] = 0;
+        }
+        acc[officialName] += p.amount;
+        return acc;
+      }, {});
+
+      // Sort by official name (A-Z)
+      const sortedOfficials = Object.entries(groupedPayments)
+        .sort((a, b) => a[0].localeCompare(b[0]));
+
+      tbody.innerHTML = sortedOfficials
         .map(
-          (p) => `
+          ([officialName, totalAmount]) => `
         <tr>
-          <td>${p.official_name || "N/A"}</td>
-          <td>${p.competition_name || "N/A"}</td>
-          <td><strong>${p.amount.toFixed(2)} €</strong></td>
-          <td>${window.formatDate(p.date)}</td>
+          <td>${officialName}</td>
+          <td><strong>${totalAmount.toFixed(2)} €</strong></td>
         </tr>
       `
         )
         .join("");
     } else {
       tbody.innerHTML =
-        '<tr><td colspan="4" class="text-center text-muted">Ni neplačanih izplačil</td></tr>';
+        '<tr><td colspan="2" class="text-center text-muted">Ni neplačanih izplačil</td></tr>';
     }
   } catch (e) {
     console.error("Failed to load dashboard stats:", e);

@@ -67,12 +67,13 @@ export function setupOfficialHandlers(db: any) {
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
         
-        // Expected columns: Name, Email, Phone, Rank (or similar variations)
+        // Expected columns: Name, Email, Phone, Rank, Additional Exams (or similar variations)
         // Try to match different possible column names
         const name = row['Name'] || row['Ime'] || row['name'] || row['ime'] || '';
         const email = row['Email'] || row['E-mail'] || row['email'] || row['e-mail'] || '';
         const phone = row['Phone'] || row['Telefon'] || row['phone'] || row['telefon'] || '';
         const rank = row['Rank'] || row['Rang'] || row['rank'] || row['rang'] || '';
+        const additionalExams = row['Additional Exams'] || row['Dodatni izpiti'] || row['additional_exams'] || row['dodatni_izpiti'] || '';
 
         // Validate required fields
         if (!name || name.toString().trim() === '') {
@@ -99,6 +100,7 @@ export function setupOfficialHandlers(db: any) {
             email: email ? email.toString().trim() : '',
             phone: phone ? phone.toString().trim() : '',
             rank: rank ? rank.toString().trim() : '',
+            additional_exams: additionalExams ? additionalExams.toString().trim() : '',
             active: 1
           });
 

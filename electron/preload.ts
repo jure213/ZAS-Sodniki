@@ -54,6 +54,7 @@ contextBridge.exposeInMainWorld('api', {
     update: (id: number, data: any) => ipcRenderer.invoke('payment:update', { id, data }),
     delete: (id: number) => ipcRenderer.invoke('payment:delete', id),
     markPaid: (id: number) => ipcRenderer.invoke('payment:markPaid', id),
+    exportToExcel: (payments: any[]) => ipcRenderer.invoke('payment:exportToExcel', payments),
   },
   // Users
   users: {
@@ -70,6 +71,10 @@ contextBridge.exposeInMainWorld('api', {
   exports: {
     generateCompetitionReport: (competitionId: number, tariffType?: string) => 
       ipcRenderer.invoke('export:generateCompetitionReport', competitionId, tariffType || 'official'),
+    generateCompetitionsSummary: (competitionIds: number[]) =>
+      ipcRenderer.invoke('export:generateCompetitionsSummary', competitionIds),
+    getSummaryData: (competitionIds: number[]) =>
+      ipcRenderer.invoke('export:getSummaryData', competitionIds),
   },
 });
 

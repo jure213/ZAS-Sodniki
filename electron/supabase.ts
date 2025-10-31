@@ -1,14 +1,20 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = "https://orcpdhrgmhiuzlnrixsn.supabase.co";
-const SUPABASE_ANON_KEY =
+// Check if running in development mode
+const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+
+// Production database (packaged app)
+const PROD_SUPABASE_URL = "https://orcpdhrgmhiuzlnrixsn.supabase.co";
+const PROD_SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yY3BkaHJnbWhpdXpsbnJpeHNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1ODM2MzMsImV4cCI6MjA3NzE1OTYzM30.ai4WMKOrSHUqbpOYvscNNDJ_f-R7zakdH4q1UbdOUW4";
+
+
 
 export class SupabaseDatabaseManager {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    this.supabase = createClient(PROD_SUPABASE_URL, PROD_SUPABASE_ANON_KEY);
   }
 
   close(): void {
@@ -63,12 +69,13 @@ export class SupabaseDatabaseManager {
       email: string;
       phone: string;
       rank: string;
+      additional_exams: string;
       active: number;
     }>
   > {
     const { data, error } = await this.supabase
       .from("officials")
-      .select("id, name, email, phone, rank, active")
+      .select("id, name, email, phone, rank, additional_exams, active")
       .order("name");
 
     if (error || !data) return [];
@@ -104,6 +111,7 @@ export class SupabaseDatabaseManager {
     email: string;
     phone: string;
     rank: string;
+    additional_exams?: string;
     active?: number;
     notes?: string;
   }): Promise<number> {
@@ -114,6 +122,7 @@ export class SupabaseDatabaseManager {
         email: data.email,
         phone: data.phone,
         rank: data.rank,
+        additional_exams: data.additional_exams ?? "",
         active: data.active ?? 1,
         notes: data.notes ?? "",
       })
@@ -131,6 +140,7 @@ export class SupabaseDatabaseManager {
       email: string;
       phone: string;
       rank: string;
+      additional_exams?: string;
       active: number;
       notes?: string;
     }
@@ -142,6 +152,7 @@ export class SupabaseDatabaseManager {
         email: data.email,
         phone: data.phone,
         rank: data.rank,
+        additional_exams: data.additional_exams ?? "",
         active: data.active,
         notes: data.notes ?? "",
       })
@@ -823,11 +834,12 @@ export class SupabaseDatabaseManager {
 
       // Add travel costs
       const kilometers = official.kilometers || 0;
-      const travelCost = kilometers * 0.37;
+      const travelCostPerKm = await this.getTravelCostPerKm();
+      const travelCost = kilometers * travelCostPerKm;
       amount += travelCost;
       
       if (kilometers > 0) {
-        breakdown += ` + potni stroški (${kilometers}km × €0.37 = €${travelCost.toFixed(2)}) = ${amount.toFixed(2)}€`;
+        breakdown += ` + potni stroški (${kilometers}km × €${travelCostPerKm.toFixed(2)} = €${travelCost.toFixed(2)}) = ${amount.toFixed(2)}€`;
       }
 
       // Check if payment already exists
@@ -882,6 +894,11 @@ export class SupabaseDatabaseManager {
     );
   }
 
+  async getTravelCostPerKm(): Promise<number> {
+    const value = await this.getAppSetting('travelCostPerKm');
+    return value !== undefined ? value : 0.37; // Default to 0.37 if not set
+  }
+
   async updateAppSetting(key: string, value: any): Promise<void> {
     const settings =
       (await this.getSetting<Record<string, any>>("app_settings")) || {};
@@ -924,13 +941,14 @@ export class SupabaseDatabaseManager {
       .single();
 
     const roles = settingsData?.value?.roles || [];
+    const travelCostPerKm = settingsData?.value?.travelCostPerKm || 0.37;
 
     const officialsMap = new Map(officials?.map((o) => [o.id, o]) || []);
 
     // Build report data - always calculate from competition_officials and current tariff settings
     return competitionOfficials.map((co) => {
       const official = officialsMap.get(co.official_id);
-      const travelCost = (co.kilometers || 0) * 0.37;
+      const travelCost = (co.kilometers || 0) * travelCostPerKm;
       const hours = co.hours || 0;
       
       // Find the role
@@ -992,5 +1010,109 @@ export class SupabaseDatabaseManager {
         kilometers: co.kilometers || 0,
       };
     });
+  }
+
+  async getCompetitionsSummaryData(
+    competitionIds: number[]
+  ): Promise<
+    Array<{
+      id: number;
+      name: string;
+      date: string;
+      location: string;
+      officialsTotal: number;
+      travelTotal: number;
+      grandTotal: number;
+    }>
+  > {
+    if (!competitionIds || competitionIds.length === 0) {
+      return [];
+    }
+
+    // Get competitions info
+    const { data: competitions } = await this.supabase
+      .from("competitions")
+      .select("id, name, date, location")
+      .in("id", competitionIds)
+      .order("date", { ascending: true });
+
+    if (!competitions || competitions.length === 0) {
+      return [];
+    }
+
+    // Get settings for rate calculation
+    const { data: settingsData } = await this.supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "app_settings")
+      .single();
+
+    const roles = settingsData?.value?.roles || [];
+    const travelCostPerKm = settingsData?.value?.travelCostPerKm || 0.37;
+
+    // Process each competition
+    const summaryData = await Promise.all(
+      competitions.map(async (comp) => {
+        // Get competition officials
+        const competitionOfficials = await this.listCompetitionOfficials(comp.id);
+
+        let officialsTotal = 0;
+        let travelTotal = 0;
+
+        // Calculate totals for this competition
+        for (const co of competitionOfficials) {
+          const travelCost = (co.kilometers || 0) * travelCostPerKm;
+          const hours = co.hours || 0;
+
+          // Find the role and calculate base amount
+          const role = roles.find((r: any) => r.name === co.role);
+          let baseAmount = 0;
+
+          if (role && role.rates && Array.isArray(role.rates)) {
+            let matchedTier = null;
+
+            for (let i = 0; i < role.rates.length; i++) {
+              const tier = role.rates[i];
+
+              if (i === 0) {
+                if (hours <= tier.to) {
+                  matchedTier = tier;
+                  break;
+                }
+              } else if (tier.to === 999) {
+                if (hours > tier.from) {
+                  matchedTier = tier;
+                  break;
+                }
+              } else {
+                if (hours > tier.from && hours <= tier.to) {
+                  matchedTier = tier;
+                  break;
+                }
+              }
+            }
+
+            if (matchedTier) {
+              baseAmount = matchedTier.rate;
+            }
+          }
+
+          officialsTotal += baseAmount;
+          travelTotal += travelCost;
+        }
+
+        return {
+          id: comp.id,
+          name: comp.name,
+          date: comp.date,
+          location: comp.location,
+          officialsTotal,
+          travelTotal,
+          grandTotal: officialsTotal + travelTotal,
+        };
+      })
+    );
+
+    return summaryData;
   }
 }
