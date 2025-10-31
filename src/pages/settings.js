@@ -41,12 +41,13 @@ export async function renderSettings(container, user) {
         <thead class="text-center">
           <tr>
             <th>IME VLOGE</th>
-            <th>URNA POSTAVKA</th>
+            <th>URNA POSTAVKA (SODNIK)</th>
+            <th>URNA POSTAVKA (RAČUN)</th>
             <th>AKCIJE</th>
           </tr>
         </thead>
         <tbody id="roles-body" class="align-middle text-center">
-          <tr><td colspan="3">Nalagam…</td></tr>
+          <tr><td colspan="4">Nalagam…</td></tr>
         </tbody>
       </table>
     </div>
@@ -96,12 +97,23 @@ export async function renderSettings(container, user) {
         return '-';
       }
 
+      // Function to format invoice rate display
+      function formatInvoiceRateDisplay(role) {
+        if (role.invoiceRates && role.invoiceRates.length > 0) {
+          return role.invoiceRates.map(tier =>
+            `${tier.from}-${tier.to === 999 ? '∞' : tier.to}h: €${tier.rate}`
+          ).join('<br>');
+        }
+        return '-';
+      }
+
       rolesBody.innerHTML = validRoles
         .map(
           (r) => `
           <tr>
             <td>${r.name}</td>
             <td><small>${formatRateDisplay(r)}</small></td>
+            <td><small>${formatInvoiceRateDisplay(r)}</small></td>
             <td>
               <button class="btn btn-sm btn-outline-primary edit-role me-1" data-id="${r.id}"><i class="bi bi-pencil"></i></button>
               <button class="btn btn-sm btn-outline-danger delete-role" data-id="${r.id}" data-name="${r.name}"><i class="bi bi-trash"></i></button>
@@ -111,7 +123,7 @@ export async function renderSettings(container, user) {
         .join("");
       if (!validRoles || validRoles.length === 0) {
         rolesBody.innerHTML =
-          '<tr><td colspan="3" class="text-muted">Ni podatkov</td></tr>';
+          '<tr><td colspan="4" class="text-muted">Ni podatkov</td></tr>';
       }
 
       // Clean up corrupted data if found
@@ -196,12 +208,13 @@ export async function renderSettings(container, user) {
     ];
 
     const currentRates = role?.rates || defaultRates;
+    const currentInvoiceRates = role?.invoiceRates || defaultRates;
 
     const modal = document.createElement("div");
     modal.className = "modal show d-block";
     modal.style.backgroundColor = "rgba(0,0,0,0.5)";
     modal.innerHTML = `
-      <div class="modal-dialog modal-lg">
+      <div class="modal-dialog modal-xl">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">${role ? "Uredi vlogo" : "Dodaj vlogo"}</h5>
@@ -213,39 +226,82 @@ export async function renderSettings(container, user) {
               <input id="f-name" class="form-control" value="${role?.name ?? ""}">
             </div>
             
-            <div class="mb-3">
-              <label class="form-label fw-bold">Fiksne postavke po razponih ur</label>
-              <small class="text-muted d-block mb-2">Določite fiksno ceno za posamezen razpon ur (ne urna postavka)</small>
-              
-              <div id="rate-tiers-container">
-                ${currentRates.map((tier, index) => `
-                  <div class="card mb-2 rate-tier" data-index="${index}">
-                    <div class="card-body p-2">
-                      <div class="row g-2 align-items-center">
-                        <div class="col-3">
-                          <label class="form-label small mb-0">Od (h)</label>
-                          <input type="number" step="0.5" class="form-control form-control-sm tier-from" value="${tier.from}" ${index === 0 ? 'readonly' : ''}>
-                        </div>
-                        <div class="col-3">
-                          <label class="form-label small mb-0">Do (h)</label>
-                          <input type="number" step="0.5" class="form-control form-control-sm tier-to" value="${tier.to === 999 ? '' : tier.to}" placeholder="∞">
-                        </div>
-                        <div class="col-4">
-                          <label class="form-label small mb-0">Cena (€)</label>
-                          <input type="number" step="0.01" class="form-control form-control-sm tier-rate" value="${tier.rate}">
-                        </div>
-                        <div class="col-2 text-center">
-                          ${currentRates.length > 1 ? `<button type="button" class="btn btn-sm btn-outline-danger remove-tier-btn mt-3"><i class="bi bi-trash"></i></button>` : ''}
+            <div class="row">
+              <!-- Official Rates Column -->
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Fiksne postavke za sodnika</label>
+                  <small class="text-muted d-block mb-2">Cene za plačilo sodnikov</small>
+                  
+                  <div id="rate-tiers-container">
+                    ${currentRates.map((tier, index) => `
+                      <div class="card mb-2 rate-tier" data-index="${index}">
+                        <div class="card-body p-2">
+                          <div class="row g-2 align-items-center">
+                            <div class="col-3">
+                              <label class="form-label small mb-0">Od (h)</label>
+                              <input type="number" step="0.5" class="form-control form-control-sm tier-from" value="${tier.from}" ${index === 0 ? 'readonly' : ''}>
+                            </div>
+                            <div class="col-3">
+                              <label class="form-label small mb-0">Do (h)</label>
+                              <input type="number" step="0.5" class="form-control form-control-sm tier-to" value="${tier.to === 999 ? '' : tier.to}" placeholder="∞">
+                            </div>
+                            <div class="col-4">
+                              <label class="form-label small mb-0">Cena (€)</label>
+                              <input type="number" step="0.01" class="form-control form-control-sm tier-rate" value="${tier.rate}">
+                            </div>
+                            <div class="col-2 text-center">
+                              ${currentRates.length > 1 ? `<button type="button" class="btn btn-sm btn-outline-danger remove-tier-btn mt-3"><i class="bi bi-trash"></i></button>` : ''}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    `).join('')}
                   </div>
-                `).join('')}
+                  
+                  <button type="button" class="btn btn-sm btn-outline-primary" id="add-tier-btn">
+                    <i class="bi bi-plus-circle me-1"></i> Dodaj stopnjo
+                  </button>
+                </div>
               </div>
-              
-              <button type="button" class="btn btn-sm btn-outline-primary" id="add-tier-btn">
-                <i class="bi bi-plus-circle me-1"></i> Dodaj stopnjo
-              </button>
+
+              <!-- Invoice Rates Column -->
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Fiksne postavke za račun</label>
+                  <small class="text-muted d-block mb-2">Cene za izdajo računov</small>
+                  
+                  <div id="invoice-rate-tiers-container">
+                    ${currentInvoiceRates.map((tier, index) => `
+                      <div class="card mb-2 invoice-rate-tier" data-index="${index}">
+                        <div class="card-body p-2">
+                          <div class="row g-2 align-items-center">
+                            <div class="col-3">
+                              <label class="form-label small mb-0">Od (h)</label>
+                              <input type="number" step="0.5" class="form-control form-control-sm invoice-tier-from" value="${tier.from}" ${index === 0 ? 'readonly' : ''}>
+                            </div>
+                            <div class="col-3">
+                              <label class="form-label small mb-0">Do (h)</label>
+                              <input type="number" step="0.5" class="form-control form-control-sm invoice-tier-to" value="${tier.to === 999 ? '' : tier.to}" placeholder="∞">
+                            </div>
+                            <div class="col-4">
+                              <label class="form-label small mb-0">Cena (€)</label>
+                              <input type="number" step="0.01" class="form-control form-control-sm invoice-tier-rate" value="${tier.rate}">
+                            </div>
+                            <div class="col-2 text-center">
+                              ${currentInvoiceRates.length > 1 ? `<button type="button" class="btn btn-sm btn-outline-danger remove-invoice-tier-btn mt-3"><i class="bi bi-trash"></i></button>` : ''}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                  
+                  <button type="button" class="btn btn-sm btn-outline-primary" id="add-invoice-tier-btn">
+                    <i class="bi bi-plus-circle me-1"></i> Dodaj stopnjo
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -258,8 +314,9 @@ export async function renderSettings(container, user) {
     document.body.appendChild(modal);
 
     const container = modal.querySelector("#rate-tiers-container");
+    const invoiceContainer = modal.querySelector("#invoice-rate-tiers-container");
 
-    // Function to rebind remove buttons
+    // Function to rebind remove buttons for official rates
     function rebindRemoveButtons() {
       container.querySelectorAll('.remove-tier-btn').forEach(btn => {
         btn.onclick = () => {
@@ -285,7 +342,33 @@ export async function renderSettings(container, user) {
       });
     }
 
+    // Invoice rate functions
+    function rebindInvoiceRemoveButtons() {
+      invoiceContainer.querySelectorAll('.remove-invoice-tier-btn').forEach(btn => {
+        btn.onclick = () => {
+          const card = btn.closest('.invoice-rate-tier');
+          card.remove();
+          renumberInvoiceTiers();
+        };
+      });
+    }
+
+    function renumberInvoiceTiers() {
+      const tiers = invoiceContainer.querySelectorAll('.invoice-rate-tier');
+      tiers.forEach((tier, index) => {
+        tier.dataset.index = index;
+        const fromInput = tier.querySelector('.invoice-tier-from');
+        if (index === 0) {
+          fromInput.value = 0;
+          fromInput.readOnly = true;
+        } else {
+          fromInput.readOnly = false;
+        }
+      });
+    }
+
     rebindRemoveButtons();
+    rebindInvoiceRemoveButtons();
 
     // Add tier button
     modal.querySelector("#add-tier-btn").onclick = () => {
@@ -321,6 +404,40 @@ export async function renderSettings(container, user) {
       renumberTiers();
     };
 
+    // Add invoice tier button
+    modal.querySelector("#add-invoice-tier-btn").onclick = () => {
+      const currentTierCount = invoiceContainer.querySelectorAll('.invoice-rate-tier').length;
+      const lastTier = invoiceContainer.querySelector('.invoice-rate-tier:last-child');
+      const lastTo = lastTier ? parseFloat(lastTier.querySelector('.invoice-tier-to').value) || 8 : 8;
+
+      const newTierHTML = `
+        <div class="card mb-2 invoice-rate-tier" data-index="${currentTierCount}">
+          <div class="card-body p-2">
+            <div class="row g-2 align-items-center">
+              <div class="col-3">
+                <label class="form-label small mb-0">Od (h)</label>
+                <input type="number" step="0.5" class="form-control form-control-sm invoice-tier-from" value="${lastTo}">
+              </div>
+              <div class="col-3">
+                <label class="form-label small mb-0">Do (h)</label>
+                <input type="number" step="0.5" class="form-control form-control-sm invoice-tier-to" placeholder="∞">
+              </div>
+              <div class="col-4">
+                <label class="form-label small mb-0">Cena (€)</label>
+                <input type="number" step="0.01" class="form-control form-control-sm invoice-tier-rate" value="20">
+              </div>
+              <div class="col-2 text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-invoice-tier-btn mt-3"><i class="bi bi-trash"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      invoiceContainer.insertAdjacentHTML('beforeend', newTierHTML);
+      rebindInvoiceRemoveButtons();
+      renumberInvoiceTiers();
+    };
+
     // Focus first input
     setTimeout(() => {
       modal.querySelector("#f-name")?.focus();
@@ -342,7 +459,7 @@ export async function renderSettings(container, user) {
         return;
       }
 
-      // Collect all rate tiers
+      // Collect all rate tiers (official rates)
       const rates = [];
       const tiers = modal.querySelectorAll('.rate-tier');
 
@@ -358,17 +475,33 @@ export async function renderSettings(container, user) {
       // Sort rates by 'from' value
       rates.sort((a, b) => a.from - b.from);
 
+      // Collect all invoice rate tiers
+      const invoiceRates = [];
+      const invoiceTiers = modal.querySelectorAll('.invoice-rate-tier');
+
+      invoiceTiers.forEach((tier) => {
+        const from = parseFloat(tier.querySelector('.invoice-tier-from').value) || 0;
+        const toValue = tier.querySelector('.invoice-tier-to').value;
+        const to = toValue ? parseFloat(toValue) : 999;
+        const rate = parseFloat(tier.querySelector('.invoice-tier-rate').value) || 0;
+
+        invoiceRates.push({ from, to, rate });
+      });
+
+      // Sort invoice rates by 'from' value
+      invoiceRates.sort((a, b) => a.from - b.from);
+
       let newRoles;
       if (role) {
         newRoles = currentRoles.map((r) =>
-          r.id === role.id ? { id: role.id, name, rates } : r
+          r.id === role.id ? { id: role.id, name, rates, invoiceRates } : r
         );
       } else {
         const maxId =
           currentRoles.length > 0
             ? Math.max(...currentRoles.map((r) => r.id))
             : 0;
-        newRoles = [...currentRoles, { id: maxId + 1, name, rates }];
+        newRoles = [...currentRoles, { id: maxId + 1, name, rates, invoiceRates }];
       }
 
       await window.api?.settings?.setRoles(newRoles);

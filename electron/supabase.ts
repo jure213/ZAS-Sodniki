@@ -105,6 +105,7 @@ export class SupabaseDatabaseManager {
     phone: string;
     rank: string;
     active?: number;
+    notes?: string;
   }): Promise<number> {
     const { data: result, error } = await this.supabase
       .from("officials")
@@ -114,6 +115,7 @@ export class SupabaseDatabaseManager {
         phone: data.phone,
         rank: data.rank,
         active: data.active ?? 1,
+        notes: data.notes ?? "",
       })
       .select("id")
       .single();
@@ -130,6 +132,7 @@ export class SupabaseDatabaseManager {
       phone: string;
       rank: string;
       active: number;
+      notes?: string;
     }
   ): Promise<boolean> {
     const { error } = await this.supabase
@@ -140,6 +143,7 @@ export class SupabaseDatabaseManager {
         phone: data.phone,
         rank: data.rank,
         active: data.active,
+        notes: data.notes ?? "",
       })
       .eq("id", id);
 
@@ -307,7 +311,9 @@ export class SupabaseDatabaseManager {
     date: string;
     method: string;
     status: string;
+    date_paid?: string | null;
     notes?: string;
+    remarks?: string;
   }): Promise<number> {
     const { data: result, error } = await this.supabase
       .from("payments")
@@ -318,7 +324,9 @@ export class SupabaseDatabaseManager {
         date: data.date,
         method: data.method,
         status: data.status,
+        date_paid: data.date_paid || null,
         notes: data.notes ?? "",
+        remarks: data.remarks ?? "",
       })
       .select("id")
       .single();
@@ -336,7 +344,9 @@ export class SupabaseDatabaseManager {
       date: string;
       method: string;
       status: string;
+      date_paid?: string | null;
       notes: string;
+      remarks: string;
     }
   ): Promise<boolean> {
     const { error } = await this.supabase
@@ -348,7 +358,9 @@ export class SupabaseDatabaseManager {
         date: data.date,
         method: data.method,
         status: data.status,
+        date_paid: data.date_paid || null,
         notes: data.notes,
+        remarks: data.remarks,
       })
       .eq("id", id);
 
@@ -367,12 +379,57 @@ export class SupabaseDatabaseManager {
   async markPaymentAsPaid(
     id: number,
     datePaid?: string,
-    method?: string
+    method?: string,
+    isPartial?: boolean,
+    partialAmount?: number
   ): Promise<boolean> {
-    const updateData: any = {
-      status: "paid",
-      date_paid: datePaid || new Date().toISOString().split("T")[0], // Use provided date or today
-    };
+    // First, get the current payment data
+    const { data: currentPayment } = await this.supabase
+      .from("payments")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (!currentPayment) return false;
+
+    const paymentDate = datePaid || new Date().toISOString().split("T")[0];
+    const formattedDate = new Date(paymentDate).toLocaleDateString('sl-SI');
+    
+    let updateData: any = {};
+    
+    if (isPartial && partialAmount !== undefined) {
+      const remainingAmount = currentPayment.amount - partialAmount;
+      
+      if (remainingAmount <= 0) {
+        // Full payment (partial amount >= total amount)
+        updateData = {
+          status: "paid",
+          date_paid: paymentDate,
+          amount: 0,
+          remarks: (currentPayment.remarks || '') + 
+            (currentPayment.remarks ? '\n' : '') +
+            `Plačano v celoti: €${partialAmount.toFixed(2)} (datum: ${formattedDate})`
+        };
+      } else {
+        // Partial payment (remaining amount > 0)
+        updateData = {
+          status: "owed", // Remains unpaid
+          amount: remainingAmount,
+          remarks: (currentPayment.remarks || '') + 
+            (currentPayment.remarks ? '\n' : '') +
+            `Delno plačilo: €${partialAmount.toFixed(2)} (datum: ${formattedDate})`
+        };
+      }
+    } else {
+      // Full payment (not partial)
+      updateData = {
+        status: "paid",
+        date_paid: paymentDate,
+        remarks: (currentPayment.remarks || '') + 
+          (currentPayment.remarks ? '\n' : '') +
+          `Plačano v celoti: €${currentPayment.amount.toFixed(2)} (datum: ${formattedDate})`
+      };
+    }
 
     // Only update method if provided
     if (method) {
@@ -718,25 +775,40 @@ export class SupabaseDatabaseManager {
       let breakdown = "";
 
       if (role.rates && role.rates.length > 0) {
-        // New tier-based fixed rate system (min < hours <= max)
+        // Tier-based fixed rate system
+        // First tier (0-4h): hours <= to
+        // Middle tiers (4-6h, 6-8h): hours > from AND hours <= to
+        // Last tier (8+h): hours > from
         let matchedTier = null;
 
-        for (const tier of role.rates) {
-          if (official.hours > tier.from && official.hours <= tier.to) {
-            matchedTier = tier;
-            break;
-          }
-          // Handle the last tier (8+ hours, where to=999)
-          if (official.hours > tier.from && tier.to === 999) {
-            matchedTier = tier;
-            break;
+        for (let i = 0; i < role.rates.length; i++) {
+          const tier = role.rates[i];
+          
+          if (i === 0) {
+            // First tier: 0-4h means hours <= 4
+            if (official.hours <= tier.to) {
+              matchedTier = tier;
+              break;
+            }
+          } else if (tier.to === 999) {
+            // Last tier: 8+h means hours > 8
+            if (official.hours > tier.from) {
+              matchedTier = tier;
+              break;
+            }
+          } else {
+            // Middle tiers: hours > from AND hours <= to
+            if (official.hours > tier.from && official.hours <= tier.to) {
+              matchedTier = tier;
+              break;
+            }
           }
         }
 
         if (matchedTier) {
           amount = matchedTier.rate;
           const toDisplay = matchedTier.to === 999 ? "∞" : matchedTier.to;
-          breakdown = `${official.hours}h (${matchedTier.from}-${toDisplay}h tier) = €${matchedTier.rate}`;
+          breakdown = `${official.hours}h (${matchedTier.from}-${toDisplay}h) = €${matchedTier.rate}`;
         } else {
           errors.push(
             `No rate tier found for ${official.hours}h for ${official.official_name}`
@@ -755,7 +827,7 @@ export class SupabaseDatabaseManager {
       amount += travelCost;
       
       if (kilometers > 0) {
-        breakdown += ` + potni stroški (${kilometers}km × €0.37 = €${travelCost.toFixed(2)})`;
+        breakdown += ` + potni stroški (${kilometers}km × €0.37 = €${travelCost.toFixed(2)}) = ${amount.toFixed(2)}€`;
       }
 
       // Check if payment already exists
@@ -777,6 +849,9 @@ export class SupabaseDatabaseManager {
 
       // Create payment
       try {
+        const discipline = official.discipline || "";
+        const roleWithDiscipline = discipline ? `${role.name} (${discipline})` : role.name;
+        
         const paymentId = await this.addPayment({
           official_id: official.official_id,
           competition_id: competitionId,
@@ -784,7 +859,7 @@ export class SupabaseDatabaseManager {
           date: competition.data.date,
           method: await defaultPaymentMethod,
           status: "owed",
-          notes: `${role.name} - ${breakdown}`,
+          notes: `${roleWithDiscipline} - ${breakdown}`,
         });
 
         if (paymentId > 0) {
@@ -814,10 +889,14 @@ export class SupabaseDatabaseManager {
     await this.setSetting("app_settings", settings);
   }
 
-  async getCompetitionReportData(competitionId: number): Promise<
+  async getCompetitionReportData(
+    competitionId: number, 
+    tariffType: string = 'official'
+  ): Promise<
     Array<{
       name: string;
       rank: string;
+      role: string;
       discipline: string;
       hours: number;
       amount: number;
@@ -837,27 +916,78 @@ export class SupabaseDatabaseManager {
       .from("officials")
       .select("id, name, rank");
 
-    // Get all payments for this competition
-    const { data: payments } = await this.supabase
-      .from("payments")
-      .select("official_id, amount")
-      .eq("competition_id", competitionId);
+    // Get settings to access roles with rates and invoiceRates
+    const { data: settingsData } = await this.supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "app_settings")
+      .single();
+
+    const roles = settingsData?.value?.roles || [];
 
     const officialsMap = new Map(officials?.map((o) => [o.id, o]) || []);
-    const paymentsMap = new Map(payments?.map((p) => [p.official_id, p.amount]) || []);
 
-    // Build report data
+    // Build report data - always calculate from competition_officials and current tariff settings
     return competitionOfficials.map((co) => {
       const official = officialsMap.get(co.official_id);
-      const paymentAmount = paymentsMap.get(co.official_id) || 0;
       const travelCost = (co.kilometers || 0) * 0.37;
+      const hours = co.hours || 0;
+      
+      // Find the role
+      const role = roles.find((r: any) => r.name === co.role);
+      let baseAmount = 0;
+
+      if (role) {
+        // Choose which rate array to use based on tariffType
+        const rateArray = tariffType === 'invoice' && role.invoiceRates 
+          ? role.invoiceRates 
+          : role.rates || [];
+        
+        if (Array.isArray(rateArray) && rateArray.length > 0) {
+          // Find matching tier
+          // First tier (0-4h): hours <= to
+          // Middle tiers (4-6h, 6-8h): hours > from AND hours <= to
+          // Last tier (8+h): hours > from
+          let matchedTier = null;
+
+          for (let i = 0; i < rateArray.length; i++) {
+            const tier = rateArray[i];
+            
+            if (i === 0) {
+              // First tier: 0-4h means hours <= 4
+              if (hours <= tier.to) {
+                matchedTier = tier;
+                break;
+              }
+            } else if (tier.to === 999) {
+              // Last tier: 8+h means hours > 8
+              if (hours > tier.from) {
+                matchedTier = tier;
+                break;
+              }
+            } else {
+              // Middle tiers: hours > from AND hours <= to
+              if (hours > tier.from && hours <= tier.to) {
+                matchedTier = tier;
+                break;
+              }
+            }
+          }
+
+          if (matchedTier) {
+            // Use the tier rate directly (it's a fixed amount, not hourly)
+            baseAmount = matchedTier.rate;
+          }
+        }
+      }
 
       return {
         name: official?.name || co.official_name || 'Neznano',
         rank: official?.rank || '',
+        role: co.role || '',
         discipline: co.discipline || '',
         hours: co.hours || 0,
-        amount: paymentAmount,
+        amount: baseAmount + travelCost,
         travelCost: travelCost,
         kilometers: co.kilometers || 0,
       };

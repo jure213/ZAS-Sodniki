@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 export function setupExportHandlers(db: any) {
-  ipcMain.handle('export:generateCompetitionReport', async (_event, competitionId: number) => {
+  ipcMain.handle('export:generateCompetitionReport', async (_event, competitionId: number, tariffType: string = 'official') => {
     try {
       // Get competition data
       const competitions = await db.listCompetitions();
@@ -15,8 +15,8 @@ export function setupExportHandlers(db: any) {
         return { ok: false, message: 'Tekma ni bila najdena' };
       }
 
-      // Get report data
-      const reportData = await db.getCompetitionReportData(competitionId);
+      // Get report data with selected tariff type
+      const reportData = await db.getCompetitionReportData(competitionId, tariffType);
 
       if (!reportData || reportData.length === 0) {
         return { ok: false, message: 'Ni podatkov za to tekmo' };
@@ -37,7 +37,7 @@ export function setupExportHandlers(db: any) {
 
       // Add title row (merged cell)
       const titleRow = worksheet.addRow([`${competition.name} - ${formatDate(competition.date)}`]);
-      worksheet.mergeCells(1, 1, 1, 7); // Merge cells A1 to G1
+      worksheet.mergeCells(1, 1, 1, 8); // Merge cells A1 to H1 (8 columns now)
       titleRow.font = { bold: true, size: 14 };
       titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
       titleRow.height = 25;
@@ -52,7 +52,7 @@ export function setupExportHandlers(db: any) {
       };
 
       // Add header row
-      const headerRow = worksheet.addRow(['IME', 'RANG', 'DISCIPLINA', 'URE', 'ZNESEK', 'POTNI STROŠKI', 'SKUPAJ']);
+      const headerRow = worksheet.addRow(['IME', 'RANG', 'VLOGA', 'DISCIPLINA', 'URE', 'ZNESEK', 'POTNI STROŠKI', 'SKUPAJ']);
       headerRow.font = { bold: true };
       headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
@@ -60,6 +60,7 @@ export function setupExportHandlers(db: any) {
       worksheet.columns = [
         { key: 'name', width: 25 },
         { key: 'rank', width: 8 },
+        { key: 'role', width: 15 },
         { key: 'discipline', width: 15 },
         { key: 'hours', width: 8 },
         { key: 'amount', width: 12 },
@@ -70,15 +71,20 @@ export function setupExportHandlers(db: any) {
       // Add data rows
       let grandTotal = 0;
       reportData.forEach((row: any) => {
-        const rowTotal = row.amount + row.travelCost;
+        // payment.amount already includes travel costs, so we need to separate them
+        // row.amount = total payment, row.travelCost = travel costs only
+        // So base amount (without travel) = row.amount - row.travelCost
+        const baseAmount = row.amount - row.travelCost;
+        const rowTotal = row.amount; // Total is the payment amount (already includes travel)
         grandTotal += rowTotal;
         
         worksheet.addRow({
           name: row.name,
           rank: parseInt(row.rank) || 0, // Save as number
+          role: row.role,
           discipline: row.discipline,
           hours: row.hours,
-          amount: row.amount.toFixed(2) + ' €',
+          amount: baseAmount.toFixed(2) + ' €',
           travelCost: row.travelCost.toFixed(2) + ' €',
           total: rowTotal.toFixed(2) + ' €',
         });
@@ -89,6 +95,7 @@ export function setupExportHandlers(db: any) {
       const totalRow = worksheet.addRow({
         name: '',
         rank: '',
+        role: '',
         discipline: '',
         hours: '',
         amount: '',
@@ -142,7 +149,8 @@ export function setupExportHandlers(db: any) {
       // Show save dialog
       const sanitizedName = competition.name.replace(/[^a-zA-Z0-9]/g, '_');
       const fileDate = formatDate(competition.date).replace(/\./g, '-'); // dd-mm-yyyy for filename
-      const defaultFileName = `Tekma_${sanitizedName}_${fileDate}.xlsx`;
+      const tariffLabel = tariffType === 'invoice' ? 'racun' : 'sodniki';
+      const defaultFileName = `Tekma_${sanitizedName}_${fileDate}_${tariffLabel}.xlsx`;
 
       const result = await dialog.showSaveDialog({
         title: 'Shrani Excel poročilo',

@@ -48,4 +48,8 @@ export function setupCompetitionHandlers(db: any) {
     const result = await db.generatePaymentsForCompetition(competitionId);
     return { ok: true, ...result };
   });
+
+  ipcMain.handle('competition:getReportData', async (_event, competitionId: number, tariffType: string = 'official') => {
+    return await db.getCompetitionReportData(competitionId, tariffType);
+  });
 }

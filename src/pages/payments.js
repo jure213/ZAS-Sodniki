@@ -122,6 +122,23 @@ export async function renderPayments(container, user) {
                     <button type="button" class="btn-close" data-dismiss="modal"></button>
                   </div>
                   <div class="modal-body">
+                    <div class="alert alert-info">
+                      <strong>Trenutni znesek:</strong> €${(payment?.amount ?? 0).toFixed(2)}
+                    </div>
+                    <div class="mb-3">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="partial-payment-checkbox">
+                        <label class="form-check-label" for="partial-payment-checkbox">
+                          Delno plačilo
+                        </label>
+                      </div>
+                      <div class="form-text">Označite, če želite vnesti delno plačilo</div>
+                    </div>
+                    <div class="mb-3" id="partial-amount-container" style="display: none;">
+                      <label class="form-label">Znesek delnega plačila (€)</label>
+                      <input type="number" step="0.01" min="0" max="${payment?.amount ?? 0}" id="partial-amount-input" class="form-control" value="${payment?.amount ?? 0}">
+                      <div class="form-text">Vnesite znesek, ki je bil plačan</div>
+                    </div>
                     <div class="mb-3">
                       <label class="form-label">Datum plačila</label>
                       <input type="date" id="date-paid-input" class="form-control" value="${new Date().toISOString().split('T')[0]}">
@@ -144,6 +161,17 @@ export async function renderPayments(container, user) {
             `;
             document.body.appendChild(modal);
             
+            // Add event listener for partial payment checkbox
+            const partialCheckbox = modal.querySelector('#partial-payment-checkbox');
+            const partialAmountContainer = modal.querySelector('#partial-amount-container');
+            partialCheckbox.addEventListener('change', () => {
+              if (partialCheckbox.checked) {
+                partialAmountContainer.style.display = 'block';
+              } else {
+                partialAmountContainer.style.display = 'none';
+              }
+            });
+            
             modal.querySelectorAll('[data-dismiss="modal"]').forEach(closeBtn => {
               closeBtn.onclick = () => modal.remove();
             });
@@ -151,7 +179,16 @@ export async function renderPayments(container, user) {
             modal.querySelector('#confirm-paid').onclick = async () => {
               const datePaid = modal.querySelector('#date-paid-input').value;
               const method = modal.querySelector('#payment-method-input').value;
-              await window.api?.payments?.markPaid({ id, datePaid, method });
+              const isPartial = modal.querySelector('#partial-payment-checkbox').checked;
+              const partialAmount = isPartial ? parseFloat(modal.querySelector('#partial-amount-input').value) : null;
+              
+              await window.api?.payments?.markPaid({ 
+                id, 
+                datePaid, 
+                method,
+                isPartial,
+                partialAmount
+              });
               modal.remove();
               loadPayments(filters);
             };
@@ -199,7 +236,12 @@ export async function renderPayments(container, user) {
               <option value="owed" ${payment?.status === 'owed' ? 'selected' : ''}>Ni plačano</option>
               <option value="paid" ${payment?.status === 'paid' ? 'selected' : ''}>Plačano</option>
             </select></div>
-            <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${payment?.notes ?? ''}</textarea></div>
+            <div class="mb-2" id="date-paid-container" style="display: ${payment?.status === 'paid' ? 'block' : 'none'};">
+              <label class="form-label">Datum plačila</label>
+              <input type="date" id="f-date-paid" class="form-control" value="${payment?.date_paid ?? ''}">
+            </div>
+            <div class="mb-2"><label class="form-label">Izračun</label><textarea id="f-notes" class="form-control" rows="2">${payment?.notes ?? ''}</textarea><div class="form-text">Avtomatsko generirani izračun</div></div>
+            <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-remarks" class="form-control" rows="2">${payment?.remarks ?? ''}</textarea><div class="form-text">Dodatne opombe</div></div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Prekliči</button>
@@ -209,6 +251,17 @@ export async function renderPayments(container, user) {
       </div>
     `;
     document.body.appendChild(modal);
+    
+    // Add event listener for status change to show/hide date_paid field
+    const statusSelect = modal.querySelector('#f-status');
+    const datePaidContainer = modal.querySelector('#date-paid-container');
+    statusSelect.addEventListener('change', () => {
+      if (statusSelect.value === 'paid') {
+        datePaidContainer.style.display = 'block';
+      } else {
+        datePaidContainer.style.display = 'none';
+      }
+    });
     
     modal.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
       btn.onclick = () => {
@@ -226,7 +279,9 @@ export async function renderPayments(container, user) {
         date: modal.querySelector('#f-date').value,
         method: modal.querySelector('#f-method').value,
         status: modal.querySelector('#f-status').value,
-        notes: modal.querySelector('#f-notes').value
+        date_paid: modal.querySelector('#f-date-paid').value || null,
+        notes: modal.querySelector('#f-notes').value,
+        remarks: modal.querySelector('#f-remarks').value
       };
       if (payment) {
         await window.api?.payments?.update(payment.id, data);

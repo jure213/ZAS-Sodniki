@@ -104,6 +104,7 @@ export async function renderOfficials(container, user) {
             <div class="mb-2"><label class="form-label">Telefon</label><input id="f-phone" class="form-control" value="${official?.phone ?? ''}"></div>
             <div class="mb-2"><label class="form-label">Rang (1, 2, 3)</label><input id="f-rank" class="form-control" value="${official?.rank ?? ''}"></div>
             <div class="mb-2"><label class="form-check-label"><input type="checkbox" id="f-active" class="form-check-input" ${official?.active ? 'checked' : ''}> Aktiven</label></div>
+            <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control" rows="3">${official?.notes ?? ''}</textarea><div class="form-text">Dodatne opombe o sodniku</div></div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Prekliči</button>
@@ -128,7 +129,8 @@ export async function renderOfficials(container, user) {
         email: modal.querySelector('#f-email').value,
         phone: modal.querySelector('#f-phone').value,
         rank: modal.querySelector('#f-rank').value,
-        active: modal.querySelector('#f-active').checked ? 1 : 0
+        active: modal.querySelector('#f-active').checked ? 1 : 0,
+        notes: modal.querySelector('#f-notes').value
       };
       if (official) {
         await window.api?.officials?.update(official.id, data);

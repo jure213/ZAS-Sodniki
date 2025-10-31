@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('api', {
     updateOfficial: (id: number, data: any) => ipcRenderer.invoke('competition:updateOfficial', { id, data }),
     deleteOfficial: (id: number) => ipcRenderer.invoke('competition:deleteOfficial', id),
     generatePayments: (competitionId: number) => ipcRenderer.invoke('competition:generatePayments', competitionId),
+    getReportData: (competitionId: number, tariffType?: string) => ipcRenderer.invoke('competition:getReportData', competitionId, tariffType || 'official'),
   },
   // Payments
   payments: {
@@ -67,7 +68,8 @@ contextBridge.exposeInMainWorld('api', {
   },
   // Exports
   exports: {
-    generateCompetitionReport: (competitionId: number) => ipcRenderer.invoke('export:generateCompetitionReport', competitionId),
+    generateCompetitionReport: (competitionId: number, tariffType?: string) => 
+      ipcRenderer.invoke('export:generateCompetitionReport', competitionId, tariffType || 'official'),
   },
 });
 

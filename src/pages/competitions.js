@@ -1,5 +1,19 @@
 export async function renderCompetitions(container, user) {
   const isAdmin = user?.role === 'admin';
+  
+  // Helper function to format status badge
+  function getStatusBadge(status) {
+    const statusMap = {
+      'completed': { color: 'success', label: 'Zaključeno' },
+      'planned': { color: 'warning', label: 'Načrtovano' },
+      'cancelled': { color: 'danger', label: 'Preklicano' },
+      'free': { color: 'success', label: 'Zastonj' },
+      'other_zas': { color: 'success', label: 'Plača drug ZAS' }
+    };
+    const statusInfo = statusMap[status] || { color: 'secondary', label: status };
+    return `<span class="badge bg-${statusInfo.color}">${statusInfo.label}</span>`;
+  }
+  
   container.innerHTML = `
     <div class="d-flex justify-content-end align-items-center mb-2">
       ${isAdmin ? '<button id="add-competition" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj tekmovanje</button>' : ''}
@@ -22,7 +36,7 @@ export async function renderCompetitions(container, user) {
             <td>${c.name ?? ''}</td>
             <td>${window.formatDate(c.date)}</td>
             <td>${c.location ?? ''}</td>
-            <td><span class="badge bg-${c.status === 'completed' ? 'success' : c.status === 'planned' ? 'warning' : 'danger'}">${c.status === 'completed' ? 'Zaključeno' : c.status === 'planned' ? 'Načrtovano' : 'Preklicano'}</span></td>
+            <td>${getStatusBadge(c.status)}</td>
             ${isAdmin ? `<td>
               <button class="btn btn-sm btn-outline-dark manage-officials" data-id="${c.id}" title="Dodeli sodnike"><i class="bi bi-people"></i></button>
               <button class="btn btn-sm btn-outline-primary edit-competition" data-id="${c.id}"><i class="bi bi-pencil"></i></button>
@@ -90,6 +104,8 @@ export async function renderCompetitions(container, user) {
               <option value="planned" ${competition?.status === 'planned' ? 'selected' : ''}>Načrtovano</option>
               <option value="completed" ${competition?.status === 'completed' ? 'selected' : ''}>Zaključeno</option>
               <option value="cancelled" ${competition?.status === 'cancelled' ? 'selected' : ''}>Preklicano</option>
+              <option value="free" ${competition?.status === 'free' ? 'selected' : ''}>Zastonj</option>
+              <option value="other_zas" ${competition?.status === 'other_zas' ? 'selected' : ''}>Plača drugi ZAS</option>
             </select></div>
             <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${competition?.notes ?? ''}</textarea></div>
           </div>
@@ -225,7 +241,7 @@ export async function renderCompetitions(container, user) {
       if (result.ok) {
         let message = `<strong>Izplačila generirana!</strong><br>Ustvarjenih: ${result.created}`;
         if (result.errors && result.errors.length > 0) {
-          message += `<br><small>Napake: ${result.errors.join(', ')}</small>`;
+          message += `<br><small>Opomba: ${result.errors.join(', ')}</small>`;
           showNotificationInModal(modal, message, 'warning');
         } else {
           showNotificationInModal(modal, message, 'success');
@@ -289,7 +305,7 @@ export async function renderCompetitions(container, user) {
                     <option value="1 - Daljinski skoki" ${compOfficial?.discipline === '1 - Daljinski skoki' ? 'selected' : ''}>1 - Daljinski skoki</option>
                     <option value="2 - Meti" ${compOfficial?.discipline === '2 - Meti' ? 'selected' : ''}>2 - Meti</option>
             </select></div>
-            <div class="mb-2"><label class="form-label">Število ur</label><input type="number" step="0.5" id="f-hours" class="form-control" value="${compOfficial?.hours ?? '8'}"></div>
+            <div class="mb-2"><label class="form-label">Število ur</label><input type="number" step="0.5" id="f-hours" class="form-control" value="${compOfficial?.hours ?? '4'}"></div>
             <div class="mb-2"><label class="form-label">Kilometri (potni stroški: €0.37/km)</label><input type="number" step="1" min="0" id="f-kilometers" class="form-control" value="${compOfficial?.kilometers ?? '0'}"></div>
             <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${compOfficial?.notes ?? ''}</textarea></div>
           </div>
@@ -307,11 +323,45 @@ export async function renderCompetitions(container, user) {
     });
 
     subModal.querySelector('#save-comp-official').onclick = async () => {
+      const discipline = subModal.querySelector('#f-discipline').value;
+      
+      // Validate that discipline is selected
+      if (!discipline || discipline === '') {
+        // Remove any existing alerts
+        const existingAlert = subModal.querySelector('.validation-alert');
+        if (existingAlert) existingAlert.remove();
+        
+        // Create Bootstrap alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-warning alert-dismissible fade show validation-alert';
+        alertDiv.innerHTML = `
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          Prosim izberite disciplino!
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Insert alert at the top of modal body
+        const modalBody = subModal.querySelector('.modal-body');
+        modalBody.insertBefore(alertDiv, modalBody.firstChild);
+        
+        // Focus on discipline dropdown
+        subModal.querySelector('#f-discipline').focus();
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+          if (alertDiv.parentNode) {
+            alertDiv.remove();
+          }
+        }, 5000);
+        
+        return;
+      }
+
       const data = {
         role: subModal.querySelector('#f-role').value,
         hours: parseFloat(subModal.querySelector('#f-hours').value),
         kilometers: parseFloat(subModal.querySelector('#f-kilometers').value) || 0,
-        discipline: subModal.querySelector('#f-discipline').value,
+        discipline: discipline,
         notes: subModal.querySelector('#f-notes').value
       };
 
@@ -347,7 +397,7 @@ export async function renderCompetitions(container, user) {
       <div class="modal-dialog modal-xl">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Množična dodelitev sodnikov</h5>
+            <h5 class="modal-title">Dodelitev sodnikov</h5>
             <button type="button" class="btn-close" data-dismiss-sub="modal"></button>
           </div>
           <div class="modal-body">
@@ -447,7 +497,7 @@ export async function renderCompetitions(container, user) {
               </div>
               <div class="mb-2">
                 <label class="form-label">Število ur</label>
-                <input type="number" step="0.5" id="quick-hours" class="form-control" value="8">
+                <input type="number" step="0.5" id="quick-hours" class="form-control" value="4">
               </div>
               <div class="mb-2">
                 <label class="form-label">Kilometri (€0.37/km)</label>
@@ -477,6 +527,38 @@ export async function renderCompetitions(container, user) {
         const hours = parseFloat(quickModal.querySelector('#quick-hours').value);
         const kilometers = parseFloat(quickModal.querySelector('#quick-kilometers').value) || 0;
         const discipline = quickModal.querySelector('#quick-discipline').value;
+
+        // Validate that discipline is selected
+        if (!discipline || discipline === '') {
+          // Remove any existing alerts
+          const existingAlert = quickModal.querySelector('.validation-alert');
+          if (existingAlert) existingAlert.remove();
+          
+          // Create Bootstrap alert
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-warning alert-dismissible fade show validation-alert';
+          alertDiv.innerHTML = `
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Prosim izberite disciplino!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          `;
+          
+          // Insert alert at the top of modal body
+          const modalBody = quickModal.querySelector('.modal-body');
+          modalBody.insertBefore(alertDiv, modalBody.firstChild);
+          
+          // Focus on discipline dropdown
+          quickModal.querySelector('#quick-discipline').focus();
+          
+          // Auto-remove after 5 seconds
+          setTimeout(() => {
+            if (alertDiv.parentNode) {
+              alertDiv.remove();
+            }
+          }, 5000);
+          
+          return;
+        }
 
         selectedOfficials.set(officialId, {
           name: officialName,
@@ -884,7 +966,7 @@ export async function renderCompetitions(container, user) {
         if (result.ok) {
           let message = `<strong>Izplačila generirana!</strong><br>Ustvarjenih: ${result.created}`;
           if (result.errors && result.errors.length > 0) {
-            message += `<br><small>Napake: ${result.errors.join(', ')}</small>`;
+            message += `<br><small>Opomba: ${result.errors.join(', ')}</small>`;
             showNotificationInModal(document.querySelector('.modal'), message, 'warning');
           } else {
             showNotificationInModal(document.querySelector('.modal'), message, 'success');
