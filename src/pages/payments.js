@@ -23,8 +23,8 @@ export async function renderPayments(container, user) {
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover">
-        <thead class="text-center"><tr><th>Sodnik</th><th>Tekmovanje</th><th class="text-center">Znesek</th><th>Način</th><th>Status</th><th>Datum tekmovanja</th><th>Datum plačila</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
-        <tbody id="payments-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 8 : 7}">Nalagam…</td></tr></tbody>
+        <thead class="text-center"><tr><th>Sodnik</th><th>Tekmovanje</th><th class="text-center">Znesek sodnik</th><th class="text-center">Preostalo</th><th>Način</th><th>Status</th><th>Datum tekmovanja</th><th>Datum plačila</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
+        <tbody id="payments-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 9 : 8}">Nalagam…</td></tr></tbody>
       </table>
     </div>
   `;
@@ -79,6 +79,7 @@ export async function renderPayments(container, user) {
           (p) => `<tr>
             <td>${p.official_name ?? ''}</td>
             <td>${p.competition_name ?? ''}</td>
+            <td class="text-center">${(p.znesek_sodnik ?? 0).toFixed(2)} €</td>
             <td class="text-center">${(p.amount ?? 0).toFixed(2)} €</td>
             <td>${formatPaymentMethod(p.method)}</td>
             <td><span class="badge bg-${p.status === 'paid' ? 'success' : 'danger'}">${p.status === 'paid' ? 'Plačano' : 'Ni plačano'}</span></td>
@@ -93,7 +94,7 @@ export async function renderPayments(container, user) {
         )
         .join('');
       if (!list || list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-muted">Ni podatkov</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${isAdmin ? 9 : 8}" class="text-muted">Ni podatkov</td></tr>`;
       }
       container.querySelector('#filter-count').textContent = `Prikazujem ${list.length} rezultatov`;
 

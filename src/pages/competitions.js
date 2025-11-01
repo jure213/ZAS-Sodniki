@@ -318,6 +318,18 @@ export async function renderCompetitions(container, user) {
             </select></div>
             <div class="mb-2"><label class="form-label">Število ur</label><input type="number" step="0.5" id="f-hours" class="form-control" value="${compOfficial?.hours ?? '4'}"></div>
             <div class="mb-2"><label class="form-label">Kilometri (potni stroški: €${travelCostPerKm.toFixed(2)}/km)</label><input type="number" step="1" min="0" id="f-kilometers" class="form-control" value="${compOfficial?.kilometers ?? '0'}"></div>
+            <hr>
+            <div class="mb-2">
+              <label class="form-label">Znesek sodnik (€)</label>
+              <input type="number" step="0.01" min="0" id="f-znesek-sodnik" class="form-control" value="${compOfficial?.znesek_sodnik ?? '0'}">
+              <div class="form-text">Avtomatsko izračunan, lahko ročno uredite</div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Znesek račun (€)</label>
+              <input type="number" step="0.01" min="0" id="f-znesek-racun" class="form-control" value="${compOfficial?.znesek_racun ?? '0'}">
+              <div class="form-text">Avtomatsko izračunan iz tarife za račun, lahko ročno uredite</div>
+            </div>
+            <hr>
             <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${compOfficial?.notes ?? ''}</textarea></div>
           </div>
           <div class="modal-footer">
@@ -328,6 +340,78 @@ export async function renderCompetitions(container, user) {
       </div>
     `;
     document.body.appendChild(subModal);
+
+    // Function to calculate amounts based on role, hours, and kilometers
+    function calculateAmounts() {
+      const roleName = subModal.querySelector('#f-role').value;
+      const hours = parseFloat(subModal.querySelector('#f-hours').value) || 0;
+      const kilometers = parseFloat(subModal.querySelector('#f-kilometers').value) || 0;
+      
+      const roleDefinition = roles.find(r => r.name === roleName);
+      
+      // Calculate base amount (sodnik tariff)
+      let baseSodnikAmount = 0;
+      if (roleDefinition) {
+        if (roleDefinition.rates && roleDefinition.rates.length > 0) {
+          // Tier-based fixed rate system
+          for (const tier of roleDefinition.rates) {
+            if (hours > tier.from && (hours <= tier.to || tier.to === 999)) {
+              baseSodnikAmount = tier.rate;
+              break;
+            }
+          }
+        } else if (roleDefinition.hourlyRate) {
+          // Backward compatibility - simple hourly rate
+          baseSodnikAmount = roleDefinition.hourlyRate * hours;
+        }
+      }
+      
+      // Calculate base amount for invoice (račun tariff)
+      let baseRacunAmount = 0;
+      if (roleDefinition) {
+        if (roleDefinition.invoiceRates && roleDefinition.invoiceRates.length > 0) {
+          // Tier-based fixed rate system for invoice
+          for (const tier of roleDefinition.invoiceRates) {
+            if (hours > tier.from && (hours <= tier.to || tier.to === 999)) {
+              baseRacunAmount = tier.rate;
+              break;
+            }
+          }
+        } else if (roleDefinition.rates && roleDefinition.rates.length > 0) {
+          // Fallback: use sodnik rates if invoice rates not defined
+          for (const tier of roleDefinition.rates) {
+            if (hours > tier.from && (hours <= tier.to || tier.to === 999)) {
+              baseRacunAmount = tier.rate;
+              break;
+            }
+          }
+        } else if (roleDefinition.hourlyRate) {
+          // Backward compatibility - simple hourly rate
+          baseRacunAmount = roleDefinition.hourlyRate * hours;
+        }
+      }
+      
+      // Calculate travel costs
+      const travelCost = kilometers * travelCostPerKm;
+      
+      // Calculate both amounts
+      const znesek_sodnik = baseSodnikAmount + travelCost;
+      const znesek_racun = baseRacunAmount + travelCost;
+      
+      // Update input fields
+      subModal.querySelector('#f-znesek-sodnik').value = znesek_sodnik.toFixed(2);
+      subModal.querySelector('#f-znesek-racun').value = znesek_racun.toFixed(2);
+    }
+
+    // Add event listeners for auto-calculation
+    subModal.querySelector('#f-role').addEventListener('change', calculateAmounts);
+    subModal.querySelector('#f-hours').addEventListener('input', calculateAmounts);
+    subModal.querySelector('#f-kilometers').addEventListener('input', calculateAmounts);
+
+    // Calculate initial values if editing existing official
+    if (compOfficial && (!compOfficial.znesek_sodnik || !compOfficial.znesek_racun)) {
+      calculateAmounts();
+    }
 
     subModal.querySelectorAll('[data-dismiss-sub="modal"]').forEach(btn => {
       btn.onclick = () => subModal.remove();
@@ -368,12 +452,22 @@ export async function renderCompetitions(container, user) {
         return;
       }
 
+      const roleName = subModal.querySelector('#f-role').value;
+      const hours = parseFloat(subModal.querySelector('#f-hours').value);
+      const kilometers = parseFloat(subModal.querySelector('#f-kilometers').value) || 0;
+      
+      // Read the amounts from the input fields (user may have edited them)
+      const znesek_sodnik = parseFloat(subModal.querySelector('#f-znesek-sodnik').value) || 0;
+      const znesek_racun = parseFloat(subModal.querySelector('#f-znesek-racun').value) || 0;
+
       const data = {
-        role: subModal.querySelector('#f-role').value,
-        hours: parseFloat(subModal.querySelector('#f-hours').value),
-        kilometers: parseFloat(subModal.querySelector('#f-kilometers').value) || 0,
+        role: roleName,
+        hours: hours,
+        kilometers: kilometers,
         discipline: discipline,
-        notes: subModal.querySelector('#f-notes').value
+        notes: subModal.querySelector('#f-notes').value,
+        znesek_sodnik: znesek_sodnik,
+        znesek_racun: znesek_racun
       };
 
       if (compOfficial) {
@@ -514,6 +608,17 @@ export async function renderCompetitions(container, user) {
                 <label class="form-label">Kilometri (€${travelCostPerKm.toFixed(2)}/km)</label>
                 <input type="number" step="1" min="0" id="quick-kilometers" class="form-control" value="0">
               </div>
+              <hr>
+              <div class="mb-2">
+                <label class="form-label">Znesek sodnik (€)</label>
+                <input type="number" step="0.01" min="0" id="quick-znesek-sodnik" class="form-control" value="0">
+                <div class="form-text">Avtomatsko izračunan</div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Znesek račun (€)</label>
+                <input type="number" step="0.01" min="0" id="quick-znesek-racun" class="form-control" value="0">
+                <div class="form-text">Avtomatsko izračunan iz tarife za račun</div>
+              </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary btn-sm" data-dismiss-quick="modal">Prekliči</button>
@@ -523,6 +628,76 @@ export async function renderCompetitions(container, user) {
         </div>
       `;
       document.body.appendChild(quickModal);
+
+      // Function to calculate amounts for quick assign
+      function calculateQuickAmounts() {
+        const roleName = quickModal.querySelector('#quick-role').value;
+        const hours = parseFloat(quickModal.querySelector('#quick-hours').value) || 0;
+        const kilometers = parseFloat(quickModal.querySelector('#quick-kilometers').value) || 0;
+        
+        const roleDefinition = roles.find(r => r.name === roleName);
+        
+        // Calculate base amount (sodnik tariff)
+        let baseSodnikAmount = 0;
+        if (roleDefinition) {
+          if (roleDefinition.rates && roleDefinition.rates.length > 0) {
+            // Tier-based fixed rate system
+            for (const tier of roleDefinition.rates) {
+              if (hours > tier.from && (hours <= tier.to || tier.to === 999)) {
+                baseSodnikAmount = tier.rate;
+                break;
+              }
+            }
+          } else if (roleDefinition.hourlyRate) {
+            // Backward compatibility - simple hourly rate
+            baseSodnikAmount = roleDefinition.hourlyRate * hours;
+          }
+        }
+        
+        // Calculate base amount for invoice (račun tariff)
+        let baseRacunAmount = 0;
+        if (roleDefinition) {
+          if (roleDefinition.invoiceRates && roleDefinition.invoiceRates.length > 0) {
+            // Tier-based fixed rate system for invoice
+            for (const tier of roleDefinition.invoiceRates) {
+              if (hours > tier.from && (hours <= tier.to || tier.to === 999)) {
+                baseRacunAmount = tier.rate;
+                break;
+              }
+            }
+          } else if (roleDefinition.rates && roleDefinition.rates.length > 0) {
+            // Fallback: use sodnik rates if invoice rates not defined
+            for (const tier of roleDefinition.rates) {
+              if (hours > tier.from && (hours <= tier.to || tier.to === 999)) {
+                baseRacunAmount = tier.rate;
+                break;
+              }
+            }
+          } else if (roleDefinition.hourlyRate) {
+            // Backward compatibility - simple hourly rate
+            baseRacunAmount = roleDefinition.hourlyRate * hours;
+          }
+        }
+        
+        // Calculate travel costs
+        const travelCost = kilometers * travelCostPerKm;
+        
+        // Calculate both amounts
+        const znesek_sodnik = baseSodnikAmount + travelCost;
+        const znesek_racun = baseRacunAmount + travelCost;
+        
+        // Update input fields
+        quickModal.querySelector('#quick-znesek-sodnik').value = znesek_sodnik.toFixed(2);
+        quickModal.querySelector('#quick-znesek-racun').value = znesek_racun.toFixed(2);
+      }
+
+      // Add event listeners for auto-calculation
+      quickModal.querySelector('#quick-role').addEventListener('change', calculateQuickAmounts);
+      quickModal.querySelector('#quick-hours').addEventListener('input', calculateQuickAmounts);
+      quickModal.querySelector('#quick-kilometers').addEventListener('input', calculateQuickAmounts);
+
+      // Calculate initial values
+      calculateQuickAmounts();
 
       // Focus on role select
       setTimeout(() => {
@@ -571,12 +746,18 @@ export async function renderCompetitions(container, user) {
           return;
         }
 
+        // Read the amounts from the input fields
+        const znesek_sodnik = parseFloat(quickModal.querySelector('#quick-znesek-sodnik').value) || 0;
+        const znesek_racun = parseFloat(quickModal.querySelector('#quick-znesek-racun').value) || 0;
+
         selectedOfficials.set(officialId, {
           name: officialName,
           role: role,
           hours: hours,
           kilometers: kilometers,
-          discipline: discipline
+          discipline: discipline,
+          znesek_sodnik: znesek_sodnik,
+          znesek_racun: znesek_racun
         });
 
         quickModal.remove();
@@ -725,6 +906,8 @@ export async function renderCompetitions(container, user) {
             const data = selectedOfficials.get(id);
             if (data) {
               data.role = select.value;
+              // Recalculate amounts when role changes
+              recalculateAmountsForOfficial(id, data);
               selectedOfficials.set(id, data);
             }
           };
@@ -749,6 +932,8 @@ export async function renderCompetitions(container, user) {
             const data = selectedOfficials.get(id);
             if (data) {
               data.kilometers = parseFloat(input.value) || 0;
+              // Recalculate amounts when kilometers change
+              recalculateAmountsForOfficial(id, data);
               selectedOfficials.set(id, data);
             }
           };
@@ -761,11 +946,64 @@ export async function renderCompetitions(container, user) {
             const data = selectedOfficials.get(id);
             if (data) {
               data.hours = parseFloat(input.value);
+              // Recalculate amounts when hours change
+              recalculateAmountsForOfficial(id, data);
               selectedOfficials.set(id, data);
             }
           };
         });
       }
+    }
+
+    // Function to recalculate amounts for an official in bulk assign
+    function recalculateAmountsForOfficial(id, data) {
+      const roleDefinition = roles.find(r => r.name === data.role);
+      const hours = data.hours || 0;
+      const kilometers = data.kilometers || 0;
+      
+      // Calculate base amount (sodnik tariff)
+      let baseSodnikAmount = 0;
+      if (roleDefinition) {
+        if (roleDefinition.rates && roleDefinition.rates.length > 0) {
+          for (const tier of roleDefinition.rates) {
+            if (hours > tier.from && (hours <= tier.to || tier.to === 999)) {
+              baseSodnikAmount = tier.rate;
+              break;
+            }
+          }
+        } else if (roleDefinition.hourlyRate) {
+          baseSodnikAmount = roleDefinition.hourlyRate * hours;
+        }
+      }
+      
+      // Calculate base amount for invoice (račun tariff)
+      let baseRacunAmount = 0;
+      if (roleDefinition) {
+        if (roleDefinition.invoiceRates && roleDefinition.invoiceRates.length > 0) {
+          for (const tier of roleDefinition.invoiceRates) {
+            if (hours > tier.from && (hours <= tier.to || tier.to === 999)) {
+              baseRacunAmount = tier.rate;
+              break;
+            }
+          }
+        } else if (roleDefinition.rates && roleDefinition.rates.length > 0) {
+          for (const tier of roleDefinition.rates) {
+            if (hours > tier.from && (hours <= tier.to || tier.to === 999)) {
+              baseRacunAmount = tier.rate;
+              break;
+            }
+          }
+        } else if (roleDefinition.hourlyRate) {
+          baseRacunAmount = roleDefinition.hourlyRate * hours;
+        }
+      }
+      
+      // Calculate travel costs
+      const travelCost = kilometers * travelCostPerKm;
+      
+      // Update amounts in data object
+      data.znesek_sodnik = baseSodnikAmount + travelCost;
+      data.znesek_racun = baseRacunAmount + travelCost;
     }
 
     function updateCount() {
@@ -791,7 +1029,9 @@ export async function renderCompetitions(container, user) {
           hours: data.hours,
           kilometers: data.kilometers || 0,
           discipline: data.discipline || '',
-          notes: ''
+          notes: '',
+          znesek_sodnik: data.znesek_sodnik || 0,
+          znesek_racun: data.znesek_racun || 0
         });
         if (result.ok) added++;
       }

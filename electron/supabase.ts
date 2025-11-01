@@ -325,6 +325,8 @@ export class SupabaseDatabaseManager {
     date_paid?: string | null;
     notes?: string;
     remarks?: string;
+    znesek_sodnik?: number;
+    znesek_racun?: number;
   }): Promise<number> {
     const { data: result, error } = await this.supabase
       .from("payments")
@@ -338,6 +340,8 @@ export class SupabaseDatabaseManager {
         date_paid: data.date_paid || null,
         notes: data.notes ?? "",
         remarks: data.remarks ?? "",
+        znesek_sodnik: data.znesek_sodnik ?? 0,
+        znesek_racun: data.znesek_racun ?? 0,
       })
       .select("id")
       .single();
@@ -436,6 +440,7 @@ export class SupabaseDatabaseManager {
       updateData = {
         status: "paid",
         date_paid: paymentDate,
+        amount: 0, // Set remaining amount to 0
         remarks: (currentPayment.remarks || '') + 
           (currentPayment.remarks ? '\n' : '') +
           `Plačano v celoti: €${currentPayment.amount.toFixed(2)} (datum: ${formattedDate})`
@@ -641,6 +646,8 @@ export class SupabaseDatabaseManager {
       kilometers: number;
       discipline: string;
       notes: string;
+      znesek_sodnik: number;
+      znesek_racun: number;
     }>
   > {
     const { data, error } = await this.supabase
@@ -674,6 +681,8 @@ export class SupabaseDatabaseManager {
       kilometers: number;
       discipline: string;
       notes: string;
+      znesek_sodnik: number;
+      znesek_racun: number;
     }>
   > {
     const { data, error } = await this.supabase
@@ -703,6 +712,8 @@ export class SupabaseDatabaseManager {
     kilometers?: number;
     discipline?: string;
     notes?: string;
+    znesek_sodnik?: number;
+    znesek_racun?: number;
   }): Promise<number> {
     const { data: result, error } = await this.supabase
       .from("competition_officials")
@@ -714,17 +725,23 @@ export class SupabaseDatabaseManager {
         kilometers: data.kilometers ?? 0,
         discipline: data.discipline ?? "",
         notes: data.notes ?? "",
+        znesek_sodnik: data.znesek_sodnik ?? 0,
+        znesek_racun: data.znesek_racun ?? 0,
       })
       .select("id")
       .single();
 
-    if (error || !result) throw new Error("Failed to add competition official");
+    if (error || !result) {
+      console.error('addCompetitionOfficial error:', error);
+      console.error('Attempted to insert data:', data);
+      throw new Error("Failed to add competition official");
+    }
     return result.id;
   }
 
   async updateCompetitionOfficial(
     id: number,
-    data: { role: string; hours: number; kilometers?: number; discipline?: string; notes: string }
+    data: { role: string; hours: number; kilometers?: number; discipline?: string; notes: string; znesek_sodnik?: number; znesek_racun?: number }
   ): Promise<boolean> {
     const { error } = await this.supabase
       .from("competition_officials")
@@ -734,6 +751,8 @@ export class SupabaseDatabaseManager {
         kilometers: data.kilometers ?? 0,
         discipline: data.discipline ?? "",
         notes: data.notes,
+        znesek_sodnik: data.znesek_sodnik ?? 0,
+        znesek_racun: data.znesek_racun ?? 0,
       })
       .eq("id", id);
 
@@ -751,7 +770,8 @@ export class SupabaseDatabaseManager {
 
   // Generate payments from competition officials
   async generatePaymentsForCompetition(
-    competitionId: number
+    competitionId: number,
+    tariffType: 'sodnik' | 'racun' = 'sodnik'
   ): Promise<{ created: number; errors: string[] }> {
     const competition = await this.supabase
       .from("competitions")
@@ -773,74 +793,16 @@ export class SupabaseDatabaseManager {
     const errors: string[] = [];
 
     for (const official of officials) {
-      const role = roles.find((r) => r.name === official.role);
-      if (!role) {
+      // Check if we have stored amounts
+      if (!official.znesek_sodnik || !official.znesek_racun) {
         errors.push(
-          `Role "${official.role}" not found for ${official.official_name}`
+          `Manjkajoči izračunani zneski za ${official.official_name}. Prosimo ponovno dodelite sodnika.`
         );
         continue;
       }
 
-      // Calculate amount using tier-based fixed rates
-      let amount = 0;
-      let breakdown = "";
-
-      if (role.rates && role.rates.length > 0) {
-        // Tier-based fixed rate system
-        // First tier (0-4h): hours <= to
-        // Middle tiers (4-6h, 6-8h): hours > from AND hours <= to
-        // Last tier (8+h): hours > from
-        let matchedTier = null;
-
-        for (let i = 0; i < role.rates.length; i++) {
-          const tier = role.rates[i];
-          
-          if (i === 0) {
-            // First tier: 0-4h means hours <= 4
-            if (official.hours <= tier.to) {
-              matchedTier = tier;
-              break;
-            }
-          } else if (tier.to === 999) {
-            // Last tier: 8+h means hours > 8
-            if (official.hours > tier.from) {
-              matchedTier = tier;
-              break;
-            }
-          } else {
-            // Middle tiers: hours > from AND hours <= to
-            if (official.hours > tier.from && official.hours <= tier.to) {
-              matchedTier = tier;
-              break;
-            }
-          }
-        }
-
-        if (matchedTier) {
-          amount = matchedTier.rate;
-          const toDisplay = matchedTier.to === 999 ? "∞" : matchedTier.to;
-          breakdown = `${official.hours}h (${matchedTier.from}-${toDisplay}h) = €${matchedTier.rate}`;
-        } else {
-          errors.push(
-            `No rate tier found for ${official.hours}h for ${official.official_name}`
-          );
-          continue;
-        }
-      } else if (role.hourlyRate) {
-        // Backward compatibility - simple hourly rate
-        amount = role.hourlyRate * official.hours;
-        breakdown = `${official.hours}h @ €${role.hourlyRate}/h`;
-      }
-
-      // Add travel costs
-      const kilometers = official.kilometers || 0;
-      const travelCostPerKm = await this.getTravelCostPerKm();
-      const travelCost = kilometers * travelCostPerKm;
-      amount += travelCost;
-      
-      if (kilometers > 0) {
-        breakdown += ` + potni stroški (${kilometers}km × €${travelCostPerKm.toFixed(2)} = €${travelCost.toFixed(2)}) = ${amount.toFixed(2)}€`;
-      }
+      // Use stored amount based on tariff type
+      const amount = tariffType === 'sodnik' ? official.znesek_sodnik : official.znesek_racun;
 
       // Check if payment already exists
       const { data: existing } = await this.supabase
@@ -859,19 +821,22 @@ export class SupabaseDatabaseManager {
       const defaultPaymentMethod =
         this.getAppSetting("defaultPaymentMethod") || "nakazilo";
 
-      // Create payment
+      // Create payment with both amounts stored
       try {
+        const role = roles.find((r) => r.name === official.role);
         const discipline = official.discipline || "";
-        const roleWithDiscipline = discipline ? `${role.name} (${discipline})` : role.name;
+        const roleWithDiscipline = discipline ? `${official.role} (${discipline})` : official.role;
         
         const paymentId = await this.addPayment({
           official_id: official.official_id,
           competition_id: competitionId,
-          amount: amount,
+          amount: amount, // This is the "preostalo" amount
           date: competition.data.date,
           method: await defaultPaymentMethod,
           status: "owed",
-          notes: `${roleWithDiscipline} - ${breakdown}`,
+          notes: `${roleWithDiscipline} - ${official.hours}h, ${official.kilometers || 0}km`,
+          znesek_sodnik: official.znesek_sodnik,
+          znesek_racun: official.znesek_racun,
         });
 
         if (paymentId > 0) {
@@ -933,71 +898,16 @@ export class SupabaseDatabaseManager {
       .from("officials")
       .select("id, name, rank");
 
-    // Get settings to access roles with rates and invoiceRates
-    const { data: settingsData } = await this.supabase
-      .from("settings")
-      .select("value")
-      .eq("key", "app_settings")
-      .single();
-
-    const roles = settingsData?.value?.roles || [];
-    const travelCostPerKm = settingsData?.value?.travelCostPerKm || 0.37;
-
+    const travelCostPerKm = await this.getTravelCostPerKm();
     const officialsMap = new Map(officials?.map((o) => [o.id, o]) || []);
 
-    // Build report data - always calculate from competition_officials and current tariff settings
+    // Build report data using stored amounts
     return competitionOfficials.map((co) => {
       const official = officialsMap.get(co.official_id);
       const travelCost = (co.kilometers || 0) * travelCostPerKm;
-      const hours = co.hours || 0;
       
-      // Find the role
-      const role = roles.find((r: any) => r.name === co.role);
-      let baseAmount = 0;
-
-      if (role) {
-        // Choose which rate array to use based on tariffType
-        const rateArray = tariffType === 'invoice' && role.invoiceRates 
-          ? role.invoiceRates 
-          : role.rates || [];
-        
-        if (Array.isArray(rateArray) && rateArray.length > 0) {
-          // Find matching tier
-          // First tier (0-4h): hours <= to
-          // Middle tiers (4-6h, 6-8h): hours > from AND hours <= to
-          // Last tier (8+h): hours > from
-          let matchedTier = null;
-
-          for (let i = 0; i < rateArray.length; i++) {
-            const tier = rateArray[i];
-            
-            if (i === 0) {
-              // First tier: 0-4h means hours <= 4
-              if (hours <= tier.to) {
-                matchedTier = tier;
-                break;
-              }
-            } else if (tier.to === 999) {
-              // Last tier: 8+h means hours > 8
-              if (hours > tier.from) {
-                matchedTier = tier;
-                break;
-              }
-            } else {
-              // Middle tiers: hours > from AND hours <= to
-              if (hours > tier.from && hours <= tier.to) {
-                matchedTier = tier;
-                break;
-              }
-            }
-          }
-
-          if (matchedTier) {
-            // Use the tier rate directly (it's a fixed amount, not hourly)
-            baseAmount = matchedTier.rate;
-          }
-        }
-      }
+      // Use stored amount based on tariff type
+      const baseAmount = tariffType === 'invoice' ? co.znesek_racun : co.znesek_sodnik;
 
       return {
         name: official?.name || co.official_name || 'Neznano',
@@ -1005,7 +915,7 @@ export class SupabaseDatabaseManager {
         role: co.role || '',
         discipline: co.discipline || '',
         hours: co.hours || 0,
-        amount: baseAmount + travelCost,
+        amount: baseAmount, // Already includes travel costs from when it was calculated
         travelCost: travelCost,
         kilometers: co.kilometers || 0,
       };
@@ -1013,7 +923,8 @@ export class SupabaseDatabaseManager {
   }
 
   async getCompetitionsSummaryData(
-    competitionIds: number[]
+    competitionIds: number[],
+    tariffType: string = 'official'
   ): Promise<
     Array<{
       id: number;
@@ -1040,15 +951,7 @@ export class SupabaseDatabaseManager {
       return [];
     }
 
-    // Get settings for rate calculation
-    const { data: settingsData } = await this.supabase
-      .from("settings")
-      .select("value")
-      .eq("key", "app_settings")
-      .single();
-
-    const roles = settingsData?.value?.roles || [];
-    const travelCostPerKm = settingsData?.value?.travelCostPerKm || 0.37;
+    const travelCostPerKm = await this.getTravelCostPerKm();
 
     // Process each competition
     const summaryData = await Promise.all(
@@ -1059,43 +962,12 @@ export class SupabaseDatabaseManager {
         let officialsTotal = 0;
         let travelTotal = 0;
 
-        // Calculate totals for this competition
+        // Calculate totals for this competition using stored amounts
         for (const co of competitionOfficials) {
           const travelCost = (co.kilometers || 0) * travelCostPerKm;
-          const hours = co.hours || 0;
-
-          // Find the role and calculate base amount
-          const role = roles.find((r: any) => r.name === co.role);
-          let baseAmount = 0;
-
-          if (role && role.rates && Array.isArray(role.rates)) {
-            let matchedTier = null;
-
-            for (let i = 0; i < role.rates.length; i++) {
-              const tier = role.rates[i];
-
-              if (i === 0) {
-                if (hours <= tier.to) {
-                  matchedTier = tier;
-                  break;
-                }
-              } else if (tier.to === 999) {
-                if (hours > tier.from) {
-                  matchedTier = tier;
-                  break;
-                }
-              } else {
-                if (hours > tier.from && hours <= tier.to) {
-                  matchedTier = tier;
-                  break;
-                }
-              }
-            }
-
-            if (matchedTier) {
-              baseAmount = matchedTier.rate;
-            }
-          }
+          
+          // Use stored amount based on tariff type
+          const baseAmount = tariffType === 'invoice' ? co.znesek_racun : co.znesek_sodnik;
 
           officialsTotal += baseAmount;
           travelTotal += travelCost;
