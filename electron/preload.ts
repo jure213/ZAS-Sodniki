@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('api', {
     delete: (id: number) => ipcRenderer.invoke('official:delete', id),
     setActive: (id: number, active: number) => ipcRenderer.invoke('official:setActive', { id, active }),
     importExcel: () => ipcRenderer.invoke('official:importExcel'),
+    getHistory: (officialId: number) => ipcRenderer.invoke('official:getHistory', officialId),
   },
   // Competitions
   competitions: {

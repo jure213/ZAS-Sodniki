@@ -13,13 +13,13 @@ export async function renderPayments(container, user) {
         <div class="mt-2">
           <button id="apply-filters" class="btn btn-sm btn-outline-primary">Filtriraj</button>
           <button id="clear-filters" class="btn btn-sm btn-outline-secondary">Počisti</button>
-          <button id="export-filtered" class="btn btn-sm btn-success ms-2"><i class="bi bi-file-earmark-excel me-1"></i>Izvozi v Excel</button>
           <span id="filter-count" class="ms-3 text-muted small"></span>
         </div>
       </div>
     </div>
     <div class="d-flex justify-content-end align-items-center mb-2">
-      ${isAdmin ? '<button id="add-payment" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj izplačilo</button>' : ''}
+          <button id="export-filtered" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-excel me-1"></i>Izvozi v Excel</button>
+      ${isAdmin ? '<button id="add-payment" class="btn btn-primary btn-sm ms-2"><i class="bi bi-plus-circle me-1"></i> Dodaj izplačilo</button>' : ''}
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover">
@@ -32,17 +32,17 @@ export async function renderPayments(container, user) {
   let officials = [];
   let competitions = [];
   let currentFilteredPayments = []; // Store currently displayed payments
-  
+
   async function loadFilters() {
     officials = await window.api?.officials?.list() ?? [];
     competitions = await window.api?.competitions?.list() ?? [];
     const officialSelect = container.querySelector('#filter-official');
     const competitionSelect = container.querySelector('#filter-competition');
-    
+
     // Clear existing options (keep only the first "Vsi"/"Vsa" option)
     officialSelect.innerHTML = '<option value="">Vsi</option>';
     competitionSelect.innerHTML = '<option value="">Vsa</option>';
-    
+
     officials.forEach(o => {
       const opt = document.createElement('option');
       opt.value = o.id;
@@ -56,7 +56,7 @@ export async function renderPayments(container, user) {
       competitionSelect.appendChild(opt);
     });
   }
-  
+
   function formatPaymentMethod(method) {
     const methodMap = {
       'gotovina': 'Gotovina',
@@ -96,7 +96,7 @@ export async function renderPayments(container, user) {
         tbody.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-muted">Ni podatkov</td></tr>`;
       }
       container.querySelector('#filter-count').textContent = `Prikazujem ${list.length} rezultatov`;
-      
+
       if (isAdmin) {
         container.querySelectorAll('.delete-payment').forEach(btn => {
           btn.onclick = async () => {
@@ -112,7 +112,7 @@ export async function renderPayments(container, user) {
           btn.onclick = async () => {
             const id = parseInt(btn.dataset.id);
             const payment = list.find(p => p.id === id);
-            
+
             // Show dialog to ask for payment date and method
             const modal = document.createElement('div');
             modal.className = 'modal show d-block';
@@ -163,7 +163,7 @@ export async function renderPayments(container, user) {
               </div>
             `;
             document.body.appendChild(modal);
-            
+
             // Add event listener for partial payment checkbox
             const partialCheckbox = modal.querySelector('#partial-payment-checkbox');
             const partialAmountContainer = modal.querySelector('#partial-amount-container');
@@ -174,20 +174,20 @@ export async function renderPayments(container, user) {
                 partialAmountContainer.style.display = 'none';
               }
             });
-            
+
             modal.querySelectorAll('[data-dismiss="modal"]').forEach(closeBtn => {
               closeBtn.onclick = () => modal.remove();
             });
-            
+
             modal.querySelector('#confirm-paid').onclick = async () => {
               const datePaid = modal.querySelector('#date-paid-input').value;
               const method = modal.querySelector('#payment-method-input').value;
               const isPartial = modal.querySelector('#partial-payment-checkbox').checked;
               const partialAmount = isPartial ? parseFloat(modal.querySelector('#partial-amount-input').value) : null;
-              
-              await window.api?.payments?.markPaid({ 
-                id, 
-                datePaid, 
+
+              await window.api?.payments?.markPaid({
+                id,
+                datePaid,
                 method,
                 isPartial,
                 partialAmount
@@ -209,13 +209,13 @@ export async function renderPayments(container, user) {
       container.querySelector('#payments-body').innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-danger">Napaka: ${String(e)}</td></tr>`;
     }
   }
-  
+
   function showEditForm(payment = null) {
     // Clean up any existing modals first
     if (window.cleanupModals) {
       window.cleanupModals();
     }
-    
+
     const modal = document.createElement('div');
     modal.className = 'modal show d-block';
     modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
@@ -254,7 +254,7 @@ export async function renderPayments(container, user) {
       </div>
     `;
     document.body.appendChild(modal);
-    
+
     // Add event listener for status change to show/hide date_paid field
     const statusSelect = modal.querySelector('#f-status');
     const datePaidContainer = modal.querySelector('#date-paid-container');
@@ -265,7 +265,7 @@ export async function renderPayments(container, user) {
         datePaidContainer.style.display = 'none';
       }
     });
-    
+
     modal.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
       btn.onclick = () => {
         if (window.cleanupModals) {
@@ -273,7 +273,7 @@ export async function renderPayments(container, user) {
         }
       };
     });
-    
+
     modal.querySelector('#save-payment').onclick = async () => {
       const data = {
         official_id: parseInt(modal.querySelector('#f-official').value),
@@ -297,7 +297,7 @@ export async function renderPayments(container, user) {
       loadPayments();
     };
   }
-  
+
   container.querySelector('#apply-filters').onclick = () => {
     const filters = {};
     const officialId = container.querySelector('#filter-official').value;
@@ -312,7 +312,7 @@ export async function renderPayments(container, user) {
     if (dateTo) filters.dateTo = dateTo;
     loadPayments(filters);
   };
-  
+
   container.querySelector('#clear-filters').onclick = () => {
     container.querySelector('#filter-official').value = '';
     container.querySelector('#filter-competition').value = '';
@@ -321,20 +321,20 @@ export async function renderPayments(container, user) {
     container.querySelector('#filter-date-to').value = '';
     loadPayments();
   };
-  
+
   container.querySelector('#export-filtered').onclick = async () => {
     if (!currentFilteredPayments || currentFilteredPayments.length === 0) {
       alert('Ni podatkov za izvoz');
       return;
     }
-    
+
     try {
       const btn = container.querySelector('#export-filtered');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Izvažam...';
-      
+
       const result = await window.api?.payments?.exportToExcel(currentFilteredPayments);
-      
+
       if (result.ok) {
         // Show success notification
         const toast = document.createElement('div');
@@ -358,11 +358,11 @@ export async function renderPayments(container, user) {
       btn.innerHTML = '<i class="bi bi-file-earmark-excel me-1"></i>Izvozi v Excel';
     }
   };
-  
+
   if (isAdmin) {
     container.querySelector('#add-payment').onclick = () => showEditForm();
   }
-  
+
   await loadFilters();
   await loadPayments();
 }

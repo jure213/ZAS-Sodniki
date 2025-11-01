@@ -153,24 +153,8 @@ export async function renderOfficials(container, user) {
       window.cleanupModals();
     }
 
-    // Fetch competition history
-    const competitions = await window.api?.competitions?.list();
-    const competitionOfficials = await window.api?.competitions?.listAllOfficials();
-    const payments = await window.api?.payments?.list();
-
-    // Filter to get only this official's competitions
-    const officialCompetitions = competitionOfficials.filter(co => co.official_id === officialId);
-    
-    // Build history data
-    const history = officialCompetitions.map(co => {
-      const comp = competitions.find(c => c.id === co.competition_id);
-      const payment = payments.find(p => p.competition_id === co.competition_id && p.official_id === officialId);
-      return {
-        name: comp?.name || 'Neznana tekma',
-        date: comp?.date || 'Ni datuma',
-        amount: payment?.amount || 0
-      };
-    });
+    // Fetch competition history with correct calculated amounts
+    const history = await window.api?.officials?.getHistory(officialId);
 
     // Calculate total
     const total = history.reduce((sum, h) => sum + h.amount, 0);
@@ -199,7 +183,7 @@ export async function renderOfficials(container, user) {
                   ${history.map(h => `
                     <tr>
                       <td>${h.name}</td>
-                      <td>${h.date}</td>
+                      <td>${h.date ? window.formatDate(h.date) : 'Ni datuma'}</td>
                       <td style="text-align: right">${h.amount.toFixed(2)} €</td>
                     </tr>
                   `).join('')}
