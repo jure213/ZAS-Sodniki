@@ -144,49 +144,13 @@ export function setupOfficialHandlers(db: any) {
 
       // Get competitions
       const competitions = await db.listCompetitions();
-      
-      // Get settings for rate calculation
-      const appSettings = await db.getSetting('app_settings');
-      const roles = appSettings?.roles || [];
-      const travelCostPerKm = appSettings?.travelCostPerKm || 0.37;
 
-      // Build history with calculated amounts
+      // Build history using stored amounts
       const history = officialCompetitions.map((co: any) => {
         const comp = competitions.find((c: any) => c.id === co.competition_id);
         
-        // Calculate amount based on hours and role
-        const role = roles.find((r: any) => r.name === co.role);
-        let baseAmount = 0;
-
-        if (role && role.rates && Array.isArray(role.rates)) {
-          const hours = co.hours || 0;
-          
-          // Find matching tier
-          for (let i = 0; i < role.rates.length; i++) {
-            const tier = role.rates[i];
-            
-            if (i === 0) {
-              if (hours <= tier.to) {
-                baseAmount = tier.rate;
-                break;
-              }
-            } else if (tier.to === 999) {
-              if (hours > tier.from) {
-                baseAmount = tier.rate;
-                break;
-              }
-            } else {
-              if (hours > tier.from && hours <= tier.to) {
-                baseAmount = tier.rate;
-                break;
-              }
-            }
-          }
-        }
-
-        // Add travel costs
-        const travelCost = (co.kilometers || 0) * travelCostPerKm;
-        const totalAmount = baseAmount + travelCost;
+        // Use stored znesek_sodnik (original calculated amount)
+        const totalAmount = co.znesek_sodnik || 0;
 
         return {
           name: comp?.name || 'Neznana tekma',

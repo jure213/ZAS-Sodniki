@@ -23,12 +23,19 @@ function createWindow() {
     height: 900,
     minWidth: 1000,
     minHeight: 600,
+    show: false, // Don't show until ready
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
     title: 'ZAS Sodniki - Athletic Officials Payment Tracker',
+  });
+
+  // Maximize window when ready
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.maximize();
+    mainWindow?.show();
   });
 
   // Load the app

@@ -29,12 +29,12 @@ export function setupCompetitionHandlers(db: any) {
     return await db.listAllCompetitionOfficials();
   });
 
-  ipcMain.handle('competition:addOfficial', async (_event, data: { competition_id: number; official_id: number; role: string; hours: number; kilometers?: number; discipline?: string; notes?: string }) => {
+  ipcMain.handle('competition:addOfficial', async (_event, data: { competition_id: number; official_id: number; role: string; hours: number; kilometers?: number; discipline?: string; notes?: string; znesek_sodnik?: number; znesek_racun?: number }) => {
     const id = await db.addCompetitionOfficial(data);
     return { ok: id > 0, id };
   });
 
-  ipcMain.handle('competition:updateOfficial', async (_event, { id, data }: { id: number; data: { role: string; hours: number; kilometers?: number; discipline?: string; notes: string } }) => {
+  ipcMain.handle('competition:updateOfficial', async (_event, { id, data }: { id: number; data: { role: string; hours: number; kilometers?: number; discipline?: string; notes: string; znesek_sodnik?: number; znesek_racun?: number } }) => {
     const success = await db.updateCompetitionOfficial(id, data);
     return { ok: success };
   });

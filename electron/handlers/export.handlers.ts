@@ -346,9 +346,9 @@ export function setupExportHandlers(db: any) {
     }
   });
 
-  ipcMain.handle('export:getSummaryData', async (_event, competitionIds: number[]) => {
+  ipcMain.handle('export:getSummaryData', async (_event, competitionIds: number[], tariffType: string = 'official') => {
     try {
-      return await db.getCompetitionsSummaryData(competitionIds);
+      return await db.getCompetitionsSummaryData(competitionIds, tariffType);
     } catch (error: any) {
       console.error('Error getting summary data:', error);
       return [];
