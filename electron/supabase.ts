@@ -544,22 +544,23 @@ export class SupabaseDatabaseManager {
     const startOfYear = `${currentYear}-01-01`;
     const endOfYear = `${currentYear}-12-31`;
 
-    // Get paid payments for current year only
+    // Get paid payments for current year only (based on date_paid, not competition date)
+    // Use znesek_sodnik as the paid amount (original amount for sodnik tariff)
     const { data: paidPaymentsData } = await this.supabase
       .from("payments")
-      .select("amount")
+      .select("znesek_sodnik")
       .eq("status", "paid")
-      .gte("date", startOfYear)
-      .lte("date", endOfYear);
+      .gte("date_paid", startOfYear)
+      .lte("date_paid", endOfYear);
 
-    // Get owed payments for all time
+    // Get owed payments for all time (amount represents remaining debt)
     const { data: owedPaymentsData } = await this.supabase
       .from("payments")
       .select("amount")
       .eq("status", "owed");
 
     const paidPayments =
-      paidPaymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+      paidPaymentsData?.reduce((sum, p) => sum + (p.znesek_sodnik || 0), 0) || 0;
     const owedPayments =
       owedPaymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
 
