@@ -546,18 +546,22 @@ export class SupabaseDatabaseManager {
 
     // Get paid payments for current year only (based on date_paid, not competition date)
     // Use znesek_sodnik as the paid amount (original amount for sodnik tariff)
+    // Exclude zero payments (free/other_zas competitions)
     const { data: paidPaymentsData } = await this.supabase
       .from("payments")
       .select("znesek_sodnik")
       .eq("status", "paid")
       .gte("date_paid", startOfYear)
-      .lte("date_paid", endOfYear);
+      .lte("date_paid", endOfYear)
+      .neq("znesek_sodnik", 0);
 
     // Get owed payments for all time (amount represents remaining debt)
+    // Exclude zero payments (free/other_zas competitions)
     const { data: owedPaymentsData } = await this.supabase
       .from("payments")
       .select("amount")
-      .eq("status", "owed");
+      .eq("status", "owed")
+      .neq("znesek_sodnik", 0);
 
     const paidPayments =
       paidPaymentsData?.reduce((sum, p) => sum + (p.znesek_sodnik || 0), 0) || 0;
@@ -794,8 +798,9 @@ export class SupabaseDatabaseManager {
     const errors: string[] = [];
 
     for (const official of officials) {
-      // Check if we have stored amounts
-      if (!official.znesek_sodnik || !official.znesek_racun) {
+      // Check if we have stored amounts (allow 0 as valid value)
+      if (official.znesek_sodnik === null || official.znesek_sodnik === undefined || 
+          official.znesek_racun === null || official.znesek_racun === undefined) {
         errors.push(
           `Manjkajoči izračunani zneski za ${official.official_name}. Prosimo ponovno dodelite sodnika.`
         );

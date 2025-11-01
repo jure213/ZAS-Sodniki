@@ -13,6 +13,12 @@ export async function renderPayments(container, user) {
         <div class="mt-2">
           <button id="apply-filters" class="btn btn-sm btn-outline-primary">Filtriraj</button>
           <button id="clear-filters" class="btn btn-sm btn-outline-secondary">Počisti</button>
+          <div class="form-check form-check-inline ms-3">
+            <input class="form-check-input" type="checkbox" id="show-zero-payments" value="">
+            <label class="form-check-label" for="show-zero-payments">
+              Prikaži ničelna izplačila (brezplačne tekme)
+            </label>
+          </div>
           <span id="filter-count" class="ms-3 text-muted small"></span>
         </div>
       </div>
@@ -72,9 +78,19 @@ export async function renderPayments(container, user) {
   async function loadPayments(filters = {}) {
     try {
       const list = await window.api?.payments?.list(filters);
-      currentFilteredPayments = list; // Store for export
+      
+      // Check if we should hide zero payments (default: hide them)
+      const showZeroPayments = container.querySelector('#show-zero-payments')?.checked ?? false;
+      
+      // Filter out zero payments if checkbox is not checked
+      const displayList = showZeroPayments 
+        ? list 
+        : list.filter(p => (p.znesek_sodnik ?? 0) !== 0);
+      
+      currentFilteredPayments = list; // Store all for export (always include zero payments in exports)
+      
       const tbody = container.querySelector('#payments-body');
-      tbody.innerHTML = list
+      tbody.innerHTML = displayList
         .map(
           (p) => `<tr>
             <td>${p.official_name ?? ''}</td>
@@ -93,10 +109,15 @@ export async function renderPayments(container, user) {
           </tr>`
         )
         .join('');
-      if (!list || list.length === 0) {
+      if (!displayList || displayList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="${isAdmin ? 9 : 8}" class="text-muted">Ni podatkov</td></tr>`;
       }
-      container.querySelector('#filter-count').textContent = `Prikazujem ${list.length} rezultatov`;
+      
+      const hiddenCount = list.length - displayList.length;
+      const countText = hiddenCount > 0 
+        ? `Prikazujem ${displayList.length} rezultatov (${hiddenCount} skritih ničelnih izplačil)`
+        : `Prikazujem ${displayList.length} rezultatov`;
+      container.querySelector('#filter-count').textContent = countText;
 
       if (isAdmin) {
         container.querySelectorAll('.delete-payment').forEach(btn => {
@@ -321,6 +342,22 @@ export async function renderPayments(container, user) {
     container.querySelector('#filter-date-from').value = '';
     container.querySelector('#filter-date-to').value = '';
     loadPayments();
+  };
+
+  // Add event listener for the zero payments checkbox
+  container.querySelector('#show-zero-payments').onchange = () => {
+    const filters = {};
+    const officialId = container.querySelector('#filter-official').value;
+    const competitionId = container.querySelector('#filter-competition').value;
+    const status = container.querySelector('#filter-status').value;
+    const dateFrom = container.querySelector('#filter-date-from').value;
+    const dateTo = container.querySelector('#filter-date-to').value;
+    if (officialId) filters.officialId = parseInt(officialId);
+    if (competitionId) filters.competitionId = parseInt(competitionId);
+    if (status) filters.status = status;
+    if (dateFrom) filters.dateFrom = dateFrom;
+    if (dateTo) filters.dateTo = dateTo;
+    loadPayments(filters);
   };
 
   container.querySelector('#export-filtered').onclick = async () => {

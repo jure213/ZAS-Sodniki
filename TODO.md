@@ -51,3 +51,13 @@ dashboard - imena -->
 pregled sodnikov -> pravi zneski
 
 <!-- opombe pri sodnikih -->
+
+export predogled excel
+
+<!-- statusi:
+    zaključeno -> izvedeno
+    preklicano 
+    zastonj/drugi zas, načrtovano -> zneski default 0
+    načrtovano, zastonj, drugi zas -> odstrani gumb generiraj -->
+
+superreport

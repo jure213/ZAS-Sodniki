@@ -76,6 +76,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('export:generateCompetitionsSummary', competitionIds),
     getSummaryData: (competitionIds: number[]) =>
       ipcRenderer.invoke('export:getSummaryData', competitionIds),
+    generatePreviewReport: (competitionId: number, officials: any[]) =>
+      ipcRenderer.invoke('export:generatePreviewReport', competitionId, officials),
   },
 });
 

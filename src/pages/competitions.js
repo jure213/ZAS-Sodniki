@@ -15,7 +15,7 @@ export async function renderCompetitions(container, user) {
   // Helper function to format status badge
   function getStatusBadge(status) {
     const statusMap = {
-      'completed': { color: 'success', label: 'Zaključeno' },
+      'completed': { color: 'success', label: 'Izvedeno' },
       'planned': { color: 'warning', label: 'Načrtovano' },
       'cancelled': { color: 'danger', label: 'Preklicano' },
       'free': { color: 'success', label: 'Zastonj' },
@@ -113,7 +113,7 @@ export async function renderCompetitions(container, user) {
             <div class="mb-2"><label class="form-label">Lokacija</label><input id="f-location" class="form-control" value="${competition?.location ?? ''}"></div>
             <div class="mb-2"><label class="form-label">Status</label><select id="f-status" class="form-select">
               <option value="planned" ${competition?.status === 'planned' ? 'selected' : ''}>Načrtovano</option>
-              <option value="completed" ${competition?.status === 'completed' ? 'selected' : ''}>Zaključeno</option>
+              <option value="completed" ${competition?.status === 'completed' ? 'selected' : ''}>Izvedeno</option>
               <option value="cancelled" ${competition?.status === 'cancelled' ? 'selected' : ''}>Preklicano</option>
               <option value="free" ${competition?.status === 'free' ? 'selected' : ''}>Zastonj</option>
               <option value="other_zas" ${competition?.status === 'other_zas' ? 'selected' : ''}>Plača drugi ZAS</option>
@@ -177,7 +177,7 @@ export async function renderCompetitions(container, user) {
             <div class="mb-3">
               <button id="bulk-assign-officials" class="btn btn-sm btn-success"><i class="bi bi-people-fill me-1"></i> Dodaj sodnike</button>
               <button id="preview-payments" class="btn btn-sm btn-warning ms-2"><i class="bi bi-eye me-1"></i> Predogled izplačil</button>
-              <button id="generate-payments" class="btn btn-sm btn-primary ms-2"><i class="bi bi-cash me-1"></i> Generiraj izplačila</button>
+              ${competition.status !== 'planned' && competition.status !== 'cancelled' ? '<button id="generate-payments" class="btn btn-sm btn-primary ms-2"><i class="bi bi-cash me-1"></i> Generiraj izplačila</button>' : ''}
             </div>
             <div class="table-responsive">
               <table class="table table-sm">
@@ -247,20 +247,23 @@ export async function renderCompetitions(container, user) {
     
     modal.querySelector('#preview-payments').onclick = () => showPaymentPreview(competition);
     
-    modal.querySelector('#generate-payments').onclick = async () => {
-      const result = await window.api?.competitions?.generatePayments(competition.id);
-      if (result.ok) {
-        let message = `<strong>Izplačila generirana!</strong><br>Ustvarjenih: ${result.created}`;
-        if (result.errors && result.errors.length > 0) {
-          message += `<br><small>Opomba: ${result.errors.join(', ')}</small>`;
-          showNotificationInModal(modal, message, 'warning');
+    const generateBtn = modal.querySelector('#generate-payments');
+    if (generateBtn) {
+      generateBtn.onclick = async () => {
+        const result = await window.api?.competitions?.generatePayments(competition.id);
+        if (result.ok) {
+          let message = `<strong>Izplačila generirana!</strong><br>Ustvarjenih: ${result.created}`;
+          if (result.errors && result.errors.length > 0) {
+            message += `<br><small>Opomba: ${result.errors.join(', ')}</small>`;
+            showNotificationInModal(modal, message, 'warning');
+          } else {
+            showNotificationInModal(modal, message, 'success');
+          }
         } else {
-          showNotificationInModal(modal, message, 'success');
+          showNotificationInModal(modal, '<strong>Napaka pri generiranju izplačil</strong>', 'danger');
         }
-      } else {
-        showNotificationInModal(modal, '<strong>Napaka pri generiranju izplačil</strong>', 'danger');
-      }
-    };
+      };
+    }
 
     await loadCompOfficials();
   }
@@ -346,6 +349,13 @@ export async function renderCompetitions(container, user) {
       const roleName = subModal.querySelector('#f-role').value;
       const hours = parseFloat(subModal.querySelector('#f-hours').value) || 0;
       const kilometers = parseFloat(subModal.querySelector('#f-kilometers').value) || 0;
+      
+      // For 'free' or 'other_zas' status, set amounts to 0
+      if (competition.status === 'free' || competition.status === 'other_zas') {
+        subModal.querySelector('#f-znesek-sodnik').value = '0.00';
+        subModal.querySelector('#f-znesek-racun').value = '0.00';
+        return;
+      }
       
       const roleDefinition = roles.find(r => r.name === roleName);
       
@@ -634,6 +644,13 @@ export async function renderCompetitions(container, user) {
         const roleName = quickModal.querySelector('#quick-role').value;
         const hours = parseFloat(quickModal.querySelector('#quick-hours').value) || 0;
         const kilometers = parseFloat(quickModal.querySelector('#quick-kilometers').value) || 0;
+        
+        // For 'free' or 'other_zas' status, set amounts to 0
+        if (competition.status === 'free' || competition.status === 'other_zas') {
+          quickModal.querySelector('#quick-znesek-sodnik').value = '0.00';
+          quickModal.querySelector('#quick-znesek-racun').value = '0.00';
+          return;
+        }
         
         const roleDefinition = roles.find(r => r.name === roleName);
         
@@ -1048,83 +1065,20 @@ export async function renderCompetitions(container, user) {
 
   async function showPaymentPreview(competition) {
     const officials = await window.api?.competitions?.listOfficials(competition.id) ?? [];
-    const roles = await window.api?.settings?.getRoles() ?? [];
     
     if (officials.length === 0) {
       showNotificationInModal(document.querySelector('.modal'), '<strong>Info:</strong> Ni dodeljenih sodnikov za predogled', 'info');
       return;
     }
 
-    // Function to calculate amount with tier-based fixed rates
-    function calculateAmount(role, hours) {
-      if (!role) return 0;
-
-      // New tier-based fixed rate system (min < hours <= max)
-      if (role.rates && role.rates.length > 0) {
-        let matchedTier = null;
-        
-        for (const tier of role.rates) {
-          if (hours > tier.from && hours <= tier.to) {
-            matchedTier = tier;
-            break;
-          }
-          // Handle the last tier (8+ hours, where to=999)
-          if (hours > tier.from && tier.to === 999) {
-            matchedTier = tier;
-            break;
-          }
-        }
-        
-        return matchedTier ? matchedTier.rate : 0;
-      } 
-      // Backward compatibility - simple hourly rate
-      else if (role.hourlyRate) {
-        return role.hourlyRate * hours;
-      }
-      
-      return 0;
-    }
-
-    // Function to get rate breakdown text
-    function getRateBreakdown(role, hours) {
-      if (!role) return '-';
-
-      // New tier-based fixed rate system (min < hours <= max)
-      if (role.rates && role.rates.length > 0) {
-        let matchedTier = null;
-        
-        for (const tier of role.rates) {
-          if (hours > tier.from && hours <= tier.to) {
-            matchedTier = tier;
-            break;
-          }
-          if (hours > tier.from && tier.to === 999) {
-            matchedTier = tier;
-            break;
-          }
-        }
-        
-        if (matchedTier) {
-          const toDisplay = matchedTier.to === 999 ? '∞' : matchedTier.to;
-          return `${matchedTier.from}-${toDisplay}h = €${matchedTier.rate}`;
-        }
-        return '-';
-      }
-      // Backward compatibility
-      else if (role.hourlyRate) {
-        return `€${role.hourlyRate}/h`;
-      }
-      
-      return '-';
-    }
-
     const previewData = officials.map(o => {
-      const role = roles.find(r => r.name === o.role);
-      const amount = calculateAmount(role, o.hours);
-      const rateInfo = getRateBreakdown(role, o.hours);
+      // Use stored znesek_sodnik (already includes base amount + travel costs)
+      const totalAmount = o.znesek_sodnik || 0;
       const kilometers = o.kilometers || 0;
       const travelCost = kilometers * travelCostPerKm;
-      const totalAmount = amount + travelCost;
+      
+      // Base amount is total minus travel costs
+      const baseAmount = totalAmount - travelCost;
       
       return {
         officialName: o.official_name,
@@ -1132,10 +1086,9 @@ export async function renderCompetitions(container, user) {
         hours: o.hours,
         kilometers: kilometers,
         travelCost: travelCost,
-        rateInfo: rateInfo,
-        amount: amount,
+        amount: baseAmount,
         totalAmount: totalAmount,
-        hasRole: !!role
+        hasRole: true // We have stored amount, so it's valid
       };
     });
 
@@ -1156,37 +1109,35 @@ export async function renderCompetitions(container, user) {
           <div class="modal-body">
             ${hasErrors ? '<div class="alert alert-warning">⚠️ Nekatere vloge niso najdene v nastavitvah</div>' : ''}
             <div class="table-responsive">
-              <table class="table table-sm table-striped">
-                <thead class="text-center">
-                  <tr>
-                    <th>Sodnik</th>
-                    <th>Vloga</th>
-                    <th>Ure</th>
-                    <th>km</th>
-                    <th>Postavka</th>
-                    <th>Potni stroški</th>
-                    <th>Skupaj (€)</th>
+              <table class="table table-sm table-bordered">
+                <thead style="background-color: #f8f9fa;">
+                  <tr class="text-center">
+                    <th>SODNIK</th>
+                    <th>VLOGA</th>
+                    <th>URE</th>
+                    <th>KM</th>
+                    <th>POSTAVKA</th>
+                    <th>POTNI STROŠKI</th>
+                    <th>SKUPAJ (€)</th>
                   </tr>
                 </thead>
-                <tbody class="align-middle text-center">
+                <tbody>
                   ${previewData.map(item => `
-                    <tr ${!item.hasRole ? 'class="table-danger"' : ''}>
+                    <tr>
                       <td>${item.officialName}</td>
-                      <td>${item.role} ${!item.hasRole ? '<span class="badge bg-danger">Vloga ne obstaja</span>' : ''}</td>
-                      <td>${item.hours.toFixed(1)}</td>
-                      <td>${item.kilometers}</td>
-                      <td><small>${item.rateInfo}</small><br><small>€${item.amount.toFixed(2)}</small></td>
-                      <td><small>${item.kilometers}km × €${travelCostPerKm.toFixed(2)}</small><br><small>€${item.travelCost.toFixed(2)}</small></td>
-                      <td><strong>€${item.totalAmount.toFixed(2)}</strong></td>
+                      <td>${item.role}</td>
+                      <td class="text-center">${item.hours.toFixed(1)}</td>
+                      <td class="text-center">${item.kilometers}</td>
+                      <td class="text-center">€${item.amount.toFixed(2)}</td>
+                      <td class="text-center">${item.kilometers}km × €${travelCostPerKm.toFixed(2)}<br>€${item.travelCost.toFixed(2)}</td>
+                      <td class="text-center"><strong>€${item.totalAmount.toFixed(2)}</strong></td>
                     </tr>
                   `).join('')}
-                </tbody>
-                <tfoot>
-                  <tr class="table-primary">
-                    <th colspan="6" class="text-center">SKUPAJ:</th>
-                    <th class="text-center"><strong>€${totalAmount.toFixed(2)}</strong></th>
+                  <tr style="background-color: #cfe2ff;">
+                    <td colspan="6" class="text-center"><strong>SKUPAJ:</strong></td>
+                    <td class="text-center"><strong>€${totalAmount.toFixed(2)}</strong></td>
                   </tr>
-                </tfoot>
+                </tbody>
               </table>
             </div>
             <div class="mt-3">
@@ -1196,8 +1147,11 @@ export async function renderCompetitions(container, user) {
             </div>
           </div>
           <div class="modal-footer">
+            <button type="button" class="btn btn-success" id="export-preview-excel">
+              <i class="bi bi-file-earmark-excel me-1"></i>Izvozi v Excel
+            </button>
             <button type="button" class="btn btn-secondary" data-dismiss-sub="modal">Zapri</button>
-            ${!hasErrors ? '<button type="button" class="btn btn-primary" id="confirm-generate">Generiraj izplačila</button>' : ''}
+            ${!hasErrors && competition.status !== 'planned' && competition.status !== 'cancelled' ? '<button type="button" class="btn btn-primary" id="confirm-generate">Generiraj izplačila</button>' : ''}
           </div>
         </div>
       </div>
@@ -1207,6 +1161,35 @@ export async function renderCompetitions(container, user) {
     subModal.querySelectorAll('[data-dismiss-sub="modal"]').forEach(btn => {
       btn.onclick = () => subModal.remove();
     });
+
+    // Export to Excel handler
+    const exportBtn = subModal.querySelector('#export-preview-excel');
+    if (exportBtn) {
+      exportBtn.onclick = async () => {
+        try {
+          exportBtn.disabled = true;
+          exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Izvažam...';
+
+          const result = await window.api?.exports?.generatePreviewReport(competition.id, officials);
+
+          if (result.ok) {
+            exportBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Izvoženo!';
+            setTimeout(() => {
+              exportBtn.disabled = false;
+              exportBtn.innerHTML = '<i class="bi bi-file-earmark-excel me-1"></i>Izvozi v Excel';
+            }, 2000);
+          } else {
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = '<i class="bi bi-file-earmark-excel me-1"></i>Izvozi v Excel';
+            alert('Napaka pri izvozu: ' + (result.message || 'Neznana napaka'));
+          }
+        } catch (error) {
+          exportBtn.disabled = false;
+          exportBtn.innerHTML = '<i class="bi bi-file-earmark-excel me-1"></i>Izvozi v Excel';
+          alert('Napaka pri izvozu: ' + error);
+        }
+      };
+    }
 
     const confirmBtn = subModal.querySelector('#confirm-generate');
     if (confirmBtn) {

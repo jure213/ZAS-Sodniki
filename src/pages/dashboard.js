@@ -78,8 +78,11 @@ export async function renderDashboard(container) {
     const payments = await window.api?.payments?.list({ status: "owed" });
     const tbody = document.getElementById("unpaid-payments");
     if (payments?.length) {
+      // Filter out zero payments (free/other_zas competitions)
+      const nonZeroPayments = payments.filter(p => (p.znesek_sodnik ?? 0) !== 0);
+      
       // Group payments by official and sum amounts
-      const groupedPayments = payments.reduce((acc, p) => {
+      const groupedPayments = nonZeroPayments.reduce((acc, p) => {
         const officialName = p.official_name || "N/A";
         if (!acc[officialName]) {
           acc[officialName] = 0;
