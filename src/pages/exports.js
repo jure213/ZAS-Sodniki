@@ -125,7 +125,7 @@ export async function renderExports(container, { user }) {
     container.querySelectorAll('input[name="exportType"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             currentExportType = e.target.value;
-            
+
             if (currentExportType === 'single') {
                 singleSection.style.display = 'block';
                 summarySection.style.display = 'none';
@@ -179,7 +179,7 @@ export async function renderExports(container, { user }) {
     container.querySelector('#select-all-competitions').addEventListener('click', () => {
         const checkboxes = container.querySelectorAll('#competitions-checklist input[type="checkbox"]');
         const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        
+
         checkboxes.forEach(cb => cb.checked = !allChecked);
         checkSummarySelection();
     });
@@ -216,7 +216,7 @@ export async function renderExports(container, { user }) {
 
     function loadCompetitionsChecklist() {
         const checklist = container.querySelector('#competitions-checklist');
-        
+
         if (!allCompetitions || allCompetitions.length === 0) {
             checklist.innerHTML = '<div class="text-muted">Ni tekem</div>';
             return;
@@ -262,6 +262,17 @@ export async function renderExports(container, { user }) {
                 return;
             }
 
+            // Calculate totals
+            let totalOfficials = 0;
+            let totalTravel = 0;
+            let grandTotal = 0;
+
+            reportData.forEach(row => {
+                totalOfficials += (row.amount - row.travelCost);
+                totalTravel += row.travelCost;
+                grandTotal += row.amount;
+            });
+
             // Build single competition preview table
             previewTable.innerHTML = `
                 <thead class="table-light">
@@ -290,6 +301,14 @@ export async function renderExports(container, { user }) {
                         </tr>
                     `).join('')}
                 </tbody>
+                <tfoot class="table-secondary fw-bold">
+                    <tr>
+                        <td colspan="5" class="text-end">SKUPAJ:</td>
+                        <td class="text-center">${totalOfficials.toFixed(2)} €</td>
+                        <td class="text-center">${totalTravel.toFixed(2)} €</td>
+                        <td class="text-center">${grandTotal.toFixed(2)} €</td>
+                    </tr>
+                </tfoot>
             `;
 
             previewContainer.style.display = 'block';
@@ -301,10 +320,10 @@ export async function renderExports(container, { user }) {
     async function loadSummaryPreview(competitionIds) {
         try {
             const tariffType = container.querySelector('input[name="summaryTariffType"]:checked')?.value || 'official';
-            
+
             // Get competition details
             const competitions = allCompetitions.filter(c => competitionIds.includes(c.id));
-            
+
             if (!competitions || competitions.length === 0) {
                 previewContainer.style.display = 'none';
                 return;
@@ -312,19 +331,19 @@ export async function renderExports(container, { user }) {
 
             // For each competition, get report data and calculate totals
             const summaryData = [];
-            
+
             for (const comp of competitions) {
                 const reportData = await window.api?.competitions?.getReportData(comp.id, tariffType);
-                
+
                 if (reportData && reportData.length > 0) {
                     let officialsTotal = 0;
                     let travelTotal = 0;
-                    
+
                     reportData.forEach(row => {
                         officialsTotal += (row.amount - row.travelCost); // Base amount without travel
                         travelTotal += row.travelCost;
                     });
-                    
+
                     summaryData.push({
                         id: comp.id,
                         name: comp.name,
@@ -367,7 +386,7 @@ export async function renderExports(container, { user }) {
                 <tbody>
                     ${summaryData.map(row => `
                         <tr>
-                            <td>${row.name}</td>
+                            <td class="text-center">${row.name}</td>
                             <td class="text-center">${window.formatDate(row.date)}</td>
                             <td class="text-center">${row.location}</td>
                             <td class="text-center">${row.officialsTotal.toFixed(2)} €</td>

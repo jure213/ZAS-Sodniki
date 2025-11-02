@@ -1,6 +1,6 @@
 export async function renderCompetitions(container, user) {
   const isAdmin = user?.role === 'admin';
-  
+
   // Get travel cost per km from settings
   let travelCostPerKm = 0.37; // Default value
   try {
@@ -11,7 +11,7 @@ export async function renderCompetitions(container, user) {
   } catch (e) {
     console.error('Failed to load travel cost setting:', e);
   }
-  
+
   // Helper function to format status badge
   function getStatusBadge(status) {
     const statusMap = {
@@ -24,10 +24,20 @@ export async function renderCompetitions(container, user) {
     const statusInfo = statusMap[status] || { color: 'secondary', label: status };
     return `<span class="badge bg-${statusInfo.color}">${statusInfo.label}</span>`;
   }
-  
+
   container.innerHTML = `
-    <div class="d-flex justify-content-end align-items-center mb-2">
-      ${isAdmin ? '<button id="add-competition" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj tekmovanje</button>' : ''}
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div>
+        <input type="text" 
+               id="search-competitions" 
+               class="form-control" 
+               placeholder="🔍 Išči po imenu, lokaciji..."
+               style="min-width: 300px">
+      </div>
+      <div>
+        <button id="export-competitions-excel" class="btn btn-success btn-sm me-2"><i class="bi bi-file-earmark-excel me-1"></i> Izvozi v Excel</button>
+        ${isAdmin ? '<button id="add-competition" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj tekmovanje</button>' : ''}
+      </div>
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover">
@@ -35,68 +45,83 @@ export async function renderCompetitions(container, user) {
         <tbody id="competitions-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 5 : 4}">Nalagam…</td></tr></tbody>
       </table>
     </div>
+    <div id="search-results-info" class="text-muted small mt-2"></div>
   `;
-  
+
+  let allCompetitions = []; // Store all competitions for filtering
+
   async function loadCompetitions() {
     try {
-      const list = await window.api?.competitions?.list();
-      const tbody = container.querySelector('#competitions-body');
-      tbody.innerHTML = list
-        .map(
-          (c) => `<tr>
-            <td>${c.name ?? ''}</td>
-            <td>${window.formatDate(c.date)}</td>
-            <td>${c.location ?? ''}</td>
-            <td>${getStatusBadge(c.status)}</td>
-            ${isAdmin ? `<td>
-              <button class="btn btn-sm btn-outline-dark manage-officials" data-id="${c.id}" title="Dodeli sodnike"><i class="bi bi-people"></i></button>
-              <button class="btn btn-sm btn-outline-primary edit-competition" data-id="${c.id}"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-sm btn-outline-danger delete-competition" data-id="${c.id}"><i class="bi bi-trash"></i></button>
-            </td>` : ''}
-          </tr>`
-        )
-        .join('');
-      if (!list || list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${isAdmin ? 5 : 4}" class="text-muted">Ni podatkov</td></tr>`;
-      }
-      
-      if (isAdmin) {
-        container.querySelectorAll('.delete-competition').forEach(btn => {
-          btn.onclick = async () => {
-            const id = parseInt(btn.dataset.id);
-            const confirmed = await window.confirmDialog('Ali ste prepričani, da želite izbrisati to tekmovanje?', 'Izbriši tekmovanje');
-            if (confirmed) {
-              await window.api?.competitions?.delete(id);
-              loadCompetitions();
-            }
-          };
-        });
-        container.querySelectorAll('.edit-competition').forEach(btn => {
-          btn.onclick = () => {
-            const id = parseInt(btn.dataset.id);
-            const competition = list.find(c => c.id === id);
-            if (competition) showEditForm(competition);
-          };
-        });
-        container.querySelectorAll('.manage-officials').forEach(btn => {
-          btn.onclick = () => {
-            const id = parseInt(btn.dataset.id);
-            const competition = list.find(c => c.id === id);
-            if (competition) showManageOfficials(competition);
-          };
-        });
-      }
+      allCompetitions = await window.api?.competitions?.list();
+      renderCompetitionsList(allCompetitions);
     } catch (e) {
       container.querySelector('#competitions-body').innerHTML = `<tr><td colspan="${isAdmin ? 5 : 4}" class="text-danger">Napaka: ${String(e)}</td></tr>`;
     }
   }
-  
+
+  function renderCompetitionsList(list) {
+    const tbody = container.querySelector('#competitions-body');
+    tbody.innerHTML = list
+      .map(
+        (c) => `<tr>
+          <td>${c.name ?? ''}</td>
+          <td>${window.formatDate(c.date)}</td>
+          <td>${c.location ?? ''}</td>
+          <td>${getStatusBadge(c.status)}</td>
+          ${isAdmin ? `<td>
+            <button class="btn btn-sm btn-outline-dark manage-officials" data-id="${c.id}" title="Dodeli sodnike"><i class="bi bi-people"></i></button>
+            <button class="btn btn-sm btn-outline-primary edit-competition" data-id="${c.id}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger delete-competition" data-id="${c.id}"><i class="bi bi-trash"></i></button>
+          </td>` : ''}
+        </tr>`
+      )
+      .join('');
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="${isAdmin ? 5 : 4}" class="text-muted">Ni podatkov</td></tr>`;
+    }
+
+    // Update search results info
+    const searchInfo = container.querySelector('#search-results-info');
+    if (list.length !== allCompetitions.length) {
+      searchInfo.textContent = `Prikazujem ${list.length} od ${allCompetitions.length} tekmovanj`;
+    } else {
+      searchInfo.textContent = `Prikazujem ${list.length} tekmovanj`;
+    }
+
+    if (isAdmin) {
+      container.querySelectorAll('.delete-competition').forEach(btn => {
+        btn.onclick = async () => {
+          const id = parseInt(btn.dataset.id);
+          const confirmed = await window.confirmDialog('Ali ste prepričani, da želite izbrisati to tekmovanje?', 'Izbriši tekmovanje');
+          if (confirmed) {
+            await window.api?.competitions?.delete(id);
+            loadCompetitions();
+          }
+        };
+      });
+      container.querySelectorAll('.edit-competition').forEach(btn => {
+        btn.onclick = () => {
+          const id = parseInt(btn.dataset.id);
+          const competition = list.find(c => c.id === id);
+          if (competition) showEditForm(competition);
+        };
+      });
+      container.querySelectorAll('.manage-officials').forEach(btn => {
+        btn.onclick = () => {
+          const id = parseInt(btn.dataset.id);
+          const competition = list.find(c => c.id === id);
+          if (competition) showManageOfficials(competition);
+        };
+      });
+    }
+  }
+
   function showEditForm(competition = null) {
     // Clean up any existing modals first
     if (window.cleanupModals) {
       window.cleanupModals();
     }
-    
+
     const modal = document.createElement('div');
     modal.className = 'modal show d-block';
     modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
@@ -128,7 +153,7 @@ export async function renderCompetitions(container, user) {
       </div>
     `;
     document.body.appendChild(modal);
-    
+
     modal.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
       btn.onclick = () => {
         if (window.cleanupModals) {
@@ -136,7 +161,7 @@ export async function renderCompetitions(container, user) {
         }
       };
     });
-    
+
     modal.querySelector('#save-competition').onclick = async () => {
       const data = {
         name: modal.querySelector('#f-name').value,
@@ -157,7 +182,7 @@ export async function renderCompetitions(container, user) {
       loadCompetitions();
     };
   }
-  
+
   async function showManageOfficials(competition) {
     if (window.cleanupModals) {
       window.cleanupModals();
@@ -244,9 +269,9 @@ export async function renderCompetitions(container, user) {
     }
 
     modal.querySelector('#bulk-assign-officials').onclick = () => showBulkAssign(competition);
-    
+
     modal.querySelector('#preview-payments').onclick = () => showPaymentPreview(competition);
-    
+
     const generateBtn = modal.querySelector('#generate-payments');
     if (generateBtn) {
       generateBtn.onclick = async () => {
@@ -271,6 +296,7 @@ export async function renderCompetitions(container, user) {
   async function showEditCompOfficial(competition, compOfficial = null) {
     const allOfficials = await window.api?.officials?.list() ?? [];
     const roles = await window.api?.settings?.getRoles() ?? [];
+    const disciplines = await window.api?.settings?.getDisciplines() ?? [];
 
     // Function to format role label
     function formatRoleLabel(role) {
@@ -303,21 +329,7 @@ export async function renderCompetitions(container, user) {
             </select></div>
             <div class="mb-2"><label class="form-label">Disciplina</label><select id="f-discipline" class="form-select">
               <option value="">-- Izberi disciplino --</option>
-                    <option value="Prijavnica" ${compOfficial?.discipline === 'Prijavnica' ? 'selected' : ''}>Prijavnica</option>
-                    <option value="Štart" ${compOfficial?.discipline === 'Štart' ? 'selected' : ''}>Štart</option>
-                    <option value="Cilj" ${compOfficial?.discipline === 'Cilj' ? 'selected' : ''}>Cilj</option>
-                    <option value="Steza" ${compOfficial?.discipline === 'Steza' ? 'selected' : ''}>Steza</option>
-                    <option value="Palica" ${compOfficial?.discipline === 'Palica' ? 'selected' : ''}>Palica</option>
-                    <option value="Višina" ${compOfficial?.discipline === 'Višina' ? 'selected' : ''}>Višina</option>
-                    <option value="Daljina" ${compOfficial?.discipline === 'Daljina' ? 'selected' : ''}>Daljina</option>
-                    <option value="Troskok" ${compOfficial?.discipline === 'Troskok' ? 'selected' : ''}>Troskok</option>
-                    <option value="Krogla" ${compOfficial?.discipline === 'Krogla' ? 'selected' : ''}>Krogla</option>
-                    <option value="Disk" ${compOfficial?.discipline === 'Disk' ? 'selected' : ''}>Disk</option>
-                    <option value="Kopje" ${compOfficial?.discipline === 'Kopje' ? 'selected' : ''}>Kopje</option>
-                    <option value="Kladivo" ${compOfficial?.discipline === 'Kladivo' ? 'selected' : ''}>Kladivo</option>
-                    <option value="Timing" ${compOfficial?.discipline === 'Timing' ? 'selected' : ''}>Timing</option>
-                    <option value="1 - Daljinski skoki" ${compOfficial?.discipline === '1 - Daljinski skoki' ? 'selected' : ''}>1 - Daljinski skoki</option>
-                    <option value="2 - Meti" ${compOfficial?.discipline === '2 - Meti' ? 'selected' : ''}>2 - Meti</option>
+              ${disciplines.map(d => `<option value="${d}" ${compOfficial?.discipline === d ? 'selected' : ''}>${d}</option>`).join('')}
             </select></div>
             <div class="mb-2"><label class="form-label">Število ur</label><input type="number" step="0.5" id="f-hours" class="form-control" value="${compOfficial?.hours ?? '4'}"></div>
             <div class="mb-2"><label class="form-label">Kilometri (potni stroški: €${travelCostPerKm.toFixed(2)}/km)</label><input type="number" step="1" min="0" id="f-kilometers" class="form-control" value="${compOfficial?.kilometers ?? '0'}"></div>
@@ -349,16 +361,16 @@ export async function renderCompetitions(container, user) {
       const roleName = subModal.querySelector('#f-role').value;
       const hours = parseFloat(subModal.querySelector('#f-hours').value) || 0;
       const kilometers = parseFloat(subModal.querySelector('#f-kilometers').value) || 0;
-      
+
       // For 'free' or 'other_zas' status, set amounts to 0
       if (competition.status === 'free' || competition.status === 'other_zas') {
         subModal.querySelector('#f-znesek-sodnik').value = '0.00';
         subModal.querySelector('#f-znesek-racun').value = '0.00';
         return;
       }
-      
+
       const roleDefinition = roles.find(r => r.name === roleName);
-      
+
       // Calculate base amount (sodnik tariff)
       let baseSodnikAmount = 0;
       if (roleDefinition) {
@@ -375,7 +387,7 @@ export async function renderCompetitions(container, user) {
           baseSodnikAmount = roleDefinition.hourlyRate * hours;
         }
       }
-      
+
       // Calculate base amount for invoice (račun tariff)
       let baseRacunAmount = 0;
       if (roleDefinition) {
@@ -400,14 +412,14 @@ export async function renderCompetitions(container, user) {
           baseRacunAmount = roleDefinition.hourlyRate * hours;
         }
       }
-      
+
       // Calculate travel costs
       const travelCost = kilometers * travelCostPerKm;
-      
+
       // Calculate both amounts
       const znesek_sodnik = baseSodnikAmount + travelCost;
       const znesek_racun = baseRacunAmount + travelCost;
-      
+
       // Update input fields
       subModal.querySelector('#f-znesek-sodnik').value = znesek_sodnik.toFixed(2);
       subModal.querySelector('#f-znesek-racun').value = znesek_racun.toFixed(2);
@@ -429,13 +441,13 @@ export async function renderCompetitions(container, user) {
 
     subModal.querySelector('#save-comp-official').onclick = async () => {
       const discipline = subModal.querySelector('#f-discipline').value;
-      
+
       // Validate that discipline is selected
       if (!discipline || discipline === '') {
         // Remove any existing alerts
         const existingAlert = subModal.querySelector('.validation-alert');
         if (existingAlert) existingAlert.remove();
-        
+
         // Create Bootstrap alert
         const alertDiv = document.createElement('div');
         alertDiv.className = 'alert alert-warning alert-dismissible fade show validation-alert';
@@ -444,28 +456,28 @@ export async function renderCompetitions(container, user) {
           Prosim izberite disciplino!
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
-        
+
         // Insert alert at the top of modal body
         const modalBody = subModal.querySelector('.modal-body');
         modalBody.insertBefore(alertDiv, modalBody.firstChild);
-        
+
         // Focus on discipline dropdown
         subModal.querySelector('#f-discipline').focus();
-        
+
         // Auto-remove after 5 seconds
         setTimeout(() => {
           if (alertDiv.parentNode) {
             alertDiv.remove();
           }
         }, 5000);
-        
+
         return;
       }
 
       const roleName = subModal.querySelector('#f-role').value;
       const hours = parseFloat(subModal.querySelector('#f-hours').value);
       const kilometers = parseFloat(subModal.querySelector('#f-kilometers').value) || 0;
-      
+
       // Read the amounts from the input fields (user may have edited them)
       const znesek_sodnik = parseFloat(subModal.querySelector('#f-znesek-sodnik').value) || 0;
       const znesek_racun = parseFloat(subModal.querySelector('#f-znesek-racun').value) || 0;
@@ -489,7 +501,7 @@ export async function renderCompetitions(container, user) {
           ...data
         });
       }
-      
+
       subModal.remove();
       showManageOfficials(competition);
     };
@@ -498,6 +510,7 @@ export async function renderCompetitions(container, user) {
   async function showBulkAssign(competition) {
     const allOfficials = await window.api?.officials?.list() ?? [];
     const roles = await window.api?.settings?.getRoles() ?? [];
+    const disciplines = await window.api?.settings?.getDisciplines() ?? [];
     const assignedOfficials = await window.api?.competitions?.listOfficials(competition.id) ?? [];
     const assignedIds = new Set(assignedOfficials.map(o => o.official_id));
 
@@ -593,21 +606,7 @@ export async function renderCompetitions(container, user) {
                 <label class="form-label">Disciplina</label>
                 <select id="quick-discipline" class="form-select">
                   <option value="">-- Izberi disciplino --</option>
-                  <option value="Prijavnica">Prijavnica</option>
-                  <option value="Štart">Štart</option>
-                  <option value="Cilj">Cilj</option>
-                  <option value="Steza">Steza</option>
-                  <option value="Palica">Palica</option>
-                  <option value="Višina">Višina</option>
-                  <option value="Daljina">Daljina</option>
-                  <option value="Troskok">Troskok</option>
-                  <option value="Krogla">Krogla</option>
-                  <option value="Disk">Disk</option>
-                  <option value="Kopje">Kopje</option>
-                  <option value="Kladivo">Kladivo</option>
-                  <option value="Timing">Timing</option>
-                  <option value="1 - Daljinski skoki">1 - Daljinski skoki</option>
-                  <option value="2 - Meti">2 - Meti</option>
+                  ${disciplines.map(d => `<option value="${d}">${d}</option>`).join('')}
                 </select>
               </div>
               <div class="mb-2">
@@ -644,16 +643,16 @@ export async function renderCompetitions(container, user) {
         const roleName = quickModal.querySelector('#quick-role').value;
         const hours = parseFloat(quickModal.querySelector('#quick-hours').value) || 0;
         const kilometers = parseFloat(quickModal.querySelector('#quick-kilometers').value) || 0;
-        
+
         // For 'free' or 'other_zas' status, set amounts to 0
         if (competition.status === 'free' || competition.status === 'other_zas') {
           quickModal.querySelector('#quick-znesek-sodnik').value = '0.00';
           quickModal.querySelector('#quick-znesek-racun').value = '0.00';
           return;
         }
-        
+
         const roleDefinition = roles.find(r => r.name === roleName);
-        
+
         // Calculate base amount (sodnik tariff)
         let baseSodnikAmount = 0;
         if (roleDefinition) {
@@ -670,7 +669,7 @@ export async function renderCompetitions(container, user) {
             baseSodnikAmount = roleDefinition.hourlyRate * hours;
           }
         }
-        
+
         // Calculate base amount for invoice (račun tariff)
         let baseRacunAmount = 0;
         if (roleDefinition) {
@@ -695,14 +694,14 @@ export async function renderCompetitions(container, user) {
             baseRacunAmount = roleDefinition.hourlyRate * hours;
           }
         }
-        
+
         // Calculate travel costs
         const travelCost = kilometers * travelCostPerKm;
-        
+
         // Calculate both amounts
         const znesek_sodnik = baseSodnikAmount + travelCost;
         const znesek_racun = baseRacunAmount + travelCost;
-        
+
         // Update input fields
         quickModal.querySelector('#quick-znesek-sodnik').value = znesek_sodnik.toFixed(2);
         quickModal.querySelector('#quick-znesek-racun').value = znesek_racun.toFixed(2);
@@ -736,7 +735,7 @@ export async function renderCompetitions(container, user) {
           // Remove any existing alerts
           const existingAlert = quickModal.querySelector('.validation-alert');
           if (existingAlert) existingAlert.remove();
-          
+
           // Create Bootstrap alert
           const alertDiv = document.createElement('div');
           alertDiv.className = 'alert alert-warning alert-dismissible fade show validation-alert';
@@ -745,21 +744,21 @@ export async function renderCompetitions(container, user) {
             Prosim izberite disciplino!
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
           `;
-          
+
           // Insert alert at the top of modal body
           const modalBody = quickModal.querySelector('.modal-body');
           modalBody.insertBefore(alertDiv, modalBody.firstChild);
-          
+
           // Focus on discipline dropdown
           quickModal.querySelector('#quick-discipline').focus();
-          
+
           // Auto-remove after 5 seconds
           setTimeout(() => {
             if (alertDiv.parentNode) {
               alertDiv.remove();
             }
           }, 5000);
-          
+
           return;
         }
 
@@ -806,7 +805,7 @@ export async function renderCompetitions(container, user) {
 
     function updateAvailableDisplay() {
       const availableOfficials = allOfficials.filter(o => !assignedIds.has(o.id) && o.active && !selectedOfficials.has(o.id));
-      
+
       if (availableOfficials.length === 0) {
         availableContainer.innerHTML = '<p class="text-muted">Vsi aktivni sodniki so že dodeljeni ali izbrani</p>';
       } else {
@@ -824,7 +823,7 @@ export async function renderCompetitions(container, user) {
           btn.onclick = () => {
             const id = parseInt(btn.dataset.id);
             const name = btn.dataset.name;
-            
+
             if (!selectedOfficials.has(id)) {
               // Show quick popup for role and hours selection
               showQuickAssignPopup(id, name);
@@ -854,7 +853,7 @@ export async function renderCompetitions(container, user) {
       } else {
         emptyMessage.style.display = 'none';
         saveBtn.disabled = false;
-        
+
         selectedContainer.innerHTML = Array.from(selectedOfficials.entries()).map(([id, data]) => `
           <div class="card mb-1" data-card-id="${id}" style="font-size: 0.85rem;">
             <div class="card-body p-2">
@@ -977,7 +976,7 @@ export async function renderCompetitions(container, user) {
       const roleDefinition = roles.find(r => r.name === data.role);
       const hours = data.hours || 0;
       const kilometers = data.kilometers || 0;
-      
+
       // Calculate base amount (sodnik tariff)
       let baseSodnikAmount = 0;
       if (roleDefinition) {
@@ -992,7 +991,7 @@ export async function renderCompetitions(container, user) {
           baseSodnikAmount = roleDefinition.hourlyRate * hours;
         }
       }
-      
+
       // Calculate base amount for invoice (račun tariff)
       let baseRacunAmount = 0;
       if (roleDefinition) {
@@ -1014,10 +1013,10 @@ export async function renderCompetitions(container, user) {
           baseRacunAmount = roleDefinition.hourlyRate * hours;
         }
       }
-      
+
       // Calculate travel costs
       const travelCost = kilometers * travelCostPerKm;
-      
+
       // Update amounts in data object
       data.znesek_sodnik = baseSodnikAmount + travelCost;
       data.znesek_racun = baseRacunAmount + travelCost;
@@ -1065,7 +1064,7 @@ export async function renderCompetitions(container, user) {
 
   async function showPaymentPreview(competition) {
     const officials = await window.api?.competitions?.listOfficials(competition.id) ?? [];
-    
+
     if (officials.length === 0) {
       showNotificationInModal(document.querySelector('.modal'), '<strong>Info:</strong> Ni dodeljenih sodnikov za predogled', 'info');
       return;
@@ -1076,10 +1075,10 @@ export async function renderCompetitions(container, user) {
       const totalAmount = o.znesek_sodnik || 0;
       const kilometers = o.kilometers || 0;
       const travelCost = kilometers * travelCostPerKm;
-      
+
       // Base amount is total minus travel costs
       const baseAmount = totalAmount - travelCost;
-      
+
       return {
         officialName: o.official_name,
         role: o.role,
@@ -1196,7 +1195,7 @@ export async function renderCompetitions(container, user) {
       confirmBtn.onclick = async () => {
         const result = await window.api?.competitions?.generatePayments(competition.id);
         subModal.remove();
-        
+
         if (result.ok) {
           let message = `<strong>Izplačila generirana!</strong><br>Ustvarjenih: ${result.created}`;
           if (result.errors && result.errors.length > 0) {
@@ -1215,7 +1214,7 @@ export async function renderCompetitions(container, user) {
   function showNotificationInModal(modal, message, type = 'info') {
     const existing = modal.querySelector('.modal-notification');
     if (existing) existing.remove();
-    
+
     const notification = document.createElement('div');
     notification.className = `alert alert-${type} alert-dismissible fade show modal-notification`;
     notification.style.margin = '10px';
@@ -1223,10 +1222,10 @@ export async function renderCompetitions(container, user) {
       ${message}
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
+
     const modalBody = modal.querySelector('.modal-body');
     modalBody.insertBefore(notification, modalBody.firstChild);
-    
+
     setTimeout(() => {
       if (notification.parentNode) {
         notification.remove();
@@ -1237,6 +1236,68 @@ export async function renderCompetitions(container, user) {
   if (isAdmin) {
     container.querySelector('#add-competition').onclick = () => showEditForm();
   }
-  
+
+  // Export button (available for all users)
+  container.querySelector('#export-competitions-excel').onclick = async () => {
+    try {
+      await window.api?.competitions?.exportExcel();
+
+      // Show notification
+      const notification = document.createElement('div');
+      notification.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+      notification.style.zIndex = '9999';
+      notification.innerHTML = `
+        <strong>Izvoz uspešen!</strong> Seznam tekmovanj je bil izvožen.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 5000);
+    } catch (e) {
+      const notification = document.createElement('div');
+      notification.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+      notification.style.zIndex = '9999';
+      notification.innerHTML = `
+        <strong>Napaka pri izvozu:</strong> ${String(e)}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 5000);
+    }
+  };
+
+  // Search functionality
+  const searchInput = container.querySelector('#search-competitions');
+  searchInput.addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase().trim();
+    
+    if (!searchTerm) {
+      // Show all competitions if search is empty
+      renderCompetitionsList(allCompetitions);
+      return;
+    }
+
+    // Filter competitions by search term
+    const filtered = allCompetitions.filter(competition => {
+      return (
+        (competition.name || '').toLowerCase().includes(searchTerm) ||
+        (competition.location || '').toLowerCase().includes(searchTerm) ||
+        (competition.status || '').toLowerCase().includes(searchTerm) ||
+        window.formatDate(competition.date).toLowerCase().includes(searchTerm)
+      );
+    });
+
+    renderCompetitionsList(filtered);
+  });
+
   await loadCompetitions();
 }

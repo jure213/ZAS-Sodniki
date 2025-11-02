@@ -77,6 +77,25 @@ export async function renderSettings(container, user) {
       </table>
     </div>
     
+    <div class="mt-5">
+      <div class="d-flex justify-content-end align-items-center mb-2">
+        <button id="add-discipline" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj disciplino</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead class="text-center">
+            <tr>
+              <th>DISCIPLINA</th>
+              <th>AKCIJE</th>
+            </tr>
+          </thead>
+          <tbody id="disciplines-body" class="align-middle text-center">
+            <tr><td colspan="2">Nalagam…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
     <div class="mt-4">
     
     <div class="card border-danger">
@@ -703,5 +722,202 @@ export async function renderSettings(container, user) {
     };
   };
 
+  // Load disciplines
+  async function loadDisciplines() {
+    try {
+      const disciplines = (await window.api?.settings?.getDisciplines()) ?? [];
+      const disciplinesBody = settingsContent.querySelector("#disciplines-body");
+
+      if (disciplines.length === 0) {
+        disciplinesBody.innerHTML = '<tr><td colspan="2" class="text-muted">Ni definiranih disciplin</td></tr>';
+        return;
+      }
+
+      disciplinesBody.innerHTML = disciplines.map((discipline, index) => `
+        <tr>
+          <td>${discipline}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary me-2 edit-discipline" data-discipline="${discipline}" data-index="${index}">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger delete-discipline" data-discipline="${discipline}">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Edit discipline handlers
+      disciplinesBody.querySelectorAll('.edit-discipline').forEach(btn => {
+        btn.onclick = async () => {
+          const oldDiscipline = btn.dataset.discipline;
+          const index = parseInt(btn.dataset.index);
+          
+          const modal = document.createElement("div");
+          modal.className = "modal show d-block";
+          modal.style.backgroundColor = "rgba(0,0,0,0.5)";
+          modal.innerHTML = `
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Uredi disciplino</h5>
+                  <button type="button" class="btn-close" data-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-3">
+                    <label class="form-label">Ime discipline</label>
+                    <input type="text" id="edit-discipline-name" class="form-control" value="${oldDiscipline}">
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Prekliči</button>
+                  <button type="button" class="btn btn-primary" id="update-discipline">Shrani</button>
+                </div>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+
+          const closeModal = () => modal.remove();
+          modal.querySelectorAll('[data-dismiss="modal"]').forEach(el => {
+            el.onclick = closeModal;
+          });
+
+          modal.querySelector('#update-discipline').onclick = async () => {
+            const newName = modal.querySelector('#edit-discipline-name').value.trim();
+            if (!newName) {
+              alert('Ime discipline ne sme biti prazno');
+              return;
+            }
+
+            // Check if name already exists (but not the same discipline)
+            if (newName !== oldDiscipline && disciplines.includes(newName)) {
+              alert('Disciplina s tem imenom že obstaja');
+              return;
+            }
+
+            // Update discipline in array
+            const updatedDisciplines = [...disciplines];
+            updatedDisciplines[index] = newName;
+            
+            await window.api?.settings?.setDisciplines(updatedDisciplines);
+            
+            // If name changed, update references in database
+            if (newName !== oldDiscipline) {
+              // Check usage first
+              const usage = await window.api?.settings?.checkDisciplineUsage(oldDiscipline);
+              if (usage && usage.count > 0) {
+                const updateRefs = await window.confirmDialog(
+                  `Disciplina "${oldDiscipline}" se uporablja pri ${usage.count} dodelitvi(-ah).\n\nAli želite posodobiti vse reference?`,
+                  'Posodobi discipline'
+                );
+                
+                if (updateRefs) {
+                  // This would need a new backend function to update references
+                  // For now, we just warn the user
+                  alert(`Disciplina je bila preimenovana. Obstaja ${usage.count} dodelitev(-e) s staro disciplino "${oldDiscipline}".\n\nProsimo ročno posodobite te dodelitve.`);
+                }
+              }
+            }
+            
+            closeModal();
+            loadDisciplines();
+          };
+        };
+      });
+
+      // Delete discipline handlers
+      disciplinesBody.querySelectorAll('.delete-discipline').forEach(btn => {
+        btn.onclick = async () => {
+          const discipline = btn.dataset.discipline;
+          
+          // Check usage
+          const usage = await window.api?.settings?.checkDisciplineUsage(discipline);
+          
+          if (usage && usage.count > 0) {
+            if (await window.confirmDialog(
+              `Disciplina "${discipline}" se uporablja pri ${usage.count} dodelitvi(-ah).\n\nAli želite izbrisati referenco na to disciplino?`,
+              'Izbriši disciplino'
+            )) {
+              await window.api?.settings?.deleteDisciplineReferences(discipline);
+              const updatedDisciplines = disciplines.filter(d => d !== discipline);
+              await window.api?.settings?.setDisciplines(updatedDisciplines);
+              loadDisciplines();
+            }
+          } else {
+            if (await window.confirmDialog(
+              `Ali želite izbrisati disciplino "${discipline}"?`,
+              'Izbriši disciplino'
+            )) {
+              const updatedDisciplines = disciplines.filter(d => d !== discipline);
+              await window.api?.settings?.setDisciplines(updatedDisciplines);
+              loadDisciplines();
+            }
+          }
+        };
+      });
+
+    } catch (e) {
+      console.error("Error loading disciplines:", e);
+      settingsContent.querySelector("#disciplines-body").innerHTML = 
+        '<tr><td colspan="2" class="text-danger">Napaka pri nalaganju</td></tr>';
+    }
+  }
+
+  // Add discipline button
+  settingsContent.querySelector("#add-discipline").onclick = () => {
+    const modal = document.createElement("div");
+    modal.className = "modal show d-block";
+    modal.style.backgroundColor = "rgba(0,0,0,0.5)";
+    modal.innerHTML = `
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Dodaj disciplino</h5>
+            <button type="button" class="btn-close" data-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Ime discipline</label>
+              <input type="text" id="discipline-name" class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Prekliči</button>
+            <button type="button" class="btn btn-primary" id="save-discipline">Shrani</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
+      btn.onclick = () => modal.remove();
+    });
+
+    modal.querySelector("#save-discipline").onclick = async () => {
+      const name = modal.querySelector("#discipline-name").value.trim();
+      
+      if (!name) {
+        alert("Vnesite ime discipline");
+        return;
+      }
+
+      const disciplines = (await window.api?.settings?.getDisciplines()) ?? [];
+      
+      if (disciplines.includes(name)) {
+        alert("Ta disciplina že obstaja");
+        return;
+      }
+
+      disciplines.push(name);
+      await window.api?.settings?.setDisciplines(disciplines);
+      
+      modal.remove();
+      loadDisciplines();
+    };
+  };
+
   await loadRoles();
+  await loadDisciplines();
 }

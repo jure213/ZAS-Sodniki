@@ -31,6 +31,14 @@ export async function renderPayments(container, user) {
       <table class="table table-sm table-hover">
         <thead class="text-center"><tr><th>Sodnik</th><th>Tekmovanje</th><th class="text-center">Znesek sodnik</th><th class="text-center">Preostalo</th><th>Način</th><th>Status</th><th>Datum tekmovanja</th><th>Datum plačila</th>${isAdmin ? '<th>Akcije</th>' : ''}</tr></thead>
         <tbody id="payments-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 9 : 8}">Nalagam…</td></tr></tbody>
+        <tfoot id="payments-footer" class="table-secondary">
+          <tr class="fw-bold">
+            <td colspan="2" class="text-end">SKUPAJ:</td>
+            <td class="text-center" id="total-znesek-sodnik">€0.00</td>
+            <td class="text-center" id="total-preostalo">€0.00</td>
+            <td colspan="${isAdmin ? 5 : 4}"></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   `;
@@ -112,6 +120,14 @@ export async function renderPayments(container, user) {
       if (!displayList || displayList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="${isAdmin ? 9 : 8}" class="text-muted">Ni podatkov</td></tr>`;
       }
+      
+      // Calculate totals for displayed payments
+      const totalZnesekSodnik = displayList.reduce((sum, p) => sum + (p.znesek_sodnik ?? 0), 0);
+      const totalPreostalo = displayList.reduce((sum, p) => sum + (p.amount ?? 0), 0);
+      
+      // Update footer totals
+      container.querySelector('#total-znesek-sodnik').textContent = `€${totalZnesekSodnik.toFixed(2)}`;
+      container.querySelector('#total-preostalo').textContent = `€${totalPreostalo.toFixed(2)}`;
       
       const hiddenCount = list.length - displayList.length;
       const countText = hiddenCount > 0 

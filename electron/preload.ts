@@ -21,6 +21,10 @@ contextBridge.exposeInMainWorld('api', {
     setRoles: (roles: any) => ipcRenderer.invoke('settings:setRoles', roles),
     checkRoleUsage: (roleName: string) => ipcRenderer.invoke('settings:checkRoleUsage', roleName),
     deleteRoleReferences: (roleName: string) => ipcRenderer.invoke('settings:deleteRoleReferences', roleName),
+    getDisciplines: () => ipcRenderer.invoke('settings:getDisciplines'),
+    setDisciplines: (disciplines: string[]) => ipcRenderer.invoke('settings:setDisciplines', disciplines),
+    checkDisciplineUsage: (discipline: string) => ipcRenderer.invoke('settings:checkDisciplineUsage', discipline),
+    deleteDisciplineReferences: (discipline: string) => ipcRenderer.invoke('settings:deleteDisciplineReferences', discipline),
     clearDatabase: () => ipcRenderer.invoke('settings:clearDatabase'),
     updateAppSetting: (key: string, value: any) => ipcRenderer.invoke('settings:updateAppSetting', key, value),
   },
@@ -33,6 +37,7 @@ contextBridge.exposeInMainWorld('api', {
     setActive: (id: number, active: number) => ipcRenderer.invoke('official:setActive', { id, active }),
     importExcel: () => ipcRenderer.invoke('official:importExcel'),
     getHistory: (officialId: number) => ipcRenderer.invoke('official:getHistory', officialId),
+    exportExcel: () => ipcRenderer.invoke('export:exportOfficials'),
   },
   // Competitions
   competitions: {
@@ -47,6 +52,7 @@ contextBridge.exposeInMainWorld('api', {
     deleteOfficial: (id: number) => ipcRenderer.invoke('competition:deleteOfficial', id),
     generatePayments: (competitionId: number) => ipcRenderer.invoke('competition:generatePayments', competitionId),
     getReportData: (competitionId: number, tariffType?: string) => ipcRenderer.invoke('competition:getReportData', competitionId, tariffType || 'official'),
+    exportExcel: () => ipcRenderer.invoke('export:exportCompetitions'),
   },
   // Payments
   payments: {
@@ -72,8 +78,8 @@ contextBridge.exposeInMainWorld('api', {
   exports: {
     generateCompetitionReport: (competitionId: number, tariffType?: string) => 
       ipcRenderer.invoke('export:generateCompetitionReport', competitionId, tariffType || 'official'),
-    generateCompetitionsSummary: (competitionIds: number[]) =>
-      ipcRenderer.invoke('export:generateCompetitionsSummary', competitionIds),
+    generateCompetitionsSummary: (competitionIds: number[], tariffType?: string) =>
+      ipcRenderer.invoke('export:generateCompetitionsSummary', competitionIds, tariffType || 'official'),
     getSummaryData: (competitionIds: number[]) =>
       ipcRenderer.invoke('export:getSummaryData', competitionIds),
     generatePreviewReport: (competitionId: number, officials: any[]) =>

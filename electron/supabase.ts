@@ -71,11 +71,12 @@ export class SupabaseDatabaseManager {
       rank: string;
       additional_exams: string;
       active: number;
+      notes: string;
     }>
   > {
     const { data, error } = await this.supabase
       .from("officials")
-      .select("id, name, email, phone, rank, additional_exams, active")
+      .select("id, name, email, phone, rank, additional_exams, active, notes")
       .order("name");
 
     if (error || !data) return [];
@@ -187,11 +188,12 @@ export class SupabaseDatabaseManager {
       location: string;
       type: string;
       status: string;
+      notes?: string;
     }>
   > {
     const { data, error } = await this.supabase
       .from("competitions")
-      .select("id, name, date, location, type, status")
+      .select("id, name, date, location, type, status, notes")
       .order("date", { ascending: false });
 
     if (error || !data) return [];
@@ -875,6 +877,42 @@ export class SupabaseDatabaseManager {
       (await this.getSetting<Record<string, any>>("app_settings")) || {};
     settings[key] = value;
     await this.setSetting("app_settings", settings);
+  }
+
+  // Disciplines management
+  async getDisciplines(): Promise<string[]> {
+    const disciplines = await this.getAppSetting('disciplines');
+    return disciplines || ['Alpsko', 'Nordijsko', 'Tek', 'Skoki', 'Biatlonec', 'Drugo'];
+  }
+
+  async setDisciplines(disciplines: string[]): Promise<void> {
+    await this.updateAppSetting('disciplines', disciplines);
+  }
+
+  async checkDisciplineUsage(discipline: string): Promise<{ count: number; competitions: any[] }> {
+    const { data, error } = await this.supabase
+      .from('competition_officials')
+      .select('id, competition_id, competitions(name)')
+      .eq('discipline', discipline);
+
+    if (error) {
+      console.error('Error checking discipline usage:', error);
+      return { count: 0, competitions: [] };
+    }
+
+    return {
+      count: data?.length || 0,
+      competitions: data || []
+    };
+  }
+
+  async deleteDisciplineReferences(discipline: string): Promise<boolean> {
+    const { error } = await this.supabase
+      .from('competition_officials')
+      .update({ discipline: null })
+      .eq('discipline', discipline);
+
+    return !error;
   }
 
   async getCompetitionReportData(

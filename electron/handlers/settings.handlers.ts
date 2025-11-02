@@ -40,4 +40,24 @@ export function setupSettingsHandlers(db: any) {
     await db.updateAppSetting(key, value);
     return { ok: true };
   });
+
+  // Disciplines handlers
+  ipcMain.handle('settings:getDisciplines', async () => {
+    return await db.getDisciplines();
+  });
+
+  ipcMain.handle('settings:setDisciplines', async (_event, disciplines: string[]) => {
+    await db.setDisciplines(disciplines);
+    return { ok: true };
+  });
+
+  ipcMain.handle('settings:checkDisciplineUsage', async (_event, discipline: string) => {
+    const usage = await db.checkDisciplineUsage(discipline);
+    return usage;
+  });
+
+  ipcMain.handle('settings:deleteDisciplineReferences', async (_event, discipline: string) => {
+    const success = await db.deleteDisciplineReferences(discipline);
+    return { ok: success };
+  });
 }

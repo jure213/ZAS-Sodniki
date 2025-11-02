@@ -527,4 +527,239 @@ export function setupExportHandlers(db: any) {
       return { ok: false, message: error.message || 'Neznana napaka' };
     }
   });
+
+  // Export officials list to Excel
+  ipcMain.handle('export:exportOfficials', async (_event) => {
+    try {
+      const officials = await db.listOfficials();
+
+      if (!officials || officials.length === 0) {
+        return { ok: false, message: 'Ni sodnikov za izvoz' };
+      }
+
+      // Create workbook with ExcelJS
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Sodniki');
+
+      // Add title row
+      const titleRow = worksheet.addRow(['Seznam sodnikov']);
+      worksheet.mergeCells(1, 1, 1, 7);
+      titleRow.font = { bold: true, size: 14 };
+      titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleRow.height = 25;
+
+      // Add border to title
+      const titleCell = worksheet.getCell('A1');
+      titleCell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+
+      // Add empty row
+      worksheet.addRow([]);
+
+      // Add header row
+      const headerRow = worksheet.addRow(['Ime', 'Email', 'Telefon', 'Rang', 'Dodatni izpiti', 'Status', 'Opombe']);
+      headerRow.font = { bold: true };
+      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0E0E0' }
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+
+      // Add data rows
+      officials.forEach((official: any) => {
+        const row = worksheet.addRow([
+          official.name || '',
+          official.email || '',
+          official.phone || '',
+          official.rank || '',
+          official.additional_exams || '',
+          official.active ? 'Aktiven' : 'Neaktiven',
+          official.notes || ''
+        ]);
+
+        row.eachCell((cell, colNum) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+          if (colNum !== 1 && colNum !== 2 && colNum !== 7) { // Not Name, Email, or Notes
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          }
+        });
+      });
+
+      // Set column widths
+      worksheet.columns = [
+        { width: 25 }, // Ime
+        { width: 30 }, // Email
+        { width: 15 }, // Telefon
+        { width: 10 }, // Rang
+        { width: 20 }, // Dodatni izpiti
+        { width: 12 }, // Status
+        { width: 40 }  // Opombe
+      ];
+
+      // Show save dialog
+      const result = await dialog.showSaveDialog({
+        title: 'Shrani seznam sodnikov',
+        defaultPath: path.join(require('os').homedir(), 'Downloads', 'sodniki.xlsx'),
+        filters: [
+          { name: 'Excel Files', extensions: ['xlsx'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      });
+
+      if (result.canceled || !result.filePath) {
+        return { ok: false, message: 'Shranjevanje preklicano' };
+      }
+
+      await workbook.xlsx.writeFile(result.filePath);
+
+      return { ok: true, filePath: result.filePath };
+    } catch (error: any) {
+      console.error('Error exporting officials:', error);
+      return { ok: false, message: error.message || 'Neznana napaka' };
+    }
+  });
+
+  // Export competitions list to Excel
+  ipcMain.handle('export:exportCompetitions', async (_event) => {
+    try {
+      const competitions = await db.listCompetitions();
+
+      if (!competitions || competitions.length === 0) {
+        return { ok: false, message: 'Ni tekmovanj za izvoz' };
+      }
+
+      // Format date helper
+      const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}.${month}.${year}`;
+      };
+
+      // Status label helper
+      const getStatusLabel = (status: string) => {
+        const statusMap: any = {
+          'completed': 'Izvedeno',
+          'planned': 'Načrtovano',
+          'cancelled': 'Preklicano',
+          'free': 'Zastonj',
+          'other_zas': 'Plača drug ZAS'
+        };
+        return statusMap[status] || status;
+      };
+
+      // Create workbook with ExcelJS
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Tekmovanja');
+
+      // Add title row
+      const titleRow = worksheet.addRow(['Seznam tekmovanj']);
+      worksheet.mergeCells(1, 1, 1, 5);
+      titleRow.font = { bold: true, size: 14 };
+      titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleRow.height = 25;
+
+      // Add border to title
+      const titleCell = worksheet.getCell('A1');
+      titleCell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+
+      // Add empty row
+      worksheet.addRow([]);
+
+      // Add header row
+      const headerRow = worksheet.addRow(['Ime', 'Datum', 'Lokacija', 'Status', 'Opombe']);
+      headerRow.font = { bold: true };
+      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0E0E0' }
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+
+      // Add data rows
+      competitions.forEach((competition: any) => {
+        const row = worksheet.addRow([
+          competition.name || '',
+          formatDate(competition.date),
+          competition.location || '',
+          getStatusLabel(competition.status),
+          competition.notes || ''
+        ]);
+
+        row.eachCell((cell, colNum) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+          if (colNum === 2 || colNum === 4) { // Datum and Status
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          }
+        });
+      });
+
+      // Set column widths
+      worksheet.columns = [
+        { width: 40 }, // Ime
+        { width: 12 }, // Datum
+        { width: 25 }, // Lokacija
+        { width: 15 }, // Status
+        { width: 40 }  // Opombe
+      ];
+
+      // Show save dialog
+      const result = await dialog.showSaveDialog({
+        title: 'Shrani seznam tekmovanj',
+        defaultPath: path.join(require('os').homedir(), 'Downloads', 'tekmovanja.xlsx'),
+        filters: [
+          { name: 'Excel Files', extensions: ['xlsx'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      });
+
+      if (result.canceled || !result.filePath) {
+        return { ok: false, message: 'Shranjevanje preklicano' };
+      }
+
+      await workbook.xlsx.writeFile(result.filePath);
+
+      return { ok: true, filePath: result.filePath };
+    } catch (error: any) {
+      console.error('Error exporting competitions:', error);
+      return { ok: false, message: error.message || 'Neznana napaka' };
+    }
+  });
 }

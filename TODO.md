@@ -7,11 +7,9 @@
                         ˇ
                         seznam, dropdown -->
 
-po dodelitvi možnost custom zneska vnos !!
-
 <!-- info o sodniku, kje je že bil -->
 
-overall izpis...za neko obdobje, sodnik | vsa tekmovanja kjer je kdo bil
+<!-- overall izpis...za neko obdobje, sodnik | vsa tekmovanja kjer je kdo bil -->
 
 <!-- več stanj tekme -> zastonj, plača drugi, -->
 
@@ -33,9 +31,9 @@ dodaj vlogo ^^ -->
 
 <!-- uredi izplačilo -> opombe -> izračun, dodatno polje (opombe -> text) -->
 
-overwrite pri popravku
+<!-- overwrite pri popravku -->
 
-sproti prikaz sodnik/račun -> generiraj to (možnost popravka)
+<!-- sproti prikaz sodnik/račun -> generiraj to (možnost popravka) -->
 
 <!-- račun/sodniki za tekme -->
 
@@ -48,11 +46,11 @@ dashboard - imena -->
 
 <!-- export izplačil v excel -->
 
-pregled sodnikov -> pravi zneski
+<!-- pregled sodnikov -> pravi zneski -->
 
 <!-- opombe pri sodnikih -->
 
-export predogled excel
+<!-- export predogled excel -->
 
 <!-- statusi:
     zaključeno -> izvedeno
@@ -61,3 +59,17 @@ export predogled excel
     načrtovano, zastonj, drugi zas -> odstrani gumb generiraj -->
 
 superreport
+
+<!-- nalaganje opomb pri tekmovanju -->
+
+<!-- export tarife za račun pri pregledu tekem -->
+
+<!-- urejanje disciplin -->
+
+<!-- opombe sodniki -->
+
+<!-- izvozi sodniki tekmovanja -->
+
+search bar sodniki
+
+sum izplačila

@@ -1,11 +1,19 @@
 export async function renderOfficials(container, user) {
   const isAdmin = user?.role === 'admin';
   container.innerHTML = `
-    <div class="d-flex justify-content-end align-items-center mb-2">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div>
+        <input type="text" 
+               id="search-officials" 
+               class="form-control" 
+               placeholder="🔍 Išči po imenu, emailu, telefonu..."
+               style="min-width: 350px">
+      </div>
       ${isAdmin ? `
         <div>
           <button id="import-excel" class="btn btn-success btn-sm me-2"><i class="bi bi-file-earmark-excel me-1"></i> Uvozi iz Excel</button>
-          <button id="add-official" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> Dodaj sodnika</button>
+          <button id="export-officials-excel" class="btn btn-success btn-sm me-2"><i class="bi bi-file-earmark-excel me-1"></i> Izvozi v Excel</button>
+          <button id="add-official" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-2"></i> Dodaj sodnika</button>
         </div>
       ` : ''}
     </div>
@@ -15,72 +23,87 @@ export async function renderOfficials(container, user) {
         <tbody id="officials-body" class="align-middle text-center"><tr><td colspan="${isAdmin ? 8 : 7}">Nalagam…</td></tr></tbody>
       </table>
     </div>
+    <div id="search-results-info" class="text-muted small mt-2"></div>
   `;
+
+  let allOfficials = []; // Store all officials for filtering
 
   async function loadOfficials() {
     try {
-      const list = await window.api?.officials?.list();
-      const tbody = container.querySelector('#officials-body');
-      tbody.innerHTML = list
-        .map(
-          (o) => `<tr>
-            <td>${o.name ?? ''}</td>
-            <td>${o.email ?? ''}</td>
-            <td>${o.phone ?? ''}</td>
-            <td>${o.rank ?? ''}</td>
-            <td>${o.additional_exams ?? ''}</td>
-            <td>${o.notes ?? ''}</td>
-            <td><span class="badge bg-${o.active ? 'success' : 'secondary'}">${o.active ? 'Aktiven' : 'Neaktiven'}</span></td>
-            ${isAdmin ? `<td>
-              <button class="btn btn-sm btn-outline-info info-official" data-id="${o.id}" data-name="${o.name}"><i class="bi bi-info-circle"></i></button>
-              <button class="btn btn-sm btn-outline-primary edit-official" data-id="${o.id}"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-sm btn-outline-${o.active ? 'warning' : 'success'} toggle-active" data-id="${o.id}" data-active="${o.active}">${o.active ? 'Deaktiviraj' : 'Aktiviraj'}</button>
-              <button class="btn btn-sm btn-outline-danger delete-official" data-id="${o.id}"><i class="bi bi-trash"></i></button>
-            </td>` : ''}
-          </tr>`
-        )
-        .join('');
-      if (!list || list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-muted">Ni podatkov</td></tr>`;
-      }
-
-      // Bind events for admin
-      if (isAdmin) {
-        container.querySelectorAll('.info-official').forEach(btn => {
-          btn.onclick = async () => {
-            const id = parseInt(btn.dataset.id);
-            const name = btn.dataset.name;
-            await showOfficialInfo(id, name);
-          };
-        });
-        container.querySelectorAll('.delete-official').forEach(btn => {
-          btn.onclick = async () => {
-            const id = parseInt(btn.dataset.id);
-            const confirmed = await window.confirmDialog('Ali ste prepričani, da želite izbrisati tega sodnika?', 'Izbriši sodnika');
-            if (confirmed) {
-              await window.api?.officials?.delete(id);
-              loadOfficials();
-            }
-          };
-        });
-        container.querySelectorAll('.toggle-active').forEach(btn => {
-          btn.onclick = async () => {
-            const id = parseInt(btn.dataset.id);
-            const active = btn.dataset.active === '1' ? 0 : 1;
-            await window.api?.officials?.setActive(id, active);
-            loadOfficials();
-          };
-        });
-        container.querySelectorAll('.edit-official').forEach(btn => {
-          btn.onclick = () => {
-            const id = parseInt(btn.dataset.id);
-            const official = list.find(o => o.id === id);
-            if (official) showEditForm(official);
-          };
-        });
-      }
+      allOfficials = await window.api?.officials?.list();
+      renderOfficialsList(allOfficials);
     } catch (e) {
       container.querySelector('#officials-body').innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-danger">Napaka: ${String(e)}</td></tr>`;
+    }
+  }
+
+  function renderOfficialsList(list) {
+    const tbody = container.querySelector('#officials-body');
+    tbody.innerHTML = list
+      .map(
+        (o) => `<tr>
+          <td>${o.name ?? ''}</td>
+          <td>${o.email ?? ''}</td>
+          <td>${o.phone ?? ''}</td>
+          <td>${o.rank ?? ''}</td>
+          <td>${o.additional_exams ?? ''}</td>
+          <td>${o.notes ?? ''}</td>
+          <td><span class="badge bg-${o.active ? 'success' : 'secondary'}">${o.active ? 'Aktiven' : 'Neaktiven'}</span></td>
+          ${isAdmin ? `<td>
+            <button class="btn btn-sm btn-outline-info info-official" data-id="${o.id}" data-name="${o.name}"><i class="bi bi-info-circle"></i></button>
+            <button class="btn btn-sm btn-outline-primary edit-official" data-id="${o.id}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-${o.active ? 'warning' : 'success'} toggle-active" data-id="${o.id}" data-active="${o.active}">${o.active ? 'Deaktiviraj' : 'Aktiviraj'}</button>
+            <button class="btn btn-sm btn-outline-danger delete-official" data-id="${o.id}"><i class="bi bi-trash"></i></button>
+          </td>` : ''}
+        </tr>`
+      )
+      .join('');
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-muted">Ni podatkov</td></tr>`;
+    }
+
+    // Update search results info
+    const searchInfo = container.querySelector('#search-results-info');
+    if (list.length !== allOfficials.length) {
+      searchInfo.textContent = `Prikazujem ${list.length} od ${allOfficials.length} sodnikov`;
+    } else {
+      searchInfo.textContent = `Prikazujem ${list.length} sodnikov`;
+    }
+
+    // Bind events for admin
+    if (isAdmin) {
+      container.querySelectorAll('.info-official').forEach(btn => {
+        btn.onclick = async () => {
+          const id = parseInt(btn.dataset.id);
+          const name = btn.dataset.name;
+          await showOfficialInfo(id, name);
+        };
+      });
+      container.querySelectorAll('.delete-official').forEach(btn => {
+        btn.onclick = async () => {
+          const id = parseInt(btn.dataset.id);
+          const confirmed = await window.confirmDialog('Ali ste prepričani, da želite izbrisati tega sodnika?', 'Izbriši sodnika');
+          if (confirmed) {
+            await window.api?.officials?.delete(id);
+            loadOfficials();
+          }
+        };
+      });
+      container.querySelectorAll('.toggle-active').forEach(btn => {
+        btn.onclick = async () => {
+          const id = parseInt(btn.dataset.id);
+          const active = btn.dataset.active === '1' ? 0 : 1;
+          await window.api?.officials?.setActive(id, active);
+          loadOfficials();
+        };
+      });
+      container.querySelectorAll('.edit-official').forEach(btn => {
+        btn.onclick = () => {
+          const id = parseInt(btn.dataset.id);
+          const official = list.find(o => o.id === id);
+          if (official) showEditForm(official);
+        };
+      });
     }
   }
 
@@ -262,6 +285,42 @@ export async function renderOfficials(container, user) {
       }
     };
   }
+
+  // Export button (available for all users)
+  container.querySelector('#export-officials-excel').onclick = async () => {
+    try {
+      await window.api?.officials?.exportExcel();
+      showNotification('<strong>Izvoz uspešen!</strong> Seznam sodnikov je bil izvožen.', 'success');
+    } catch (e) {
+      showNotification(`<strong>Napaka pri izvozu:</strong> ${String(e)}`, 'danger');
+    }
+  };
+
+  // Search functionality
+  const searchInput = container.querySelector('#search-officials');
+  searchInput.addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase().trim();
+    
+    if (!searchTerm) {
+      // Show all officials if search is empty
+      renderOfficialsList(allOfficials);
+      return;
+    }
+
+    // Filter officials by search term
+    const filtered = allOfficials.filter(official => {
+      return (
+        (official.name || '').toLowerCase().includes(searchTerm) ||
+        (official.email || '').toLowerCase().includes(searchTerm) ||
+        (official.phone || '').toLowerCase().includes(searchTerm) ||
+        (official.rank || '').toLowerCase().includes(searchTerm) ||
+        (official.additional_exams || '').toLowerCase().includes(searchTerm) ||
+        (official.notes || '').toLowerCase().includes(searchTerm)
+      );
+    });
+
+    renderOfficialsList(filtered);
+  });
 
   await loadOfficials();
 }
