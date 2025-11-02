@@ -70,6 +70,6 @@ superreport
 
 <!-- izvozi sodniki tekmovanja -->
 
-search bar sodniki
+<!-- search bar sodniki -->
 
-sum izplačila
+<!-- sum izplačila -->
