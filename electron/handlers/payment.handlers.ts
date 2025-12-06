@@ -71,7 +71,7 @@ export function setupPaymentHandlers(db: any) {
       const headerRow = worksheet.addRow([
         'SODNIK',
         'TEKMOVANJE',
-        'ZNESEK',
+        'ZNESEK (€)',
         'NAČIN',
         'STATUS',
         'DATUM TEKMOVANJA',
@@ -103,15 +103,16 @@ export function setupPaymentHandlers(db: any) {
           totalOwed += amount;
         }
 
-        worksheet.addRow({
+        const dataRow = worksheet.addRow({
           official: payment.official_name || '',
           competition: payment.competition_name || '',
-          amount: amount.toFixed(2) + ' €',
+          amount: parseFloat(amount.toFixed(2)),
           method: formatMethod(payment.method),
           status: payment.status === 'paid' ? 'Plačano' : 'Ni plačano',
           date: formatDate(payment.date),
           datePaid: formatDate(payment.date_paid)
         });
+        dataRow.getCell(3).numFmt = '#,##0.00';
       });
 
       // Add summary row
@@ -119,13 +120,14 @@ export function setupPaymentHandlers(db: any) {
       const summaryRow = worksheet.addRow({
         official: 'SKUPAJ',
         competition: '',
-        amount: (totalPaid + totalOwed).toFixed(2) + ' €',
+        amount: parseFloat((totalPaid + totalOwed).toFixed(2)),
         method: '',
         status: '',
-        date: `Plačano: €${totalPaid.toFixed(2)}`,
-        datePaid: `Ni plačano: €${totalOwed.toFixed(2)}`
+        date: `Plačano: ${totalPaid.toFixed(2)}`,
+        datePaid: `Ni plačano: ${totalOwed.toFixed(2)}`
       });
       summaryRow.font = { bold: true };
+      summaryRow.getCell(3).numFmt = '#,##0.00';
 
       // Apply borders to all cells
       worksheet.eachRow((row, rowNumber) => {

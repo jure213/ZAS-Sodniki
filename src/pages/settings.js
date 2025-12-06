@@ -85,8 +85,9 @@ export async function renderSettings(container, user) {
         <table class="table table-sm table-hover">
           <thead class="text-center">
             <tr>
-              <th>DISCIPLINA</th>
-              <th>AKCIJE</th>
+              <th style="width: 50%">DISCIPLINA</th>
+              <th style="width: 25%">AKCIJE</th>
+              <th style="width: 25%">VRSTNI RED</th>
             </tr>
           </thead>
           <tbody id="disciplines-body" class="align-middle text-center">
@@ -729,7 +730,7 @@ export async function renderSettings(container, user) {
       const disciplinesBody = settingsContent.querySelector("#disciplines-body");
 
       if (disciplines.length === 0) {
-        disciplinesBody.innerHTML = '<tr><td colspan="2" class="text-muted">Ni definiranih disciplin</td></tr>';
+        disciplinesBody.innerHTML = '<tr><td colspan="3" class="text-muted">Ni definiranih disciplin</td></tr>';
         return;
       }
 
@@ -744,8 +745,46 @@ export async function renderSettings(container, user) {
               <i class="bi bi-trash"></i>
             </button>
           </td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-secondary me-1 move-discipline-up" data-index="${index}" ${index === 0 ? 'disabled' : ''}>
+              <i class="bi bi-arrow-up"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary move-discipline-down" data-index="${index}" ${index === disciplines.length - 1 ? 'disabled' : ''}>
+              <i class="bi bi-arrow-down"></i>
+            </button>
+          </td>
         </tr>
       `).join('');
+
+      // Move discipline up handlers
+      disciplinesBody.querySelectorAll('.move-discipline-up').forEach(btn => {
+        btn.onclick = async () => {
+          const index = parseInt(btn.dataset.index);
+          if (index === 0) return;
+          
+          const newDisciplines = [...disciplines];
+          [newDisciplines[index - 1], newDisciplines[index]] = 
+          [newDisciplines[index], newDisciplines[index - 1]];
+          
+          await window.api?.settings?.setDisciplines(newDisciplines);
+          await loadDisciplines();
+        };
+      });
+
+      // Move discipline down handlers
+      disciplinesBody.querySelectorAll('.move-discipline-down').forEach(btn => {
+        btn.onclick = async () => {
+          const index = parseInt(btn.dataset.index);
+          if (index === disciplines.length - 1) return;
+          
+          const newDisciplines = [...disciplines];
+          [newDisciplines[index], newDisciplines[index + 1]] = 
+          [newDisciplines[index + 1], newDisciplines[index]];
+          
+          await window.api?.settings?.setDisciplines(newDisciplines);
+          await loadDisciplines();
+        };
+      });
 
       // Edit discipline handlers
       disciplinesBody.querySelectorAll('.edit-discipline').forEach(btn => {

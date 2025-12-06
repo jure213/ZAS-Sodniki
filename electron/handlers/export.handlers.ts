@@ -52,7 +52,7 @@ export function setupExportHandlers(db: any) {
       };
 
       // Add header row
-      const headerRow = worksheet.addRow(['IME', 'RANG', 'VLOGA', 'DISCIPLINA', 'URE', 'ZNESEK', 'POTNI STROŠKI', 'SKUPAJ']);
+      const headerRow = worksheet.addRow(['IME', 'RANG', 'VLOGA', 'DISCIPLINA', 'URE', 'ZNESEK (€)', 'POTNI STROŠKI (€)', 'SKUPAJ (€)']);
       headerRow.font = { bold: true };
       headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
@@ -78,15 +78,19 @@ export function setupExportHandlers(db: any) {
         const rowTotal = row.amount; // Total is the payment amount (already includes travel)
         grandTotal += rowTotal;
         
-        worksheet.addRow({
+        const dataRow = worksheet.addRow({
           name: row.name,
-          rank: parseInt(row.rank) || 0, // Save as number
+          rank: parseInt(row.rank) || 0,
           role: row.role,
           discipline: row.discipline,
           hours: row.hours,
-          amount: baseAmount.toFixed(2) + ' €',
-          travelCost: row.travelCost.toFixed(2) + ' €',
-          total: rowTotal.toFixed(2) + ' €',
+          amount: parseFloat(baseAmount.toFixed(2)),
+          travelCost: parseFloat(row.travelCost.toFixed(2)),
+          total: parseFloat(rowTotal.toFixed(2)),
+        });
+        // Format currency columns
+        [6, 7, 8].forEach(col => {
+          dataRow.getCell(col).numFmt = '#,##0.00';
         });
       });
 
@@ -100,8 +104,9 @@ export function setupExportHandlers(db: any) {
         hours: '',
         amount: '',
         travelCost: 'SKUPAJ:',
-        total: grandTotal.toFixed(2) + ' €',
+        total: parseFloat(grandTotal.toFixed(2)),
       });
+      totalRow.getCell(8).numFmt = '#,##0.00';
 
       // Apply borders and center alignment to all cells
       const totalRowNumber = worksheet.rowCount; // Last row is the total row
@@ -134,16 +139,6 @@ export function setupExportHandlers(db: any) {
             cell.font = { bold: true };
           }
         });
-      });
-
-      // Auto-fit column widths based on content
-      worksheet.columns.forEach((column) => {
-        let maxLength = 0;
-        column.eachCell!({ includeEmpty: true }, (cell) => {
-          const cellValue = cell.value ? cell.value.toString() : '';
-          maxLength = Math.max(maxLength, cellValue.length);
-        });
-        column.width = maxLength < 10 ? 10 : maxLength + 2; // Minimum 10, add padding
       });
 
       // Show save dialog
@@ -249,7 +244,7 @@ export function setupExportHandlers(db: any) {
       };
 
       // Add header row
-      const headerRow = worksheet.addRow(['TEKMA', 'DATUM', 'LOKACIJA', 'SODNIKI', 'POTNI STROŠKI', 'SKUPAJ']);
+      const headerRow = worksheet.addRow(['TEKMA', 'DATUM', 'LOKACIJA', 'SODNIKI (€)', 'POTNI STROŠKI (€)', 'SKUPAJ (€)']);
       headerRow.font = { bold: true };
       headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
@@ -273,13 +268,17 @@ export function setupExportHandlers(db: any) {
         totalTravel += row.travelTotal;
         grandTotal += row.grandTotal;
 
-        worksheet.addRow({
+        const dataRow = worksheet.addRow({
           name: row.name,
           date: formatDate(row.date),
           location: row.location,
-          officials: row.officialsTotal.toFixed(2) + ' €',
-          travel: row.travelTotal.toFixed(2) + ' €',
-          total: row.grandTotal.toFixed(2) + ' €',
+          officials: parseFloat(row.officialsTotal.toFixed(2)),
+          travel: parseFloat(row.travelTotal.toFixed(2)),
+          total: parseFloat(row.grandTotal.toFixed(2)),
+        });
+        // Format currency columns
+        [4, 5, 6].forEach(col => {
+          dataRow.getCell(col).numFmt = '#,##0.00';
         });
       });
 
@@ -290,8 +289,9 @@ export function setupExportHandlers(db: any) {
         location: '',
         officials: '',
         travel: 'SKUPAJ:',
-        total: grandTotal.toFixed(2) + ' €',
+        total: parseFloat(grandTotal.toFixed(2)),
       });
+      totalRow.getCell(6).numFmt = '#,##0.00';
 
       // Apply borders and center alignment to all cells
       const totalRowNumber = worksheet.rowCount;
@@ -418,9 +418,9 @@ export function setupExportHandlers(db: any) {
         'VLOGA',
         'URE',
         'KM',
-        'POSTAVKA',
-        'POTNI STROŠKI',
-        'SKUPAJ',
+        'POSTAVKA (€)',
+        'POTNI STROŠKI (€)',
+        'SKUPAJ (€)',
       ]);
       headerRow.font = { bold: true };
       headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -445,14 +445,18 @@ export function setupExportHandlers(db: any) {
         const baseAmount = totalAmount - travelCost;
         grandTotal += totalAmount;
 
-        worksheet.addRow({
+        const dataRow = worksheet.addRow({
           sodnik: official.official_name,
           vloga: official.role,
           ure: official.hours,
           km: kilometers,
-          postavka: baseAmount.toFixed(2) + ' €',
-          potni: travelCost.toFixed(2) + ' €',
-          skupaj: totalAmount.toFixed(2) + ' €',
+          postavka: parseFloat(baseAmount.toFixed(2)),
+          potni: parseFloat(travelCost.toFixed(2)),
+          skupaj: parseFloat(totalAmount.toFixed(2)),
+        });
+        // Format currency columns
+        [5, 6, 7].forEach(col => {
+          dataRow.getCell(col).numFmt = '#,##0.00';
         });
       });
 
@@ -464,8 +468,9 @@ export function setupExportHandlers(db: any) {
         km: '',
         postavka: '',
         potni: 'SKUPAJ:',
-        skupaj: grandTotal.toFixed(2) + ' €',
+        skupaj: parseFloat(grandTotal.toFixed(2)),
       });
+      totalRow.getCell(7).numFmt = '#,##0.00';
 
       // Apply borders and center alignment to all cells
       const totalRowNumber = worksheet.rowCount;

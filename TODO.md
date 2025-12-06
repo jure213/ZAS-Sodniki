@@ -58,7 +58,7 @@ dashboard - imena -->
     zastonj/drugi zas, načrtovano -> zneski default 0
     načrtovano, zastonj, drugi zas -> odstrani gumb generiraj -->
 
-superreport
+<!-- superreport -->
 
 <!-- nalaganje opomb pri tekmovanju -->
 
@@ -74,6 +74,6 @@ superreport
 
 <!-- sum izplačila -->
 
-spreminjanje vrstnega reda disciplin
+<!-- spreminjanje vrstnega reda disciplin -->
 
-export v excel -> samo številke, da bo valid za excel
+<!-- export v excel -> samo številke, da bo valid za excel -->
