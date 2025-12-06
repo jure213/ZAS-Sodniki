@@ -128,7 +128,7 @@ export async function renderOfficials(container, user) {
             <div class="mb-2"><label class="form-label">Email</label><input id="f-email" class="form-control" value="${official?.email ?? ''}"></div>
             <div class="mb-2"><label class="form-label">Telefon</label><input id="f-phone" class="form-control" value="${official?.phone ?? ''}"></div>
             <div class="mb-2"><label class="form-label">Rang (1, 2, 3)</label><input id="f-rank" class="form-control" value="${official?.rank ?? ''}"></div>
-            <div class="mb-2"><label class="form-label">Dodatni izpiti</label><input id="f-additional-exams" class="form-control" value="${official?.additional_exams ?? ''}"><div class="form-text">Npr: Atletika, Gimnastika</div></div>
+            <div class="mb-2"><label class="form-label">Dodatni izpiti</label><input id="f-additional-exams" class="form-control" value="${official?.additional_exams ?? ''}"><div class="form-text">Npr: štarter, Delegat...</div></div>
             <div class="mb-2"><label class="form-check-label"><input type="checkbox" id="f-active" class="form-check-input" ${official?.active ? 'checked' : ''}> Aktiven</label></div>
             <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control" rows="3">${official?.notes ?? ''}</textarea><div class="form-text">Dodatne opombe o sodniku</div></div>
           </div>

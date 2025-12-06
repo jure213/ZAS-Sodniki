@@ -431,7 +431,7 @@ export async function renderCompetitions(container, user) {
     subModal.querySelector('#f-kilometers').addEventListener('input', calculateAmounts);
 
     // Calculate initial values if editing existing official
-    if (compOfficial && (!compOfficial.znesek_sodnik || !compOfficial.znesek_racun)) {
+    if (!compOfficial) {
       calculateAmounts();
     }
 
