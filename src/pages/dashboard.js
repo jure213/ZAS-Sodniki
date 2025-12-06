@@ -44,17 +44,19 @@ export async function renderDashboard(container) {
         <div class="table-container">
           <div class="p-4">
             <h3 class="h5 mb-3">Neplačana izplačila po sodnikih</h3>
-            <table class="table table-hover mb-0">
-              <thead class="text-center">
-                <tr>
-                  <th style="width: 50%;">SODNIK</th>
-                  <th style="width: 50%;">SKUPNI ZNESEK</th>
-                </tr>
-              </thead>
-              <tbody id="unpaid-payments" class="align-middle text-center">
-                <tr><td colspan="2" class="text-center text-muted">Nalaganje...</td></tr>
-              </tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="text-center">
+                  <tr>
+                    <th style="width: 50%;">SODNIK</th>
+                    <th style="width: 50%;">SKUPNI ZNESEK</th>
+                  </tr>
+                </thead>
+                <tbody id="unpaid-payments" class="align-middle text-center">
+                  <tr><td colspan="2" class="text-center text-muted">Nalaganje...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
