@@ -73,3 +73,7 @@ superreport
 <!-- search bar sodniki -->
 
 <!-- sum izplačila -->
+
+spreminjanje vrstnega reda disciplin
+
+export v excel -> samo številke, da bo valid za excel
