@@ -1,12 +1,14 @@
 import { ipcMain } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
+import bcrypt from 'bcryptjs';
 
 export function setupAuthHandlers(db: any) {
   ipcMain.handle('auth:login', async (_event: IpcMainInvokeEvent, { username, password }: { username: string; password: string }) => {
     const user = await db.getUserByUsername(username);
     if (!user) return { ok: false, error: 'Uporabnik ne obstaja' };
-    // NOTE: Plain-text for prototype; replace with hashed password check (bcrypt) in production
-    if (user.password !== password) return { ok: false, error: 'Napačno geslo' };
+    
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) return { ok: false, error: 'Napačno geslo' };
     return { ok: true, user: { id: user.id, username: user.username, name: user.name, role: user.role } };
   });
 

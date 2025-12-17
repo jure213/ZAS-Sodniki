@@ -25,11 +25,13 @@
   "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.76.1",
+    "bcryptjs": "^3.0.3",
     "electron-updater": "^6.6.2",
     "exceljs": "^4.4.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.10.6",
     "electron": "^28.1.0",
     "electron-builder": "^24.13.3",

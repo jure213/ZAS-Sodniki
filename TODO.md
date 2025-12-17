@@ -76,4 +76,6 @@ dashboard - imena -->
 
 <!-- spreminjanje vrstnega reda disciplin -->
 
-<!-- export v excel -> samo številke, da bo valid za excel -->
+<!-- export v excel -> samo številke, da bo valid za adexcel -->
+
+<!-- hash gesel -->
