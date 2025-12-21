@@ -79,3 +79,5 @@ dashboard - imena -->
 <!-- export v excel -> samo številke, da bo valid za adexcel -->
 
 <!-- hash gesel -->
+
+filter za datume ne dela (datum tekmovanja -> datum plačila)
