@@ -80,4 +80,4 @@ dashboard - imena -->
 
 <!-- hash gesel -->
 
-filter za datume ne dela (datum tekmovanja -> datum plačila)
+<!-- filter za datume ne dela (datum tekmovanja -> datum plačila) -->
