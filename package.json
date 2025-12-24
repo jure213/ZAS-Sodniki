@@ -26,6 +26,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.76.1",
     "bcryptjs": "^3.0.3",
+    "dotenv": "^17.2.3",
     "electron-updater": "^6.6.2",
     "exceljs": "^4.4.0",
     "xlsx": "^0.18.5"
@@ -45,7 +46,8 @@
     },
     "files": [
       "dist-electron/**/*",
-      "src/**/*"
+      "src/**/*",
+      ".env"
     ],
     "icon": "electron/zas_ikona.ico",
     "linux": {

@@ -1,18 +1,20 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-// Check if running in development mode
-const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+// Get Supabase credentials from environment variables
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
 
-// Production database (packaged app)
-const PROD_SUPABASE_URL = "https://orcpdhrgmhiuzlnrixsn.supabase.co";
-const PROD_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yY3BkaHJnbWhpdXpsbnJpeHNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1ODM2MzMsImV4cCI6MjA3NzE1OTYzM30.ai4WMKOrSHUqbpOYvscNNDJ_f-R7zakdH4q1UbdOUW4";
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    'Missing Supabase credentials. Please ensure SUPABASE_URL and SUPABASE_ANON_KEY are set in your .env file.'
+  );
+}
 
 export class SupabaseDatabaseManager {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(PROD_SUPABASE_URL, PROD_SUPABASE_ANON_KEY);
+    this.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
   close(): void {

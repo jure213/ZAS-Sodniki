@@ -2,6 +2,22 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
 import { autoUpdater, AppUpdater } from 'electron-updater';
 import * as path from 'path';
+import { config } from 'dotenv';
+
+// Load environment variables BEFORE importing supabase
+// In development: project root
+// In production: app resources
+const envPath = app.isPackaged
+  ? path.join(process.resourcesPath, '.env')
+  : path.join(__dirname, '..', '.env');
+
+const result = config({ path: envPath });
+
+console.log('Environment path:', envPath);
+console.log('Dotenv result:', result.error ? result.error.message : 'Success');
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'Set' : 'Not set');
+console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'Set' : 'Not set');
+
 import { SupabaseDatabaseManager } from './supabase';
 
 // Configure logging
