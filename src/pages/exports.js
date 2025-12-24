@@ -295,18 +295,18 @@ export async function renderExports(container, { user }) {
                             <td class="text-center">${row.role}</td>
                             <td class="text-center">${row.discipline}</td>
                             <td class="text-center">${row.hours}</td>
-                            <td class="text-center">${(row.amount - row.travelCost).toFixed(2)} €</td>
-                            <td class="text-center">${row.travelCost.toFixed(2)} €</td>
-                            <td class="text-center fw-bold">${row.amount.toFixed(2)} €</td>
+                            <td class="text-center">${window.formatCurrency(row.amount - row.travelCost)}</td>
+                            <td class="text-center">${window.formatCurrency(row.travelCost)}</td>
+                            <td class="text-center fw-bold">${window.formatCurrency(row.amount)}</td>
                         </tr>
                     `).join('')}
                 </tbody>
                 <tfoot class="table-secondary fw-bold">
                     <tr>
                         <td colspan="5" class="text-end">SKUPAJ:</td>
-                        <td class="text-center">${totalOfficials.toFixed(2)} €</td>
-                        <td class="text-center">${totalTravel.toFixed(2)} €</td>
-                        <td class="text-center">${grandTotal.toFixed(2)} €</td>
+                        <td class="text-center">${window.formatCurrency(totalOfficials)}</td>
+                        <td class="text-center">${window.formatCurrency(totalTravel)}</td>
+                        <td class="text-center">${window.formatCurrency(grandTotal)}</td>
                     </tr>
                 </tfoot>
             `;
@@ -389,16 +389,16 @@ export async function renderExports(container, { user }) {
                             <td class="text-center">${row.name}</td>
                             <td class="text-center">${window.formatDate(row.date)}</td>
                             <td class="text-center">${row.location}</td>
-                            <td class="text-center">${row.officialsTotal.toFixed(2)} €</td>
-                            <td class="text-center">${row.travelTotal.toFixed(2)} €</td>
-                            <td class="text-center fw-bold">${row.grandTotal.toFixed(2)} €</td>
+                            <td class="text-center">${window.formatCurrency(row.officialsTotal)}</td>
+                            <td class="text-center">${window.formatCurrency(row.travelTotal)}</td>
+                            <td class="text-center fw-bold">${window.formatCurrency(row.grandTotal)}</td>
                         </tr>
                     `).join('')}
                     <tr class="table-secondary fw-bold">
                         <td colspan="3" class="text-end">SKUPAJ:</td>
-                        <td class="text-center">${totalOfficials.toFixed(2)} €</td>
-                        <td class="text-center">${totalTravel.toFixed(2)} €</td>
-                        <td class="text-center">${grandTotal.toFixed(2)} €</td>
+                        <td class="text-center">${window.formatCurrency(totalOfficials)}</td>
+                        <td class="text-center">${window.formatCurrency(totalTravel)}</td>
+                        <td class="text-center">${window.formatCurrency(grandTotal)}</td>
                     </tr>
                 </tbody>
             `;

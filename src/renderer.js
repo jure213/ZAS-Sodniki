@@ -7,6 +7,7 @@ import { renderPayments } from './pages/payments.js';
 import { renderSettings } from './pages/settings.js';
 import { renderUsers } from './pages/users.js';
 import { renderExports } from './pages/exports.js';
+import { initializeUpdater } from './components/updater.js';
 
 function qs(id) {
   return document.getElementById(id);
@@ -21,6 +22,22 @@ window.formatDate = function(dateString) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
   return `${day}.${month}.${year}`;
+};
+
+// Global function to format currency to European format (1.000,00 €)
+window.formatCurrency = function(amount) {
+  if (amount === null || amount === undefined) return '0,00 €';
+  const num = Number(amount);
+  if (isNaN(num)) return '0,00 €';
+  
+  // Format with 2 decimals
+  const formatted = num.toFixed(2);
+  const [integer, decimal] = formatted.split('.');
+  
+  // Add thousand separators (.)
+  const withSeparators = integer.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  
+  return `${withSeparators},${decimal} €`;
 };
 
 // Global function to clean up all modals and restore body state
@@ -125,9 +142,12 @@ function showApp(user) {
 }
 
 async function route(user) {
-  const hash = window.location.hash || '#/dashboard';
+  const fullHash = window.location.hash || '#/dashboard';
   const content = qs('appContent');
   const pageTitle = qs('pageTitle');
+  
+  // Split hash into path and query string
+  const [hash, queryString] = fullHash.split('?');
   
   pageTitle.textContent = pageTitles[hash] || 'ZAS Sodniki';
   
@@ -142,7 +162,24 @@ async function route(user) {
       await renderCompetitions(content, user);
       break;
     case '#/payments':
-      await renderPayments(content, user);
+      // Parse URL parameters for filters
+      const urlParams = new URLSearchParams(queryString);
+      const officialParam = urlParams.get('official');
+      let initialFilters = null;
+      
+      if (officialParam) {
+        // Find official by name
+        const officials = await window.api?.officials?.list() ?? [];
+        const official = officials.find(o => o.name === officialParam);
+        if (official) {
+          initialFilters = {
+            officialId: official.id,
+            status: 'owed'
+          };
+        }
+      }
+      
+      await renderPayments(content, user, initialFilters);
       break;
     case '#/exports':
       await renderExports(content, user);
@@ -167,6 +204,13 @@ async function route(user) {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  // Initialize auto-updater
+  try {
+    initializeUpdater();
+  } catch (error) {
+    console.error('Updater initialization failed:', error);
+  }
+  
   // Check if "remember me" is enabled
   const rememberMe = localStorage.getItem('rememberMe') === 'true';
   

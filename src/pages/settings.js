@@ -55,6 +55,20 @@ export async function renderSettings(container, user) {
             <i class="bi bi-info-circle"></i> Ta vrednost se uporablja za izračun potnih stroškov (kilometri × €/km)
           </small>
         </div>
+        
+        <div class="mb-3">
+          <label class="form-label">
+            <i class="bi bi-arrow-clockwise me-1"></i>Posodobitve aplikacije
+          </label>
+          <div>
+            <button id="check-updates-btn" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-download me-1"></i>Preveri za posodobitve
+            </button>
+            <small class="text-muted d-block mt-1">
+              <i class="bi bi-info-circle"></i> Aplikacija samodejno preveri za posodobitve ob zagonu. S tem gumbom lahko ročno sprožite preverjanje.
+            </small>
+          </div>
+        </div>
       </div>
     </div>
   
@@ -137,7 +151,7 @@ export async function renderSettings(container, user) {
             `${tier.from}-${tier.to === 999 ? '∞' : tier.to}h: €${tier.rate}`
           ).join('<br>');
         } else if (role.hourlyRate) {
-          return `€${role.hourlyRate.toFixed(2)}`;
+          return window.formatCurrency(role.hourlyRate);
         }
         return '-';
       }
@@ -600,20 +614,69 @@ export async function renderSettings(container, user) {
       toast.style.zIndex = "9999";
       toast.innerHTML = `
         <i class="bi bi-check-circle-fill me-2"></i>
-        <strong>Nastavitev shranjena!</strong> Cena na kilometer je nastavljena na €${value.toFixed(2)}/km
+        <strong>Nastavitev shranjena!</strong> Cena na kilometer je nastavljena na ${window.formatCurrency(value)}/km
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       `;
       document.body.appendChild(toast);
-
-      setTimeout(() => {
-        toast.remove();
-      }, 3000);
-    } catch (error) {
-      console.error('Failed to save travel cost setting:', error);
-      alert('Napaka pri shranjevanju nastavitve');
-      e.target.value = travelCostPerKm;
+      setTimeout(() => toast.remove(), 3000);
+    } catch (e) {
+      alert('Napaka pri shranjevanju: ' + String(e));
     }
   };
+
+  // Handle check for updates button
+  const checkUpdatesBtn = settingsContent.querySelector("#check-updates-btn");
+  if (checkUpdatesBtn && window.api?.updater) {
+    checkUpdatesBtn.onclick = async () => {
+      const btn = checkUpdatesBtn;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Preverjam...';
+      
+      try {
+        const result = await window.api.updater.check();
+        
+        if (result.error) {
+          // Show error notification
+          const toast = document.createElement("div");
+          toast.className = "alert alert-warning alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
+          toast.style.zIndex = "9999";
+          toast.innerHTML = `
+            <i class="bi bi-info-circle-fill me-2"></i>
+            ${result.error}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          `;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 4000);
+        } else {
+          // Update check initiated - notification will appear via updater events
+          const toast = document.createElement("div");
+          toast.className = "alert alert-info alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
+          toast.style.zIndex = "9999";
+          toast.innerHTML = `
+            <i class="bi bi-info-circle-fill me-2"></i>
+            Preverjam za posodobitve...
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          `;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 3000);
+        }
+      } catch (error) {
+        const toast = document.createElement("div");
+        toast.className = "alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3";
+        toast.style.zIndex = "9999";
+        toast.innerHTML = `
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          Napaka pri preverjanju: ${String(error)}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-download me-1"></i>Preveri za posodobitve';
+      }
+    };
+  }
 
   settingsContent.querySelector("#add-role").onclick = async () => {
     const roles = (await window.api?.settings?.getRoles()) ?? [];

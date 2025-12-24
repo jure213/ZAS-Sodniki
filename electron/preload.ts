@@ -7,6 +7,42 @@ contextBridge.exposeInMainWorld('api', {
   ping: async () => ipcRenderer.invoke('app:ping'),
   restart: async () => ipcRenderer.invoke('app:restart'),
   quit: async () => ipcRenderer.invoke('app:quit'),
+  // Updater
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    download: () => ipcRenderer.invoke('updater:download'),
+    install: () => ipcRenderer.invoke('updater:install'),
+    onChecking: (callback: () => void) => {
+      const listener = () => callback();
+      ipcRenderer.on('update-checking', listener);
+      return () => ipcRenderer.removeListener('update-checking', listener);
+    },
+    onAvailable: (callback: (info: any) => void) => {
+      const listener = (_event: any, info: any) => callback(info);
+      ipcRenderer.on('update-available', listener);
+      return () => ipcRenderer.removeListener('update-available', listener);
+    },
+    onNotAvailable: (callback: (info: any) => void) => {
+      const listener = (_event: any, info: any) => callback(info);
+      ipcRenderer.on('update-not-available', listener);
+      return () => ipcRenderer.removeListener('update-not-available', listener);
+    },
+    onError: (callback: (message: string) => void) => {
+      const listener = (_event: any, message: string) => callback(message);
+      ipcRenderer.on('update-error', listener);
+      return () => ipcRenderer.removeListener('update-error', listener);
+    },
+    onDownloadProgress: (callback: (progress: any) => void) => {
+      const listener = (_event: any, progress: any) => callback(progress);
+      ipcRenderer.on('update-download-progress', listener);
+      return () => ipcRenderer.removeListener('update-download-progress', listener);
+    },
+    onDownloaded: (callback: (info: any) => void) => {
+      const listener = (_event: any, info: any) => callback(info);
+      ipcRenderer.on('update-downloaded', listener);
+      return () => ipcRenderer.removeListener('update-downloaded', listener);
+    },
+  },
   // Auth
   auth: {
     login: (payload: { username: string; password: string }) =>

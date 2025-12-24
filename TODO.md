@@ -25,6 +25,7 @@ dodaj vlogo ^^ -->
 <!-- napaka -> opomba (generacija izplačil) -->
 
 <!-- default ure 4 -->
+
 <!-- obvezen vnos -->
 
 <!-- označi plačano -> možnost delnega plačila (plačil < dolg -> ostane med neplačanimi) -->
@@ -81,3 +82,19 @@ dashboard - imena -->
 <!-- hash gesel -->
 
 <!-- filter za datume ne dela (datum tekmovanja -> datum plačila) -->
+
+<!-- default filter -> ne plačano -->
+
+<!-- overview -> link na filtrirano -->
+
+<!-- dinamični filtri (ne plačano -> samo sodniki, z neplačili, tekme z neplačili) -->
+
+<!-- brez gumba filtriraj (avtomatsko apply) -->
+
+<!-- odstrani gumb dodaj izplačilo -->
+
+<!-- več izpisa na overviewu...2 stolpca? -->
+
+<!-- popravek izplačila valut -> 1.000,00 € -->
+
+<!-- popravek modal sodniki -->

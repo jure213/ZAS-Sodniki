@@ -207,14 +207,14 @@ export async function renderOfficials(container, user) {
                     <tr>
                       <td>${h.name}</td>
                       <td>${h.date ? window.formatDate(h.date) : 'Ni datuma'}</td>
-                      <td style="text-align: right">${h.amount.toFixed(2)} €</td>
+                      <td style="text-align: right">${window.formatCurrency(h.amount)}</td>
                     </tr>
                   `).join('')}
                 </tbody>
                 <tfoot class="table-light">
                   <tr class="fw-bold">
                     <td colspan="2">Skupaj:</td>
-                    <td style="text-align: right">${total.toFixed(2)} €</td>
+                    <td style="text-align: right">${window.formatCurrency(total)}</td>
                   </tr>
                 </tfoot>
               </table>

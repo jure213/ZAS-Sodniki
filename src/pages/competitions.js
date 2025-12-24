@@ -212,6 +212,7 @@ export async function renderCompetitions(container, user) {
             </div>
           </div>
           <div class="modal-footer">
+            <small class="text-muted me-auto">(Že generirana izplačila se izbriše na zavihku "Izplačila")</small>
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Zapri</button>
           </div>
         </div>
@@ -229,23 +230,36 @@ export async function renderCompetitions(container, user) {
 
     async function loadCompOfficials() {
       const officials = await window.api?.competitions?.listOfficials(competition.id) ?? [];
+      
+      // Get all payments for this competition to check which officials already have payments
+      const payments = await window.api?.payments?.list({ competitionId: competition.id }) ?? [];
+      const officialsWithPayments = new Set(payments.map(p => p.official_id));
+      
       const tbody = modal.querySelector('#comp-officials-body');
       if (officials.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Ni dodeljenih sodnikov</td></tr>';
       } else {
-        tbody.innerHTML = officials.map(o => `
+        tbody.innerHTML = officials.map(o => {
+          const hasPayment = officialsWithPayments.has(o.official_id);
+          const nameStyle = hasPayment ? 'text-decoration: underline;' : '';
+          const deleteButton = hasPayment 
+            ? '' 
+            : `<button class="btn btn-sm btn-outline-danger delete-comp-official" data-id="${o.id}"><i class="bi bi-trash"></i></button>`;
+          
+          return `
           <tr>
-            <td>${o.official_name ?? ''}</td>
+            <td style="${nameStyle}">${o.official_name ?? ''}</td>
             <td>${o.role ?? ''}</td>
             <td>${o.discipline ?? ''}</td>
             <td>${o.hours ?? 0}</td>
             <td>${o.kilometers ?? 0}</td>
             <td>
               <button class="btn btn-sm btn-outline-primary edit-comp-official" data-id="${o.id}"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-sm btn-outline-danger delete-comp-official" data-id="${o.id}"><i class="bi bi-trash"></i></button>
+              ${deleteButton}
             </td>
           </tr>
-        `).join('');
+        `;
+        }).join('');
 
         tbody.querySelectorAll('.edit-comp-official').forEach(btn => {
           btn.onclick = () => {

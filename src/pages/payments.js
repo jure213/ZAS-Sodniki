@@ -1,4 +1,4 @@
-export async function renderPayments(container, user) {
+export async function renderPayments(container, user, initialFilters = null) {
   const isAdmin = user?.role === 'admin';
   container.innerHTML = `
     <div class="card mb-3">
@@ -6,13 +6,12 @@ export async function renderPayments(container, user) {
         <div class="row g-2">
           <div class="col-md-3"><label class="form-label small">Sodnik</label><select id="filter-official" class="form-select form-select-sm"><option value="">Vsi</option></select></div>
           <div class="col-md-3"><label class="form-label small">Tekmovanje</label><select id="filter-competition" class="form-select form-select-sm"><option value="">Vsa</option></select></div>
-          <div class="col-md-2"><label class="form-label small">Status</label><select id="filter-status" class="form-select form-select-sm"><option value="">Vsi</option><option value="owed">Ni plačano</option><option value="paid">Plačano</option></select></div>
+          <div class="col-md-2"><label class="form-label small">Status</label><select id="filter-status" class="form-select form-select-sm"><option value="">Vsi</option><option value="owed" selected>Ni plačano</option><option value="paid">Plačano</option></select></div>
           <div class="col-md-2"><label class="form-label small">Datum od</label><input type="date" id="filter-date-from" class="form-control form-control-sm"></div>
           <div class="col-md-2"><label class="form-label small">Datum do</label><input type="date" id="filter-date-to" class="form-control form-control-sm"></div>
         </div>
         <div class="mt-2">
-          <button id="apply-filters" class="btn btn-sm btn-outline-primary">Filtriraj</button>
-          <button id="clear-filters" class="btn btn-sm btn-outline-secondary">Počisti</button>
+          <button id="clear-filters" class="btn btn-sm btn-outline-secondary">Počisti filtre</button>
           <div class="form-check form-check-inline ms-3">
             <input class="form-check-input" type="checkbox" id="show-zero-payments" value="">
             <label class="form-check-label" for="show-zero-payments">
@@ -25,7 +24,6 @@ export async function renderPayments(container, user) {
     </div>
     <div class="d-flex justify-content-end align-items-center mb-2">
           <button id="export-filtered" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-excel me-1"></i>Izvozi v Excel</button>
-      ${isAdmin ? '<button id="add-payment" class="btn btn-primary btn-sm ms-2"><i class="bi bi-plus-circle me-1"></i> Dodaj izplačilo</button>' : ''}
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover">
@@ -47,26 +45,63 @@ export async function renderPayments(container, user) {
   let competitions = [];
   let currentFilteredPayments = []; // Store currently displayed payments
 
-  async function loadFilters() {
+  async function loadFilters(currentFilters = {}) {
     officials = await window.api?.officials?.list() ?? [];
     competitions = await window.api?.competitions?.list() ?? [];
+    
+    // Get all payments to determine which officials/competitions have payments matching the filter
+    const allPayments = await window.api?.payments?.list({}) ?? [];
+    
     const officialSelect = container.querySelector('#filter-official');
     const competitionSelect = container.querySelector('#filter-competition');
+    
+    // Store current selections
+    const currentOfficialId = officialSelect.value;
+    const currentCompetitionId = competitionSelect.value;
 
     // Clear existing options (keep only the first "Vsi"/"Vsa" option)
     officialSelect.innerHTML = '<option value="">Vsi</option>';
     competitionSelect.innerHTML = '<option value="">Vsa</option>';
 
-    officials.forEach(o => {
+    // Filter payments based on current filters
+    let filteredPayments = allPayments;
+    if (currentFilters.status) {
+      filteredPayments = filteredPayments.filter(p => p.status === currentFilters.status);
+    }
+    if (currentFilters.competitionId) {
+      filteredPayments = filteredPayments.filter(p => p.competition_id === currentFilters.competitionId);
+    }
+    if (currentFilters.officialId) {
+      filteredPayments = filteredPayments.filter(p => p.official_id === currentFilters.officialId);
+    }
+    
+    // Get unique official and competition IDs from filtered payments
+    const officialIdsWithPayments = new Set(filteredPayments.map(p => p.official_id));
+    const competitionIdsWithPayments = new Set(filteredPayments.map(p => p.competition_id));
+    
+    // Populate officials dropdown - filter based on selected competition
+    const officialsToShow = (currentFilters.status || currentFilters.competitionId)
+      ? officials.filter(o => officialIdsWithPayments.has(o.id))
+      : officials;
+    
+    officialsToShow.forEach(o => {
       const opt = document.createElement('option');
       opt.value = o.id;
       opt.textContent = o.name;
+      if (o.id.toString() === currentOfficialId) opt.selected = true;
       officialSelect.appendChild(opt);
     });
-    competitions.forEach(c => {
+    
+    // Populate competitions dropdown - filter based on selected official
+    const competitionsToShow = (currentFilters.status || currentFilters.officialId)
+      ? competitions.filter(c => competitionIdsWithPayments.has(c.id))
+      : competitions;
+    
+    competitionsToShow.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.id;
       opt.textContent = c.name;
+      if (c.id.toString() === currentCompetitionId) opt.selected = true;
       competitionSelect.appendChild(opt);
     });
   }
@@ -103,8 +138,8 @@ export async function renderPayments(container, user) {
           (p) => `<tr>
             <td>${p.official_name ?? ''}</td>
             <td>${p.competition_name ?? ''}</td>
-            <td class="text-center">${(p.znesek_sodnik ?? 0).toFixed(2)} €</td>
-            <td class="text-center">${(p.amount ?? 0).toFixed(2)} €</td>
+            <td class="text-center">${window.formatCurrency(p.znesek_sodnik ?? 0)}</td>
+            <td class="text-center">${window.formatCurrency(p.amount ?? 0)}</td>
             <td>${formatPaymentMethod(p.method)}</td>
             <td><span class="badge bg-${p.status === 'paid' ? 'success' : 'danger'}">${p.status === 'paid' ? 'Plačano' : 'Ni plačano'}</span></td>
             <td>${window.formatDate(p.date)}</td>
@@ -126,8 +161,8 @@ export async function renderPayments(container, user) {
       const totalPreostalo = displayList.reduce((sum, p) => sum + (p.amount ?? 0), 0);
       
       // Update footer totals
-      container.querySelector('#total-znesek-sodnik').textContent = `€${totalZnesekSodnik.toFixed(2)}`;
-      container.querySelector('#total-preostalo').textContent = `€${totalPreostalo.toFixed(2)}`;
+      container.querySelector('#total-znesek-sodnik').textContent = window.formatCurrency(totalZnesekSodnik);
+      container.querySelector('#total-preostalo').textContent = window.formatCurrency(totalPreostalo);
       
       const hiddenCount = list.length - displayList.length;
       const countText = hiddenCount > 0 
@@ -164,7 +199,7 @@ export async function renderPayments(container, user) {
                   </div>
                   <div class="modal-body">
                     <div class="alert alert-info">
-                      <strong>Trenutni znesek:</strong> €${(payment?.amount ?? 0).toFixed(2)}
+                      <strong>Trenutni znesek:</strong> ${window.formatCurrency(payment?.amount ?? 0)}
                     </div>
                     <div class="mb-3">
                       <div class="form-check">
@@ -336,7 +371,8 @@ export async function renderPayments(container, user) {
     };
   }
 
-  container.querySelector('#apply-filters').onclick = () => {
+  // Auto-apply filters on change
+  async function applyCurrentFilters() {
     const filters = {};
     const officialId = container.querySelector('#filter-official').value;
     const competitionId = container.querySelector('#filter-competition').value;
@@ -348,32 +384,31 @@ export async function renderPayments(container, user) {
     if (status) filters.status = status;
     if (dateFrom) filters.dateFrom = dateFrom;
     if (dateTo) filters.dateTo = dateTo;
-    loadPayments(filters);
-  };
+    
+    // Reload filter dropdowns dynamically based on current status
+    await loadFilters(filters);
+    await loadPayments(filters);
+  }
+  
+  // Add change listeners to all filter inputs
+  container.querySelector('#filter-official').onchange = applyCurrentFilters;
+  container.querySelector('#filter-competition').onchange = applyCurrentFilters;
+  container.querySelector('#filter-status').onchange = applyCurrentFilters;
+  container.querySelector('#filter-date-from').onchange = applyCurrentFilters;
+  container.querySelector('#filter-date-to').onchange = applyCurrentFilters;
 
-  container.querySelector('#clear-filters').onclick = () => {
+  // Add event listener for the zero payments checkbox
+  container.querySelector('#show-zero-payments').onchange = applyCurrentFilters;
+  
+  // Add event listener for clear filters button
+  container.querySelector('#clear-filters').onclick = async () => {
     container.querySelector('#filter-official').value = '';
     container.querySelector('#filter-competition').value = '';
     container.querySelector('#filter-status').value = '';
     container.querySelector('#filter-date-from').value = '';
     container.querySelector('#filter-date-to').value = '';
-    loadPayments();
-  };
-
-  // Add event listener for the zero payments checkbox
-  container.querySelector('#show-zero-payments').onchange = () => {
-    const filters = {};
-    const officialId = container.querySelector('#filter-official').value;
-    const competitionId = container.querySelector('#filter-competition').value;
-    const status = container.querySelector('#filter-status').value;
-    const dateFrom = container.querySelector('#filter-date-from').value;
-    const dateTo = container.querySelector('#filter-date-to').value;
-    if (officialId) filters.officialId = parseInt(officialId);
-    if (competitionId) filters.competitionId = parseInt(competitionId);
-    if (status) filters.status = status;
-    if (dateFrom) filters.dateFrom = dateFrom;
-    if (dateTo) filters.dateTo = dateTo;
-    loadPayments(filters);
+    await loadFilters({});
+    await loadPayments({});
   };
 
   container.querySelector('#export-filtered').onclick = async () => {
@@ -413,10 +448,22 @@ export async function renderPayments(container, user) {
     }
   };
 
-  if (isAdmin) {
-    container.querySelector('#add-payment').onclick = () => showEditForm();
+  // Determine initial filters
+  const defaultFilters = initialFilters || { status: 'owed' };
+  
+  // First load filters to populate dropdowns
+  await loadFilters(defaultFilters);
+  
+  // Then set filter UI elements to match initial filters
+  if (initialFilters) {
+    if (initialFilters.officialId) {
+      container.querySelector('#filter-official').value = initialFilters.officialId;
+    }
+    if (initialFilters.status) {
+      container.querySelector('#filter-status').value = initialFilters.status;
+    }
   }
-
-  await loadFilters();
-  await loadPayments();
+  
+  // Load payments with filters
+  await loadPayments(defaultFilters);
 }

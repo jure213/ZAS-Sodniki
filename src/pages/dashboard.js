@@ -40,19 +40,40 @@ export async function renderDashboard(container) {
     </div>
     
     <div class="row g-4">
-      <div class="col-12">
+      <div class="col-12 mb-3">
+        <h3 class="h5">Neplačana izplačila po sodnikih</h3>
+      </div>
+      <div class="col-md-6">
         <div class="table-container">
-          <div class="p-4">
-            <h3 class="h5 mb-3">Neplačana izplačila po sodnikih</h3>
+          <div class="p-3">
             <div class="table-responsive">
-              <table class="table table-hover mb-0">
+              <table class="table table-hover table-sm mb-0">
                 <thead class="text-center">
                   <tr>
-                    <th style="width: 50%;">SODNIK</th>
-                    <th style="width: 50%;">SKUPNI ZNESEK</th>
+                    <th style="width: 60%;">SODNIK</th>
+                    <th style="width: 40%;">ZNESEK</th>
                   </tr>
                 </thead>
-                <tbody id="unpaid-payments" class="align-middle text-center">
+                <tbody id="unpaid-payments-left" class="align-middle text-center">
+                  <tr><td colspan="2" class="text-center text-muted">Nalaganje...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="table-container">
+          <div class="p-3">
+            <div class="table-responsive">
+              <table class="table table-hover table-sm mb-0">
+                <thead class="text-center">
+                  <tr>
+                    <th style="width: 60%;">SODNIK</th>
+                    <th style="width: 40%;">ZNESEK</th>
+                  </tr>
+                </thead>
+                <tbody id="unpaid-payments-right" class="align-middle text-center">
                   <tr><td colspan="2" class="text-center text-muted">Nalaganje...</td></tr>
                 </tbody>
               </table>
@@ -71,14 +92,16 @@ export async function renderDashboard(container) {
       document.getElementById("stat-competitions").textContent =
         stats.activeCompetitions;
       document.getElementById("stat-paid").textContent =
-        (stats.paidPayments ?? 0).toFixed(2) + " €";
+        window.formatCurrency(stats.paidPayments ?? 0);
       document.getElementById("stat-owed").textContent =
-        (stats.owedPayments ?? 0).toFixed(2) + " €";
+        window.formatCurrency(stats.owedPayments ?? 0);
     }
 
     // Load unpaid payments
     const payments = await window.api?.payments?.list({ status: "owed" });
-    const tbody = document.getElementById("unpaid-payments");
+    const tbodyLeft = document.getElementById("unpaid-payments-left");
+    const tbodyRight = document.getElementById("unpaid-payments-right");
+    
     if (payments?.length) {
       // Filter out zero payments (free/other_zas competitions)
       const nonZeroPayments = payments.filter(p => (p.znesek_sodnik ?? 0) !== 0);
@@ -97,19 +120,65 @@ export async function renderDashboard(container) {
       const sortedOfficials = Object.entries(groupedPayments)
         .sort((a, b) => a[0].localeCompare(b[0]));
 
-      tbody.innerHTML = sortedOfficials
-        .map(
-          ([officialName, totalAmount]) => `
-        <tr>
-          <td>${officialName}</td>
-          <td><strong>${totalAmount.toFixed(2)} €</strong></td>
-        </tr>
-      `
-        )
-        .join("");
+      // Use two columns only if 20 or more officials
+      const useTwoColumns = sortedOfficials.length >= 20;
+
+      if (useTwoColumns) {
+        // Split into two columns
+        const midpoint = Math.ceil(sortedOfficials.length / 2);
+        const leftOfficials = sortedOfficials.slice(0, midpoint);
+        const rightOfficials = sortedOfficials.slice(midpoint);
+
+        // Render left column
+        tbodyLeft.innerHTML = leftOfficials
+          .map(
+            ([officialName, totalAmount]) => `
+          <tr class="official-row" style="cursor: pointer;" data-official-name="${officialName}">
+            <td>${officialName}</td>
+            <td><strong>${window.formatCurrency(totalAmount)}</strong></td>
+          </tr>
+        `
+          )
+          .join("");
+        
+        // Render right column
+        tbodyRight.innerHTML = rightOfficials
+          .map(
+            ([officialName, totalAmount]) => `
+          <tr class="official-row" style="cursor: pointer;" data-official-name="${officialName}">
+            <td>${officialName}</td>
+            <td><strong>${window.formatCurrency(totalAmount)}</strong></td>
+          </tr>
+        `
+          )
+          .join("");
+      } else {
+        // Use single column - put all in left, hide right
+        tbodyLeft.innerHTML = sortedOfficials
+          .map(
+            ([officialName, totalAmount]) => `
+          <tr class="official-row" style="cursor: pointer;" data-official-name="${officialName}">
+            <td>${officialName}</td>
+            <td><strong>${window.formatCurrency(totalAmount)}</strong></td>
+          </tr>
+        `
+          )
+          .join("");
+        
+        // Hide right column
+        tbodyRight.parentElement.parentElement.parentElement.parentElement.style.display = 'none';
+      }
+      
+      // Add click event listeners to navigate to payments with filters
+      document.querySelectorAll('.official-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const officialName = row.dataset.officialName;
+          window.location.hash = `#/payments?official=${encodeURIComponent(officialName)}`;
+        });
+      });
     } else {
-      tbody.innerHTML =
-        '<tr><td colspan="2" class="text-center text-muted">Ni neplačanih izplačil</td></tr>';
+      tbodyLeft.innerHTML = '<tr><td colspan="2" class="text-center text-muted">Ni neplačanih izplačil</td></tr>';
+      tbodyRight.innerHTML = '<tr><td colspan="2" class="text-center text-muted">-</td></tr>';
     }
   } catch (e) {
     console.error("Failed to load dashboard stats:", e);
