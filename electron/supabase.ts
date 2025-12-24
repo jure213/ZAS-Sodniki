@@ -1,12 +1,22 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-// Check if running in development mode
-const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+// XOR decode function for obfuscated credentials
+function xorDecode(encoded: string, key: string): string {
+  const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+  let result = '';
+  for (let i = 0; i < decoded.length; i++) {
+    result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return result;
+}
 
-// Production database (packaged app)
-const PROD_SUPABASE_URL = "https://orcpdhrgmhiuzlnrixsn.supabase.co";
-const PROD_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yY3BkaHJnbWhpdXpsbnJpeHNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1ODM2MzMsImV4cCI6MjA3NzE1OTYzM30.ai4WMKOrSHUqbpOYvscNNDJ_f-R7zakdH4q1UbdOUW4";
+// Obfuscated credentials (XOR cipher + Base64)
+const SECRET_KEY = 'ZAS_SODNIKI_2025';
+const ENCODED_URL = 'MjUnLyB1a2EmOSovVlhAUjcpOiopIyo8IDM6MRxDR0U7IzIsNmEnIQ==';
+const ENCODED_KEY = 'PzgZNzEIJycGIgMWZ0p7BBQoGiwaIRZ7KggAaXtbQm0MAhlmfSo9BDkoehJbf1t/ICULHTsWKQgzERoWQXlcfzYbOhZlBil3MBJ6HVlRen80IwQ3IyscPjopJxVCVXp7Lwg6KDosKXc6ERoWBHlfcy8jYWs6AwcEORIRDlt/WHBpDzkaYgAAA3sGMxJBeV9jbiIQFmUCLg96BTMaA39mbCAMYG99Li16HgYCEEBjemArIyMQCjk3LQcFDRVtVh9nbTsyNDcHcD94His7fWVlAQ==';
+
+const PROD_SUPABASE_URL = xorDecode(ENCODED_URL, SECRET_KEY);
+const PROD_SUPABASE_ANON_KEY = xorDecode(ENCODED_KEY, SECRET_KEY);
 
 export class SupabaseDatabaseManager {
   private supabase: SupabaseClient;
