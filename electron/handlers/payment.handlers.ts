@@ -22,8 +22,8 @@ export function setupPaymentHandlers(db: any) {
     return { ok: success };
   });
 
-  ipcMain.handle('payment:markPaid', async (_event, { id, datePaid, method, isPartial, partialAmount }: { id: number; datePaid?: string; method?: string; isPartial?: boolean; partialAmount?: number }) => {
-    const success = await db.markPaymentAsPaid(id, datePaid, method, isPartial, partialAmount);
+  ipcMain.handle('payment:markPaid', async (_event, { id, datePaid, method, isPartial, partialAmount, remarks }: { id: number; datePaid?: string; method?: string; isPartial?: boolean; partialAmount?: number; remarks?: string }) => {
+    const success = await db.markPaymentAsPaid(id, datePaid, method, isPartial, partialAmount, remarks);
     return { ok: success };
   });
 

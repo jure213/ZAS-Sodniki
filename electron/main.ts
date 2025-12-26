@@ -87,7 +87,10 @@ autoUpdater.on('checking-for-update', () => {
 
 autoUpdater.on('update-available', (info) => {
   console.log('Update available:', info);
-  mainWindow?.webContents.send('update-available', info);
+  mainWindow?.webContents.send('update-available', {
+    ...info,
+    currentVersion: app.getVersion()
+  });
 });
 
 autoUpdater.on('update-not-available', (info) => {

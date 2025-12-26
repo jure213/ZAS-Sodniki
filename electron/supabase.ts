@@ -25,6 +25,22 @@ export class SupabaseDatabaseManager {
     this.supabase = createClient(PROD_SUPABASE_URL, PROD_SUPABASE_ANON_KEY);
   }
 
+  // Helper function to format currency to European format (1.000,00 €)
+  private formatCurrency(amount: number): string {
+    if (amount === null || amount === undefined) return '0,00 €';
+    const num = Number(amount);
+    if (isNaN(num)) return '0,00 €';
+    
+    // Format with 2 decimals
+    const formatted = num.toFixed(2);
+    const [integer, decimal] = formatted.split('.');
+    
+    // Add thousand separators (.)
+    const withSeparators = integer.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    
+    return `${withSeparators},${decimal} €`;
+  }
+
   close(): void {
     // No need to close connection with Supabase
   }
@@ -406,7 +422,8 @@ export class SupabaseDatabaseManager {
     datePaid?: string,
     method?: string,
     isPartial?: boolean,
-    partialAmount?: number
+    partialAmount?: number,
+    remarks?: string
   ): Promise<boolean> {
     // First, get the current payment data
     const { data: currentPayment } = await this.supabase
@@ -427,33 +444,45 @@ export class SupabaseDatabaseManager {
       
       if (remainingAmount <= 0) {
         // Full payment (partial amount >= total amount)
+        let remarksText = `Plačano v celoti: ${this.formatCurrency(partialAmount)} (datum: ${formattedDate})`;
+        if (remarks) {
+          remarksText += `\n${remarks}`;
+        }
         updateData = {
           status: "paid",
           date_paid: paymentDate,
           amount: 0,
           remarks: (currentPayment.remarks || '') + 
             (currentPayment.remarks ? '\n' : '') +
-            `Plačano v celoti: €${partialAmount.toFixed(2)} (datum: ${formattedDate})`
+            remarksText
         };
       } else {
         // Partial payment (remaining amount > 0)
+        let remarksText = `Delno plačilo: ${this.formatCurrency(partialAmount)} (datum: ${formattedDate})`;
+        if (remarks) {
+          remarksText += `\n${remarks}`;
+        }
         updateData = {
           status: "owed", // Remains unpaid
           amount: remainingAmount,
           remarks: (currentPayment.remarks || '') + 
             (currentPayment.remarks ? '\n' : '') +
-            `Delno plačilo: €${partialAmount.toFixed(2)} (datum: ${formattedDate})`
+            remarksText
         };
       }
     } else {
       // Full payment (not partial)
+      let remarksText = `Plačano v celoti: ${this.formatCurrency(currentPayment.amount)} (datum: ${formattedDate})`;
+      if (remarks) {
+        remarksText += `\n${remarks}`;
+      }
       updateData = {
         status: "paid",
         date_paid: paymentDate,
         amount: 0, // Set remaining amount to 0
         remarks: (currentPayment.remarks || '') + 
           (currentPayment.remarks ? '\n' : '') +
-          `Plačano v celoti: €${currentPayment.amount.toFixed(2)} (datum: ${formattedDate})`
+          remarksText
       };
     }
 

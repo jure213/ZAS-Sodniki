@@ -44,6 +44,7 @@ export async function renderPayments(container, user, initialFilters = null) {
   let officials = [];
   let competitions = [];
   let currentFilteredPayments = []; // Store currently displayed payments
+  let currentFilters = {}; // Store current filter values
 
   async function loadFilters(currentFilters = {}) {
     officials = await window.api?.officials?.list() ?? [];
@@ -177,7 +178,7 @@ export async function renderPayments(container, user, initialFilters = null) {
             const confirmed = await window.confirmDialog('Ali ste prepričani, da želite izbrisati to izplačilo?', 'Izbriši izplačilo');
             if (confirmed) {
               await window.api?.payments?.delete(id);
-              loadPayments(filters);
+              loadPayments(currentFilters);
             }
           };
         });
@@ -227,6 +228,11 @@ export async function renderPayments(container, user, initialFilters = null) {
                         <option value="nakazilo" ${payment?.method === 'nakazilo' || payment?.method === 'bank_transfer' ? 'selected' : ''}>Nakazilo</option>
                       </select>
                     </div>
+                    <div class="mb-3">
+                      <label class="form-label">Opombe</label>
+                      <textarea id="payment-remarks-input" class="form-control" rows="3" placeholder="Dodatne opombe k plačilu..."></textarea>
+                      <div class="form-text">Te opombe bodo dodane k obstoječim opombam v zapisu</div>
+                    </div>
                   </div>
                   <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Prekliči</button>
@@ -257,16 +263,18 @@ export async function renderPayments(container, user, initialFilters = null) {
               const method = modal.querySelector('#payment-method-input').value;
               const isPartial = modal.querySelector('#partial-payment-checkbox').checked;
               const partialAmount = isPartial ? parseFloat(modal.querySelector('#partial-amount-input').value) : null;
+              const remarks = modal.querySelector('#payment-remarks-input').value;
 
               await window.api?.payments?.markPaid({
                 id,
                 datePaid,
                 method,
                 isPartial,
-                partialAmount
+                partialAmount,
+                remarks
               });
               modal.remove();
-              loadPayments(filters);
+              loadPayments(currentFilters);
             };
           };
         });
@@ -367,7 +375,7 @@ export async function renderPayments(container, user, initialFilters = null) {
       if (window.cleanupModals) {
         window.cleanupModals();
       }
-      loadPayments();
+      loadPayments(currentFilters);
     };
   }
 
@@ -384,6 +392,9 @@ export async function renderPayments(container, user, initialFilters = null) {
     if (status) filters.status = status;
     if (dateFrom) filters.dateFrom = dateFrom;
     if (dateTo) filters.dateTo = dateTo;
+    
+    // Store current filters
+    currentFilters = filters;
     
     // Reload filter dropdowns dynamically based on current status
     await loadFilters(filters);
@@ -407,6 +418,7 @@ export async function renderPayments(container, user, initialFilters = null) {
     container.querySelector('#filter-status').value = '';
     container.querySelector('#filter-date-from').value = '';
     container.querySelector('#filter-date-to').value = '';
+    currentFilters = {};
     await loadFilters({});
     await loadPayments({});
   };
@@ -450,6 +462,9 @@ export async function renderPayments(container, user, initialFilters = null) {
 
   // Determine initial filters
   const defaultFilters = initialFilters || { status: 'owed' };
+  
+  // Store as current filters
+  currentFilters = defaultFilters;
   
   // First load filters to populate dropdowns
   await loadFilters(defaultFilters);

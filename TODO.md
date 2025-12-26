@@ -98,3 +98,5 @@ dashboard - imena -->
 <!-- popravek izplačila valut -> 1.000,00 € -->
 
 <!-- popravek modal sodniki -->
+
+opombe pri plačevanju
