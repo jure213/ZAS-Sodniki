@@ -99,4 +99,4 @@ dashboard - imena -->
 
 <!-- popravek modal sodniki -->
 
-opombe pri plačevanju
+<!-- opombe pri plačevanju -->
