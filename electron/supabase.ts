@@ -13,16 +13,16 @@ function xorDecode(encoded: string, key: string): string {
 // Obfuscated credentials (XOR cipher + Base64)
 const SECRET_KEY = 'ZAS_SODNIKI_2025';
 const ENCODED_URL = 'MjUnLyB1a2EmOSovVlhAUjcpOiopIyo8IDM6MRxDR0U7IzIsNmEnIQ==';
-const ENCODED_KEY = 'PzgZNzEIJycGIgMWZ0p7BBQoGiwaIRZ7KggAaXtbQm0MAhlmfSo9BDkoehJbf1t/ICULHTsWKQgzERoWQXlcfzYbOhZlBil3MBJ6HVlRen80IwQ3IyscPjopJxVCVXp7Lwg6KDosKXc6ERoWBHlfcy8jYWs6AwcEORIRDlt/WHBpDzkaYgAAA3sGMxJBeV9jbiIQFmUCLg96BTMaA39mbCAMYG99Li16HgYCEEBjemArIyMQCjk3LQcFDRVtVh9nbTsyNDcHcD94His7fWVlAQ==';
+const ENCODED_SERVICE_KEY = 'PzgZNzEIJycGIgMWZ0p7BBQoGiwaIRZ7KggAaXtbQm0MAhlmfSo9BDkoehJbf1t/ICULHTsWKQgzERoWQXlcfzYbOhZlBil3MBJ6HVlRen80IwQ3IyscPjopJxVCVXp7Lwg6KDosKXc6ERoWBHlcezYiPQUjFnYYLygkZkFqYXwpCD4zOysHB38GHTwAfWZgbgwpBikCPTkgERE3RXlYWiMMFzxgAhAbfAUjEkhWYxsADgAsARASPyEiKAZncXNhFygBOAkpLHcoMQwQaAVwTQgEahEaEAt+EDgA';
 
 const PROD_SUPABASE_URL = xorDecode(ENCODED_URL, SECRET_KEY);
-const PROD_SUPABASE_ANON_KEY = xorDecode(ENCODED_KEY, SECRET_KEY);
+const PROD_SUPABASE_SERVICE_KEY = xorDecode(ENCODED_SERVICE_KEY, SECRET_KEY);
 
 export class SupabaseDatabaseManager {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(PROD_SUPABASE_URL, PROD_SUPABASE_ANON_KEY);
+    this.supabase = createClient(PROD_SUPABASE_URL, PROD_SUPABASE_SERVICE_KEY);
   }
 
   // Helper function to format currency to European format (1.000,00 €)
