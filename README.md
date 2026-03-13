@@ -21,7 +21,7 @@ npm run dev
 # Linux
 npm run build:linux
 
-# Windows (potreben Wine za cross-build na Linuxu)
+# Windows
 npm run build:win
 ```
 
@@ -37,11 +37,6 @@ Datoteke za nastavitev v posameznem sisetmu bodo v mapi `release/`.
 - `src/` — renderer (HTML + JS)
   - `index.html` — osnovni UI (Bootstrap) + hitri testi
   - `renderer.js` — kliče API iz `preload`
-
-## Opombe o varnosti
-
-- Gesla so trenutno shranjena v navadnem besedilu za potrebe prototipa. Za produkcijo zamenjajte z bcrypt/scrypt in dodajte ustrezno politiko.
-- `contextIsolation` je omogočen in `nodeIntegration` onemogočen.
 
 ## Licenca
 

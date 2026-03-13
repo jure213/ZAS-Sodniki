@@ -8,7 +8,7 @@ function xorEncode(str, key) {
   return Buffer.from(encoded).toString('base64');
 }
 
-const SECRET_KEY = 'ZAS_SODNIKI_2025'; // Change this to something unique
+const SECRET_KEY = 'ZAS_SODNIKI_2025'; 
 
 const url = 'https://orcpdhrgmhiuzlnrixsn.supabase.co';
 const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yY3BkaHJnbWhpdXpsbnJpeHNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1ODM2MzMsImV4cCI6MjA3NzE1OTYzM30.ai4WMKOrSHUqbpOYvscNNDJ_f-R7zakdH4q1UbdOUW4';
