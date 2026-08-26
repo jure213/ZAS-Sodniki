@@ -1,0 +1,9 @@
+[Unit]
+Description=Weekly logical backup of the ZAS Sodniki PostgreSQL database
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/jurer/projects/ZAS-Sodniki
+ExecStart=/home/jurer/projects/ZAS-Sodniki/deploy/scripts/backup.sh

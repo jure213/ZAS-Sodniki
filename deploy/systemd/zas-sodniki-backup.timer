@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the ZAS Sodniki database backup every Sunday
+
+[Timer]
+OnCalendar=Sun *-*-* 03:15:00 Europe/Ljubljana
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

@@ -68,6 +68,11 @@ dist-electron/
 .env.test
 .env.production
 
+# Generated API configuration and database migration artifacts
+electron/generated/
+deploy/dumps/
+deploy/backups/
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

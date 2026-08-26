@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:17.11-bookworm
+    container_name: zas-sodniki-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: zas_sodniki
+      POSTGRES_USER: zas_sodniki_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGREST_DB_PASSWORD: ${POSTGREST_DB_PASSWORD:?POSTGREST_DB_PASSWORD is required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zas_sodniki_admin -d zas_sodniki"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - zas_sodniki_postgres_data:/var/lib/postgresql/data
+      - ./deploy/init:/docker-entrypoint-initdb.d:ro
+      - ./deploy/dumps:/migrations:ro
+    networks:
+      database:
+      psql-net:
+        aliases:
+          - zas-sodniki-db
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    image: postgrest/postgrest:v14.12
+    container_name: zas-sodniki-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: "host=db port=5432 dbname=zas_sodniki user=postgrest_authenticator password=${POSTGREST_DB_PASSWORD:?POSTGREST_DB_PASSWORD is required}"
+      PGRST_DB_SCHEMAS: public
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET:?PGRST_JWT_SECRET is required}
+      PGRST_OPENAPI_MODE: disabled
+      PGRST_DB_TX_END: commit-allow-override
+      PGRST_SERVER_PORT: 3000
+    expose:
+      - "3000"
+    networks:
+      database:
+      proxy-net:
+        aliases:
+          - zas-sodniki-api
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  database:
+    internal: true
+  psql-net:
+    external: true
+    name: psql-net
+  proxy-net:
+    external: true
+    name: proxy-net
+
+volumes:
+  zas_sodniki_postgres_data:

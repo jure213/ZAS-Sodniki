@@ -1,28 +1,17 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-
-// XOR decode function for obfuscated credentials
-function xorDecode(encoded: string, key: string): string {
-  const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
-  let result = '';
-  for (let i = 0; i < decoded.length; i++) {
-    result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
-
-// Obfuscated credentials (XOR cipher + Base64)
-const SECRET_KEY = 'ZAS_SODNIKI_2025';
-const ENCODED_URL = 'MjUnLyB1a2EmOSovVlhAUjcpOiopIyo8IDM6MRxDR0U7IzIsNmEnIQ==';
-const ENCODED_SERVICE_KEY = 'PzgZNzEIJycGIgMWZ0p7BBQoGiwaIRZ7KggAaXtbQm0MAhlmfSo9BDkoehJbf1t/ICULHTsWKQgzERoWQXlcfzYbOhZlBil3MBJ6HVlRen80IwQ3IyscPjopJxVCVXp7Lwg6KDosKXc6ERoWBHlcezYiPQUjFnYYLygkZkFqYXwpCD4zOysHB38GHTwAfWZgbgwpBikCPTkgERE3RXlYWiMMFzxgAhAbfAUjEkhWYxsADgAsARASPyEiKAZncXNhFygBOAkpLHcoMQwQaAVwTQgEahEaEAt+EDgA';
-
-const PROD_SUPABASE_URL = xorDecode(ENCODED_URL, SECRET_KEY);
-const PROD_SUPABASE_SERVICE_KEY = xorDecode(ENCODED_SERVICE_KEY, SECRET_KEY);
+import { API_KEY, API_URL } from "./generated/api-config";
 
 export class SupabaseDatabaseManager {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(PROD_SUPABASE_URL, PROD_SUPABASE_SERVICE_KEY);
+    this.supabase = createClient(API_URL, API_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    });
   }
 
   // Helper function to format currency to European format (1.000,00 €)
@@ -42,7 +31,7 @@ export class SupabaseDatabaseManager {
   }
 
   close(): void {
-    // No need to close connection with Supabase
+    // The HTTP-based database client has no persistent connection to close.
   }
 
   // Simple helpers

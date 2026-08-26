@@ -56,7 +56,7 @@ function createWindow() {
 async function initializeApp() {
   try {
     db = new SupabaseDatabaseManager();
-    console.log('Supabase database initialized');
+    console.log('Database API initialized');
 
     // Set up IPC handlers
     setupAuthHandlers(db as any);
