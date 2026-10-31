@@ -217,6 +217,77 @@ insecure setup. Avoid it; if you must, recreate the old role
 check out the previous `docker-compose.yml` and `deploy/sql/grant-api.sql`,
 run that `grant-api.sql`, restore `.env.bak`, and run `docker compose up -d api`.
 
+## 8. Migration 002 (v2.0 data model): rehearse, apply, roll back (DRAFT)
+
+Migration `deploy/sql/002_data_model.sql` changes money storage: payments get
+installments (`payment_transactions`), assignments carry their own tariff
+snapshot, roles and disciplines become tables, settings move to
+`private.settings_legacy`. It drops the columns v1.1.x clients write to, so
+**1.1.x clients stop working on purpose** once it is applied. Apply it together
+with the v2.0.0 release, never separately.
+
+The migration runs in one transaction. A failed preflight check or assertion
+rolls everything back and prints what to fix. It never edits your data to make a
+check pass. Known preflight stops: duplicate assignments (same official twice in
+one competition), several payments for one official in one competition,
+unreadable dates, unknown statuses or payment methods, unreadable installment
+lines in remarks, malformed role JSON.
+
+### Rehearse on a copy of the real data (always, before the VPS)
+
+```bash
+# 1. Backup on the VPS and copy it to your PC (deploy/dumps/ is gitignored)
+./deploy/scripts/backup.sh
+# 2. Local stack, restore, migrate
+./deploy/scripts/restore-dump.sh deploy/dumps/<backup>.dump   # applies pending migrations
+# 3. Review the report (ids, names, old-vs-new numbers; keep the output local)
+docker compose exec -T db psql --no-psqlrc -U zas_sodniki_admin -d zas_sodniki \
+  < deploy/sql/reports/002_report.sql
+# 4. SQL tests, API privilege checks
+./deploy/sql/tests/run.sh
+ZAS_API_URL=http://127.0.0.1:8081 ZAS_API_PREFIX="" ./deploy/scripts/verify.sh
+```
+
+Do not run the SQL tests on the production database. They roll back, but they
+are written for a throwaway stack.
+
+### Apply on the VPS
+
+1. `./deploy/scripts/backup.sh` and note the file name: this is the rollback point.
+2. `git pull`, then `./deploy/scripts/migrate.sh` (applies 002 and refreshes grants).
+3. `./deploy/scripts/verify.sh`, then the report above; compare with the rehearsal.
+4. Publish the v2.0.0 release.
+
+`migrate.sh` is safe to repeat: with 002 recorded it does nothing.
+
+### Roll back
+
+Everything before the first user entry in v2 can be undone by restoring the
+backup from step 1. Entries made in v2 after the migration are lost by a
+rollback, so decide early.
+
+```bash
+git checkout <the v1.1.x tag>            # the matching migrate.sh and grant-api.sql
+./deploy/scripts/restore-dump.sh --replace --no-migrate deploy/dumps/<backup-before-002>.dump
+./deploy/scripts/migrate.sh              # v1.1.x version: roles, grants, JWT secret
+./deploy/scripts/verify.sh
+```
+
+Why each part matters:
+
+- `--replace` now also runs `DROP SCHEMA public CASCADE` and recreates it
+  (besides dropping `private`). `pg_restore --clean` alone would fail on the v2
+  tables and views that depend on `payments`.
+- `--no-migrate` restores the archive as it is. With the v2 checkout the
+  migrate step would apply 002 again.
+- The `git checkout` of v1.1.x (or the 1.1.x `migrate.sh`/`grant-api.sql`) makes
+  the final `migrate.sh` restore the old grants; the v2 `grant-api.sql` refers to
+  tables that do not exist in the old schema.
+- Backups never contain the JWT secret; `migrate.sh` writes it back from `.env`.
+
+If anyone already installed 2.0.0, republish the 1.1.x code as a newer version
+(2.0.1) so their auto-updater moves them back.
+
 ## Diagnostika
 
 ```bash
