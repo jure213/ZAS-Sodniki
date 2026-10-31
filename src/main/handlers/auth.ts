@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron';
 import { loginSchema } from '@shared/schemas';
-import { db } from '../db/client';
+import { ApiError, db } from '../db/client';
 import { handle } from '../ipc/handle';
 import { AppError } from '../ipc/errors';
 import { clearToken, loadToken, saveToken } from '../session/token';
@@ -32,7 +32,18 @@ export function registerAuthHandlers(): void {
     if (!token) return null;
 
     db.setToken(token);
-    const user = await db.me();
+    // Throws (→ NETWORK) when the server is unreachable; the remembered token
+    // is kept so the renderer can retry once the connection is back.
+    let user;
+    try {
+      user = await db.me();
+    } catch (e) {
+      // A 502/503 from nginx while the API is down counts as "unreachable" too.
+      if (e instanceof ApiError && e.status && e.status >= 500) {
+        throw new AppError('NETWORK', 'Strežnik ni dosegljiv');
+      }
+      throw e;
+    }
     if (!user) {
       db.setToken(null);
       clearToken();

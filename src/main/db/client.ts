@@ -84,11 +84,18 @@ export class DbClient {
     return data;
   }
 
-  /** The user for the current token, or null if the token is not valid. */
+  /**
+   * The user for the current token, or null if the server rejected the token.
+   * Throws ApiError when the server could not answer (offline, 5xx), so a
+   * remembered session is not thrown away just because the network is down.
+   */
   async me(): Promise<AppUser | null> {
-    const { data, error } = await this.rest.rpc('me');
-    if (error || !data) return null;
-    return data as AppUser;
+    const { data, error, status } = await this.rest.rpc('me');
+    if (error) {
+      if (status === 401 || status === 403) return null;
+      throw new ApiError(error.message ?? '', error.code || undefined, status || undefined);
+    }
+    return (data as AppUser | null) ?? null;
   }
 }
 

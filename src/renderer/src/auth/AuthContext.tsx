@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AppUser } from '@shared/ipc';
-import { call } from '@/lib/ipc';
+import { call, IpcCallError } from '@/lib/ipc';
 
-type Status = 'loading' | 'out' | 'in';
+/** 'offline': a remembered session exists but the server could not be reached at startup. */
+type Status = 'loading' | 'out' | 'in' | 'offline';
 
 type AuthState = {
   status: Status;
@@ -12,6 +13,10 @@ type AuthState = {
   expired: boolean;
   signIn: (user: AppUser) => void;
   signOut: () => Promise<void>;
+  /** Tries to restore the remembered session again (after 'offline'). */
+  retryRestore: () => void;
+  /** Leaves the 'offline' screen for the login page (the remembered token stays until a new login). */
+  goToLogin: () => void;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -22,19 +27,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [expired, setExpired] = useState(false);
 
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
+    setStatus('loading');
     call('auth:restoreSession')
       .then((u) => {
         if (cancelled) return;
         setUser(u);
         setStatus(u ? 'in' : 'out');
       })
-      .catch(() => !cancelled && setStatus('out'));
+      .catch((e) => {
+        if (cancelled) return;
+        setStatus(e instanceof IpcCallError && e.code === 'NETWORK' ? 'offline' : 'out');
+      });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
+
+  const retryRestore = useCallback(() => setAttempt((n) => n + 1), []);
+  const goToLogin = useCallback(() => setStatus('out'), []);
 
   useEffect(
     () =>
@@ -69,7 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [queryClient]);
 
-  const value = useMemo(() => ({ status, user, expired, signIn, signOut }), [status, user, expired, signIn, signOut]);
+  const value = useMemo(
+    () => ({ status, user, expired, signIn, signOut, retryRestore, goToLogin }),
+    [status, user, expired, signIn, signOut, retryRestore, goToLogin],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
