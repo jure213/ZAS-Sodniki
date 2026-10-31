@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
 
+// Same icon gradients as the v1 dashboard (white icon on a gradient square).
 const TONES = {
-  brand: 'bg-primary/10 text-primary',
-  green: 'bg-emerald-100 text-emerald-700',
-  amber: 'bg-amber-100 text-amber-700',
-  red: 'bg-red-100 text-red-700',
+  brand: 'linear-gradient(135deg, #072b74 0%, #898dbb 100%)',
+  pink: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  green: 'linear-gradient(135deg, #196905 0%, #82e2a2 100%)',
+  red: 'linear-gradient(135deg, #ee0d0d 0%, #be6363 100%)',
 } as const;
 
 /** KPI tile: icon chip, label, big value, optional hint line / action slot. */
@@ -30,7 +30,7 @@ export function StatCard({
 }) {
   return (
     <div className="flex items-start gap-4 rounded-xl border bg-card p-5 shadow-sm">
-      <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-lg', TONES[tone])}>
+      <div className="flex size-12 shrink-0 items-center justify-center rounded-xl text-white shadow-sm" style={{ backgroundImage: TONES[tone] }}>
         <Icon className="size-5" />
       </div>
       <div className="min-w-0 flex-1">

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ColumnDef } from '@tanstack/react-table';
-import { ChevronRight, Flag, HandCoins, Users, Wallet } from 'lucide-react';
+import { ChevronRight, CircleAlert, CircleCheck, Flag, Users } from 'lucide-react';
 import type { OwedByOfficial } from '@shared/types';
 import { formatCents } from '@shared/money';
 import { PageHeader } from '@/components/PageHeader';
@@ -57,13 +57,14 @@ export function DashboardPage() {
           label="Aktivna tekmovanja"
           value={s?.active_competitions}
           icon={Flag}
+          tone="pink"
           loading={stats.isLoading}
           hint="načrtovana in izvedena"
         />
         <StatCard
           label={`Plačano v letu ${year}`}
           value={s && money(s.paid_cents)}
-          icon={HandCoins}
+          icon={CircleCheck}
           tone="green"
           loading={stats.isLoading}
           action={
@@ -84,8 +85,8 @@ export function DashboardPage() {
         <StatCard
           label="Neplačano"
           value={s && money(s.owed_cents)}
-          icon={Wallet}
-          tone="amber"
+          icon={CircleAlert}
+          tone="red"
           loading={stats.isLoading}
           hint={s ? `Skupaj obveznosti: ${formatCents(s.total_cents)}` : undefined}
         />
