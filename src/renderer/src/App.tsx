@@ -12,6 +12,7 @@ import { SettingsPage } from '@/pages/settings/SettingsPage';
 import { UsersPage } from '@/pages/users/UsersPage';
 import { CompetitionDetailPage } from '@/pages/competitions/CompetitionDetailPage';
 import { CompetitionsPage } from '@/pages/competitions/CompetitionsPage';
+import { PaymentsPage } from '@/pages/payments/PaymentsPage';
 import { Placeholder } from '@/pages/Placeholder';
 
 function AdminOnly({ children }: { children: React.ReactNode }) {
@@ -42,7 +43,7 @@ export function App() {
               <Route path="/officials" element={<OfficialsPage />} />
               <Route path="/competitions" element={<CompetitionsPage />} />
               <Route path="/competitions/:id" element={<CompetitionDetailPage />} />
-              <Route path="/payments" element={<Placeholder title="Izplačila" />} />
+              <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/exports" element={<Placeholder title="Izpisi" />} />
               <Route path="/settings" element={<AdminOnly><SettingsPage /></AdminOnly>} />
               <Route path="/users" element={<AdminOnly><UsersPage /></AdminOnly>} />
