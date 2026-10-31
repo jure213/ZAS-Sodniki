@@ -46,6 +46,4 @@ export function registerAuthHandlers(): void {
     clearToken();
     return null;
   });
-
-  handle('prefs:get', null, () => getPrefs());
 }

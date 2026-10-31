@@ -20,7 +20,8 @@
     "dist": "npm run build && electron-builder --win",
     "dist:dir": "npm run build && electron-builder --win --dir && npm run check:asar",
     "dist:linux": "npm run build && electron-builder --linux",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "test:integration": "vitest run -c vitest.integration.config.ts"
   },
   "keywords": [
     "electron",
@@ -32,7 +33,7 @@
   "dependencies": {
     "@supabase/postgrest-js": "^2.78.0",
     "electron-updater": "^6.6.2",
-    "exceljs": "3.4.0",
+    "exceljs": "3.10.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {

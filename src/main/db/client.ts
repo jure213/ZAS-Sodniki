@@ -74,10 +74,6 @@ export class DbClient {
     this.token = token;
   }
 
-  hasSession(): boolean {
-    return this.token !== null;
-  }
-
   /** Resolves to null for wrong credentials; throws ApiError otherwise. */
   async login(username: string, password: string, remember: boolean): Promise<LoginResult | null> {
     this.token = null;

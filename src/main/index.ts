@@ -1,7 +1,8 @@
 import { app, BrowserWindow, session } from 'electron';
 import * as path from 'node:path';
-import { handle } from './ipc/handle';
+import { registerAppHandlers } from './handlers/app';
 import { registerAuthHandlers } from './handlers/auth';
+import { registerDataHandlers } from './handlers/index';
 import { registerUpdater } from './updater';
 import { devServerUrl, indexFileUrl, installDevCsp, lockDownWindow } from './security';
 
@@ -43,12 +44,9 @@ function createWindow(): void {
 
 function registerHandlers(): void {
   registerAuthHandlers();
+  registerAppHandlers();
+  registerDataHandlers();
   registerUpdater(() => mainWindow);
-  handle('app:getVersion', null, () => app.getVersion());
-  handle('app:quit', null, () => {
-    app.quit();
-    return null;
-  });
 }
 
 app.whenReady().then(() => {

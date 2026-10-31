@@ -25,17 +25,45 @@ const MESSAGES = {
 
 const NETWORK_RE = /fetch failed|failed to fetch|econnrefused|enotfound|etimedout|econnreset|network|socket/i;
 
+/** PostgreSQL's own (English) messages, as opposed to the Slovenian ones our SQL functions raise. */
+const PG_BOILERPLATE =
+  /duplicate key|violates|permission denied|null value|invalid input|out of range|could not|row-level security|JWT|does not exist|syntax error/i;
+
+/** Friendly message for a unique violation, chosen by constraint name. */
+const CONFLICT_BY_CONSTRAINT: [RegExp, string][] = [
+  [/competition_officials_one_per_competition/, 'Sodnik je že dodeljen temu tekmovanju.'],
+  [/users_username/, 'Uporabniško ime že obstaja.'],
+  [/roles_name_key/, 'Vloga s tem imenom že obstaja.'],
+  [/disciplines_name_key/, 'Disciplina s tem imenom že obstaja.'],
+  [/payments_assignment_id_key/, 'Izplačilo za to dodelitev že obstaja.'],
+];
+
+function ownMessage(e: ApiError, fallback: string): string {
+  return e.message && !PG_BOILERPLATE.test(e.message) ? e.message : fallback;
+}
+
 function fromPostgres(e: ApiError): IpcError {
   const { pgCode: code, status } = e;
-  if (code === '23505') return { code: 'CONFLICT', message: MESSAGES.CONFLICT };
-  if (code === '42501') return { code: 'FORBIDDEN', message: MESSAGES.FORBIDDEN };
-  if (code === '23503') return { code: 'IN_USE', message: MESSAGES.IN_USE };
+  if (code === '23505') {
+    const known = CONFLICT_BY_CONSTRAINT.find(([re]) => re.test(e.message));
+    return { code: 'CONFLICT', message: known?.[1] ?? ownMessage(e, MESSAGES.CONFLICT) };
+  }
+  if (code === '42501') return { code: 'FORBIDDEN', message: ownMessage(e, MESSAGES.FORBIDDEN) };
+  if (code === '23503') {
+    // Deleting a row that others reference. Inserting a reference to a missing row is a validation problem.
+    if (/update or delete on table/i.test(e.message)) return { code: 'IN_USE', message: MESSAGES.IN_USE };
+    return { code: 'VALIDATION', message: 'Povezani zapis ne obstaja.' };
+  }
   if (status === 401 || code === 'PGRST301' || code === 'PGRST303') {
     return { code: 'SESSION_EXPIRED', message: MESSAGES.SESSION_EXPIRED };
   }
+  if (code === 'PGRST116') return { code: 'VALIDATION', message: 'Zapis ne obstaja.' };
+  // Messages raised by our SQL functions and triggers (RAISE EXCEPTION) are Slovenian.
+  if (code && ['22023', 'P0001', 'P0002', '23514', '23502', '22P02', '22003', '22007'].includes(code)) {
+    return { code: 'VALIDATION', message: ownMessage(e, MESSAGES.VALIDATION) };
+  }
   if (!status && NETWORK_RE.test(e.message)) return { code: 'NETWORK', message: MESSAGES.NETWORK };
-  // Messages raised by our SQL functions (RAISE EXCEPTION) are already Slovenian.
-  return { code: 'UNKNOWN', message: e.message || MESSAGES.UNKNOWN };
+  return { code: 'UNKNOWN', message: ownMessage(e, MESSAGES.UNKNOWN) };
 }
 
 /** Maps anything thrown inside a handler to a transport-safe error. */
