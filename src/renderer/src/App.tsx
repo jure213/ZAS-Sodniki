@@ -8,6 +8,8 @@ import { UpdaterDialog } from '@/components/UpdaterDialog';
 import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { OfficialsPage } from '@/pages/officials/OfficialsPage';
+import { SettingsPage } from '@/pages/settings/SettingsPage';
+import { UsersPage } from '@/pages/users/UsersPage';
 import { Placeholder } from '@/pages/Placeholder';
 
 function AdminOnly({ children }: { children: React.ReactNode }) {
@@ -39,8 +41,8 @@ export function App() {
               <Route path="/competitions" element={<Placeholder title="Tekmovanja" />} />
               <Route path="/payments" element={<Placeholder title="Izplačila" />} />
               <Route path="/exports" element={<Placeholder title="Izpisi" />} />
-              <Route path="/settings" element={<AdminOnly><Placeholder title="Nastavitve" /></AdminOnly>} />
-              <Route path="/users" element={<AdminOnly><Placeholder title="Uporabniki" /></AdminOnly>} />
+              <Route path="/settings" element={<AdminOnly><SettingsPage /></AdminOnly>} />
+              <Route path="/users" element={<AdminOnly><UsersPage /></AdminOnly>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>
