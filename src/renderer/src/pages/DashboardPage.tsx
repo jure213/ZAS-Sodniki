@@ -52,14 +52,13 @@ export function DashboardPage() {
       <PageHeader title="Nadzorna plošča" description="Pregled izplačil sodnikom" />
 
       <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Sodniki" value={s?.total_officials} icon={Users} loading={stats.isLoading} hint="vsi vpisani sodniki" />
+        <StatCard label="Sodniki" value={s?.total_officials} icon={Users} loading={stats.isLoading} />
         <StatCard
           label="Aktivna tekmovanja"
           value={s?.active_competitions}
           icon={Flag}
           tone="pink"
           loading={stats.isLoading}
-          hint="načrtovana in izvedena"
         />
         <StatCard
           label={`Plačano v letu ${year}`}
@@ -88,7 +87,6 @@ export function DashboardPage() {
           icon={CircleAlert}
           tone="red"
           loading={stats.isLoading}
-          hint="vse neporavnano, ne glede na leto"
         />
       </div>
 
