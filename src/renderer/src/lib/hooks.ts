@@ -1,6 +1,7 @@
 // Domain query hooks. Mutations are used directly via useApiMutation in the pages.
 
 import { toast } from 'sonner';
+import type { PaymentFilter } from '@shared/schemas';
 import type { SaveFileResult } from '@shared/types';
 import { useApiMutation, useApiQuery, qk } from '@/lib/api';
 
@@ -39,3 +40,8 @@ export function useExcelExport<C extends 'excel:officials' | 'excel:competitions
     },
   });
 }
+
+export const usePayments = (filter?: PaymentFilter) =>
+  useApiQuery('payments:list', filter, qk.payments.list(filter), { placeholderData: (prev) => prev });
+export const usePayment = (id: number | null) =>
+  useApiQuery('payments:get', { id: id ?? 0 }, qk.payments.detail(id ?? 0), { enabled: id != null });
