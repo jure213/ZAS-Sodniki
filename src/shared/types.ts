@@ -179,6 +179,22 @@ export type UserRow = {
   created_at: string;
 };
 
+export type AuditAction = 'insert' | 'update' | 'delete' | 'login' | 'login_failed' | 'generate' | 'clear_all';
+
+/** One line of the audit log (Dnevnik). summary and changes are plain text, never HTML. */
+export type AuditEntry = {
+  id: number;
+  at: string;
+  user_id: number | null;
+  username: string;
+  action: AuditAction | (string & {});
+  entity: string;
+  entity_id: number | null;
+  summary: string;
+  /** Field label -> [before, after] as display text; null when the entry has no field diff. */
+  changes: Record<string, [string | null, string | null]> | null;
+};
+
 export type CompetitionSummaryRow = {
   id: number;
   name: string;

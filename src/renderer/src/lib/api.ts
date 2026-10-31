@@ -55,6 +55,7 @@ export const qk = {
     owed: ['dashboard', 'owed'] as const,
   },
   users: { all: ['users'] as const, list: ['users', 'list'] as const },
+  audit: { all: ['audit'] as const, list: (filter: unknown) => ['audit', 'list', filter] as const },
 };
 
 /** Message to show for any thrown value. */

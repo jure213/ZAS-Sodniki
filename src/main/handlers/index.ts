@@ -1,4 +1,5 @@
 import { registerAssignmentHandlers } from './assignments';
+import { registerAuditHandlers } from './audit';
 import { registerCompetitionHandlers } from './competitions';
 import { registerConfigHandlers } from './config';
 import { registerDashboardHandlers } from './dashboard';
@@ -16,5 +17,6 @@ export function registerDataHandlers(): void {
   registerPaymentHandlers();
   registerDashboardHandlers();
   registerUserHandlers();
+  registerAuditHandlers();
   registerExcelHandlers();
 }

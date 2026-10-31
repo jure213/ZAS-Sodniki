@@ -113,6 +113,9 @@ export interface IpcChannels {
   'users:update': { input: In<typeof S.userUpdateInput>; output: null };
   'users:delete': { input: In<typeof S.idInput>; output: null };
 
+  // --- audit log (admin only; enforced by the database) ---
+  'audit:list': { input: In<typeof S.auditQuery>; output: { rows: T.AuditEntry[]; total: number } };
+
   // --- Excel (D1-D6). Each opens the native save dialog. ---
   'excel:competitionReport': { input: In<typeof S.excelCompetitionInput>; output: T.SaveFileResult };
   'excel:summary': { input: In<typeof S.excelSummaryInput>; output: T.SaveFileResult };

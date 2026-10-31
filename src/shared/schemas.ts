@@ -214,6 +214,20 @@ export const userCreateSchema = z.object({
 });
 export const userUpdateInput = z.object({ id: idSchema, data: userSchema });
 
+/** Filter groups of the audit log; the database entities behind each are mapped in audit.repo. */
+export const AUDIT_TYPES = ['official', 'competition', 'assignment', 'payment', 'role', 'discipline', 'config', 'user', 'auth'] as const;
+export const auditQuery = z.object({
+  /** Inclusive local calendar days. */
+  from: isoDateSchema.optional(),
+  to: isoDateSchema.optional(),
+  userId: idSchema.optional(),
+  entity: z.enum(AUDIT_TYPES).optional(),
+  search: z.string().trim().max(100).optional(),
+  limit: z.number().int().min(1).max(500).default(100),
+  offset: z.number().int().min(0).max(1_000_000).default(0),
+});
+export type AuditQuery = z.output<typeof auditQuery>;
+
 export const prefsInput = z.object({ rememberMe: z.boolean() });
 
 export const excelCompetitionInput = z.object({ competition_id: idSchema, tariff: tariffSchema });

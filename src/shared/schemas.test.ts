@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assignmentSchema, competitionSchema, loginSchema, recordPaymentSchema, tierSchema } from './schemas';
+import { assignmentSchema, auditQuery, competitionSchema, loginSchema, recordPaymentSchema, tierSchema } from './schemas';
 
 const msg = (r: { success: boolean; error?: { issues: { message: string }[] } }) => r.error?.issues[0]?.message;
 
@@ -32,5 +32,18 @@ describe('schemas (Slovenian messages)', () => {
     const ok = { payment_id: 1, amount_cents: 1250, paid_on: '2025-03-07', method: 'gotovina' };
     expect(recordPaymentSchema.safeParse(ok).success).toBe(true);
     expect(msg(recordPaymentSchema.safeParse({ ...ok, amount_cents: 0 }))).toBe('Znesek mora biti večji od 0');
+  });
+  it('audit query has paging defaults and validates filters', () => {
+    expect(auditQuery.parse({})).toEqual({ limit: 100, offset: 0 });
+    expect(auditQuery.parse({ search: '  Novak ', entity: 'payment', from: '2026-01-31', userId: 3 })).toMatchObject({
+      search: 'Novak',
+      entity: 'payment',
+    });
+    expect(auditQuery.safeParse({ entity: 'settings' }).success).toBe(false);
+    expect(auditQuery.safeParse({ from: '2026-02-30' }).success).toBe(false);
+    expect(auditQuery.safeParse({ limit: 0 }).success).toBe(false);
+    expect(auditQuery.safeParse({ limit: 501 }).success).toBe(false);
+    expect(auditQuery.safeParse({ offset: -1 }).success).toBe(false);
+    expect(auditQuery.safeParse({ search: 'x'.repeat(101) }).success).toBe(false);
   });
 });
