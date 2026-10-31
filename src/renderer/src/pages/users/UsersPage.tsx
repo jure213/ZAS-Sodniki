@@ -58,7 +58,7 @@ export function UsersPage() {
           return (
             <div className="flex justify-end gap-1">
               <Hint label="Uredi">
-                <Button variant="ghost" size="icon" className="size-8" aria-label="Uredi" onClick={() => setEditing({ user: u })}>
+                <Button variant="ghost" size="icon" className="size-7" aria-label="Uredi" onClick={() => setEditing({ user: u })}>
                   <Pencil />
                 </Button>
               </Hint>
@@ -67,7 +67,7 @@ export function UsersPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-8 hover:text-destructive"
+                    className="size-7 hover:text-destructive"
                     aria-label="Izbriši"
                     disabled={self}
                     onClick={() => setDeleting(u)}

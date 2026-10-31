@@ -22,9 +22,9 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
   return <tr className={cn('border-b transition-colors hover:bg-muted/50 data-[clickable=true]:cursor-pointer', className)} {...props} />;
 }
 function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
-  return <th className={cn('h-10 px-3 text-left align-middle text-xs font-semibold tracking-wide whitespace-nowrap text-muted-foreground uppercase', className)} {...props} />;
+  return <th className={cn('h-9 px-3 text-left align-middle text-xs font-semibold tracking-wide whitespace-nowrap text-muted-foreground uppercase', className)} {...props} />;
 }
 function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
-  return <td className={cn('px-3 py-2.5 align-middle', className)} {...props} />;
+  return <td className={cn('px-3 py-1 align-middle', className)} {...props} />;
 }
 export { Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell };

@@ -81,12 +81,12 @@ export function DisciplinesTab() {
                   </Button>
                 )}
                 <Hint label="Premakni više">
-                  <Button variant="ghost" size="icon" className="size-8" aria-label="Premakni više" disabled={i === 0 || reorder.isPending} onClick={() => move(i, -1)}>
+                  <Button variant="ghost" size="icon" className="size-7" aria-label="Premakni više" disabled={i === 0 || reorder.isPending} onClick={() => move(i, -1)}>
                     <ArrowUp />
                   </Button>
                 </Hint>
                 <Hint label="Premakni niže">
-                  <Button variant="ghost" size="icon" className="size-8" aria-label="Premakni niže" disabled={i === items.length - 1 || reorder.isPending} onClick={() => move(i, 1)}>
+                  <Button variant="ghost" size="icon" className="size-7" aria-label="Premakni niže" disabled={i === items.length - 1 || reorder.isPending} onClick={() => move(i, 1)}>
                     <ArrowDown />
                   </Button>
                 </Hint>
@@ -94,7 +94,7 @@ export function DisciplinesTab() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-8"
+                    className="size-7"
                     aria-label="Preimenuj"
                     onClick={() => {
                       setRenaming(d);
@@ -105,7 +105,7 @@ export function DisciplinesTab() {
                   </Button>
                 </Hint>
                 <Hint label="Odstrani">
-                  <Button variant="ghost" size="icon" className="size-8 hover:text-destructive" aria-label="Odstrani" onClick={() => setDeleting(d)}>
+                  <Button variant="ghost" size="icon" className="size-7 hover:text-destructive" aria-label="Odstrani" onClick={() => setDeleting(d)}>
                     <Trash2 />
                   </Button>
                 </Hint>

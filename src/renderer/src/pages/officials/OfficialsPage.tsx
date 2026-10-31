@@ -90,14 +90,14 @@ export function OfficialsPage() {
           return (
             <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
               <Hint label="Zgodovina">
-                <Button variant="ghost" size="icon" className="size-8" aria-label="Zgodovina" onClick={() => setHistory(o)}>
+                <Button variant="ghost" size="icon" className="size-7" aria-label="Zgodovina" onClick={() => setHistory(o)}>
                   <History />
                 </Button>
               </Hint>
               {isAdmin && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="size-8" aria-label="Več dejanj">
+                    <Button variant="ghost" size="icon" className="size-7" aria-label="Več dejanj">
                       <MoreHorizontal />
                     </Button>
                   </DropdownMenuTrigger>

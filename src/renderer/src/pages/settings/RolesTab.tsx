@@ -83,12 +83,12 @@ export function RolesTab() {
                 </Button>
               )}
               <Hint label="Uredi">
-                <Button variant="ghost" size="icon" className="size-8" aria-label="Uredi" onClick={() => setEditing({ role: r })}>
+                <Button variant="ghost" size="icon" className="size-7" aria-label="Uredi" onClick={() => setEditing({ role: r })}>
                   <Pencil />
                 </Button>
               </Hint>
               <Hint label="Odstrani">
-                <Button variant="ghost" size="icon" className="size-8 hover:text-destructive" aria-label="Odstrani" onClick={() => setDeleting(r)}>
+                <Button variant="ghost" size="icon" className="size-7 hover:text-destructive" aria-label="Odstrani" onClick={() => setDeleting(r)}>
                   <Trash2 />
                 </Button>
               </Hint>

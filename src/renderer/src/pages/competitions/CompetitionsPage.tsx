@@ -61,7 +61,7 @@ export function CompetitionsPage() {
             <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-8" aria-label="Več dejanj">
+                  <Button variant="ghost" size="icon" className="size-7" aria-label="Več dejanj">
                     <MoreHorizontal />
                   </Button>
                 </DropdownMenuTrigger>
