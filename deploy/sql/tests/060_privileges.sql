@@ -35,6 +35,7 @@ SELECT public.zz_denied('SELECT 1 FROM public.payment_transactions');
 SELECT public.zz_denied('SELECT 1 FROM public.officials');
 SELECT public.zz_denied('SELECT public.dashboard_stats()');
 SELECT public.zz_denied('SELECT public.record_payment(1, 1)');
+SELECT public.zz_denied('SELECT 1 FROM public.audit_log');
 RESET ROLE;
 
 -- zas_user: reads, but changes nothing and calls no money function
@@ -53,6 +54,7 @@ SELECT public.zz_denied('SELECT public.save_role(NULL, ''ZZ x'', ''[]'', ''[]'')
 SELECT public.zz_denied('UPDATE public.officials SET name = ''x''');
 SELECT public.zz_denied('SELECT 1 FROM private.settings_legacy');
 SELECT public.zz_denied('SELECT 1 FROM private.m002_payments');
+SELECT public.zz_denied('SELECT 1 FROM public.audit_log');
 RESET ROLE;
 
 -- zas_admin: functions yes; direct writes to guarded tables and columns no
@@ -71,6 +73,11 @@ SELECT public.zz_denied(format('INSERT INTO public.payments (official_id, compet
 SELECT public.zz_denied('UPDATE public.payments SET tariff = ''racun''');
 SELECT public.zz_denied('UPDATE public.competition_officials SET competition_id = competition_id');
 SELECT public.zz_denied('SELECT 1 FROM private.settings_legacy');
+-- the audit log is readable by admins, but never writable through the API
+SELECT count(*) FROM public.audit_log;
+SELECT public.zz_denied('INSERT INTO public.audit_log (action, entity, summary) VALUES (''insert'', ''x'', ''x'')');
+SELECT public.zz_denied('UPDATE public.audit_log SET summary = summary');
+SELECT public.zz_denied('DELETE FROM public.audit_log');
 -- allowed direct writes
 UPDATE public.officials SET name = 'ZZ official A2' WHERE id = current_setting('fx.off_a')::bigint;
 UPDATE public.competition_officials SET hours = 5, base_sodnik = 25 WHERE id = current_setting('fx.a3')::bigint;

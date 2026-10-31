@@ -73,6 +73,10 @@ TO zas_admin;
 -- Users: admins may list them, but never read password hashes or write directly.
 GRANT SELECT (id, username, name, role, created_at) ON public.users TO zas_admin;
 
+-- Audit log (003): administrators may read it. Nobody may write it through the
+-- API; entries come only from SECURITY DEFINER functions and triggers.
+GRANT SELECT ON public.audit_log TO zas_admin;
+
 -- Functions.
 GRANT EXECUTE ON FUNCTION private.check_request() TO zas_anon, zas_user, zas_admin;
 GRANT EXECUTE ON FUNCTION public.login(text, text, boolean) TO zas_anon;

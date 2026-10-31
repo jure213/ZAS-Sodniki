@@ -84,7 +84,7 @@ if [[ "$(psql_q -c "SELECT to_regclass('public.payment_transactions') IS NOT NUL
   }
 
   # Anonymous: no view, table or function of the new model is reachable.
-  for path in payment_balances assignment_details payment_transactions roles role_rates disciplines app_config; do
+  for path in payment_balances assignment_details payment_transactions roles role_rates disciplines app_config audit_log; do
     expect "anonymous GET /$path" "401" "$(http - GET "/$path?limit=1")"
   done
   expect "anonymous dashboard_stats" "401" "$(http - POST /rpc/dashboard_stats '{}')"
@@ -115,6 +115,24 @@ if [[ "$(psql_q -c "SELECT to_regclass('public.payment_transactions') IS NOT NUL
   else
     echo "NOTE: no user with role 'user'; skipped the read-only user checks."
   fi
+fi
+
+# ---------------------------------------------------------------------------
+# Audit log (migration 003): only administrators read it, nobody writes it.
+# ---------------------------------------------------------------------------
+if [[ "$(psql_q -c "SELECT to_regclass('public.audit_log') IS NOT NULL")" == "t" ]]; then
+  expect "anonymous GET /audit_log" "401" "$(http - GET "/audit_log?limit=1")"
+  expect "admin GET /audit_log" "200" "$(http "$admin_token" GET "/audit_log?limit=1")"
+  expect "admin POST /audit_log" "403" "$(http "$admin_token" POST /audit_log '{"action":"insert","entity":"x","summary":"x"}')"
+  expect "admin PATCH /audit_log" "403" "$(http "$admin_token" PATCH "/audit_log?id=eq.-1" '{"summary":"x"}')"
+  expect "admin DELETE /audit_log" "403" "$(http "$admin_token" DELETE "/audit_log?id=eq.-1")"
+  if [[ -n "${user_token:-}" ]]; then
+    expect "user GET /audit_log" "403" "$(http "$user_token" GET "/audit_log?limit=1")"
+  else
+    echo "NOTE: no user with role 'user'; skipped the audit_log read check for normal users."
+  fi
+else
+  fail "audit_log does not exist: migration 003_audit is missing (run deploy/scripts/migrate.sh)"
 fi
 
 echo "Database and public API checks passed."
