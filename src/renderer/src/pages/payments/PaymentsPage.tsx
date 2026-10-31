@@ -48,7 +48,9 @@ export function PaymentsPage() {
       { replace: true },
     );
 
-  const [status, setStatus] = useState<string>(ALL);
+  // Default: everything not fully paid (v1 also showed partially paid under "Ni plačano").
+  const DEFAULT_STATUS = 'open';
+  const [status, setStatus] = useState<string>(DEFAULT_STATUS);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [hideZero, setHideZero] = useState(true);
@@ -68,10 +70,10 @@ export function PaymentsPage() {
   const payments = usePayments(filter);
   const exportXlsx = useExcelExport('excel:payments');
 
-  const dirtyFilters = !!official || !!competition || status !== ALL || from !== '' || to !== '' || !hideZero;
+  const dirtyFilters = !!official || !!competition || status !== DEFAULT_STATUS || from !== '' || to !== '' || !hideZero;
   const reset = () => {
     setParams({}, { replace: true });
-    setStatus(ALL);
+    setStatus(DEFAULT_STATUS);
     setFrom('');
     setTo('');
     setHideZero(true);
