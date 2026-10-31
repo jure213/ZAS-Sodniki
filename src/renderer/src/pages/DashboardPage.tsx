@@ -88,7 +88,7 @@ export function DashboardPage() {
           icon={CircleAlert}
           tone="red"
           loading={stats.isLoading}
-          hint={s ? `Skupaj obveznosti: ${formatCents(s.total_cents)}` : undefined}
+          hint="vse neporavnano, ne glede na leto"
         />
       </div>
 
