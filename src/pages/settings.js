@@ -150,10 +150,10 @@ export async function renderSettings(container, user) {
       function formatRateDisplay(role) {
         if (role.rates && role.rates.length > 0) {
           return role.rates.map(tier =>
-            `${tier.from}-${tier.to === 999 ? '∞' : tier.to}h: €${tier.rate}`
+            esc(`${tier.from}-${tier.to === 999 ? '∞' : tier.to}h: €${tier.rate}`)
           ).join('<br>');
         } else if (role.hourlyRate) {
-          return window.formatCurrency(role.hourlyRate);
+          return esc(window.formatCurrency(role.hourlyRate));
         }
         return '-';
       }
@@ -162,7 +162,7 @@ export async function renderSettings(container, user) {
       function formatInvoiceRateDisplay(role) {
         if (role.invoiceRates && role.invoiceRates.length > 0) {
           return role.invoiceRates.map(tier =>
-            `${tier.from}-${tier.to === 999 ? '∞' : tier.to}h: €${tier.rate}`
+            esc(`${tier.from}-${tier.to === 999 ? '∞' : tier.to}h: €${tier.rate}`)
           ).join('<br>');
         }
         return '-';
@@ -173,8 +173,8 @@ export async function renderSettings(container, user) {
           (r) => `
           <tr>
             <td>${esc(r.name)}</td>
-            <td><small>${esc(formatRateDisplay(r))}</small></td>
-            <td><small>${esc(formatInvoiceRateDisplay(r))}</small></td>
+            <td><small>${formatRateDisplay(r)}</small></td>
+            <td><small>${formatInvoiceRateDisplay(r)}</small></td>
             <td>
               <button class="btn btn-sm btn-outline-primary edit-role me-1" data-id="${r.id}"><i class="bi bi-pencil"></i></button>
               <button class="btn btn-sm btn-outline-danger delete-role" data-id="${r.id}" data-name="${esc(r.name)}"><i class="bi bi-trash"></i></button>

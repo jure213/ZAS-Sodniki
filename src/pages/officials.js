@@ -289,7 +289,8 @@ export async function renderOfficials(container, user) {
   }
 
   // Export button (available for all users)
-  container.querySelector('#export-officials-excel').onclick = async () => {
+  const exportBtn = container.querySelector('#export-officials-excel');
+  if (exportBtn) exportBtn.onclick = async () => {
     try {
       await window.api?.officials?.exportExcel();
       showNotification('<strong>Izvoz uspešen!</strong> Seznam sodnikov je bil izvožen.', 'success');
