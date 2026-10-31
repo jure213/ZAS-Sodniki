@@ -88,7 +88,7 @@ export function CompetitionsPage() {
         description="Tekmovanja, dodeljeni sodniki in izplačila"
         actions={
           <>
-            <Button variant="outline" disabled={exportXlsx.isPending} onClick={() => exportXlsx.mutate(undefined)}>
+            <Button variant="excel" disabled={exportXlsx.isPending} onClick={() => exportXlsx.mutate(undefined)}>
               <FileDown /> Izvozi v Excel
             </Button>
             {isAdmin && (

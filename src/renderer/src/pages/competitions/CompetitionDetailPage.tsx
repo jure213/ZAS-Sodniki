@@ -343,7 +343,7 @@ export function CompetitionDetailPage() {
               </Button>
             )}
             <Button
-              variant="outline"
+              variant="excel"
               disabled={list.length === 0 || exportPreview.isPending}
               onClick={() => exportPreview.mutate({ competition_id: c.id, tariff })}
             >

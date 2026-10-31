@@ -13,6 +13,7 @@ const buttonVariants = cva(
         outline: 'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
+        excel: 'bg-[#217346] text-white shadow-xs hover:bg-[#185c37]',
       },
       size: {
         default: 'h-9 px-4 py-2',

@@ -133,10 +133,10 @@ export function OfficialsPage() {
         actions={
           isAdmin && (
             <>
-              <Button variant="outline" disabled={exportXlsx.isPending} onClick={() => exportXlsx.mutate(undefined)}>
+              <Button variant="excel" disabled={exportXlsx.isPending} onClick={() => exportXlsx.mutate(undefined)}>
                 <FileDown /> Izvozi v Excel
               </Button>
-              <Button variant="outline" disabled={importPreview.isPending} onClick={() => importPreview.mutate(undefined)}>
+              <Button variant="excel" disabled={importPreview.isPending} onClick={() => importPreview.mutate(undefined)}>
                 <FileUp /> Uvozi iz Excela
               </Button>
               <Button onClick={() => setEditing({})}>

@@ -18,7 +18,7 @@ export function CompetitionStatusBadge({ status }: { status: CompetitionStatus }
   return <Badge variant={COMP_VARIANT[status] ?? 'outline'}>{STATUS_LABELS[status] ?? status}</Badge>;
 }
 
-const PAY: Record<PaymentStatus, { label: string; variant: 'warning' | 'default' | 'success' }> = {
+const PAY: Record<PaymentStatus, { label: string; variant: 'destructive' | 'warning' | 'success' }> = {
   owed: { label: 'Neplačano', variant: 'destructive' },
   partial: { label: 'Delno plačano', variant: 'warning' },
   paid: { label: 'Plačano', variant: 'success' },

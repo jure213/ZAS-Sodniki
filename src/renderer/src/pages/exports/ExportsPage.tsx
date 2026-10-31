@@ -108,7 +108,7 @@ function CompetitionReport() {
               {!competitionId ? 'Izberite tekmovanje za predogled.' : 'Izbrano tekmovanje nima dodeljenih sodnikov.'}
             </span>
           )}
-          <Button disabled={noData || exportXlsx.isPending} onClick={() => exportXlsx.mutate({ competition_id: id, tariff })}>
+          <Button variant="excel" disabled={noData || exportXlsx.isPending} onClick={() => exportXlsx.mutate({ competition_id: id, tariff })}>
             <FileDown /> Izvozi v Excel
           </Button>
         </div>
@@ -244,7 +244,7 @@ function SummaryReport() {
                   {ids.length === 0 ? 'Izberite vsaj eno tekmovanje.' : 'Za izbrana tekmovanja ni podatkov.'}
                 </span>
               )}
-              <Button disabled={noData || exportXlsx.isPending} onClick={() => exportXlsx.mutate({ competition_ids: ids, tariff })}>
+              <Button variant="excel" disabled={noData || exportXlsx.isPending} onClick={() => exportXlsx.mutate({ competition_ids: ids, tariff })}>
                 <FileDown /> Izvozi v Excel
               </Button>
             </div>
@@ -283,7 +283,7 @@ function CompetitionsList() {
         <p className="font-medium">Seznam vseh tekmovanj</p>
         <p className="text-sm text-muted-foreground">Ime, datum, lokacija in status vseh tekmovanj ({count}).</p>
       </div>
-      <Button disabled={count === 0 || exportXlsx.isPending} onClick={() => exportXlsx.mutate(undefined)}>
+      <Button variant="excel" disabled={count === 0 || exportXlsx.isPending} onClick={() => exportXlsx.mutate(undefined)}>
         <FileDown /> Izvozi v Excel
       </Button>
       {count === 0 && <span className="text-xs text-muted-foreground">Ni tekmovanj za izvoz.</span>}

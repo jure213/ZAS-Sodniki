@@ -143,7 +143,7 @@ export function PaymentsPage() {
         title="Izplačila"
         description={officialName ? `Izplačila sodnika ${officialName}` : 'Pregled izplačil in plačil po sodnikih ter tekmovanjih'}
         actions={
-          <Button variant="outline" disabled={exportXlsx.isPending || (payments.data?.length ?? 0) === 0} onClick={() => exportXlsx.mutate(filter)}>
+          <Button variant="excel" disabled={exportXlsx.isPending || (payments.data?.length ?? 0) === 0} onClick={() => exportXlsx.mutate(filter)}>
             <FileDown /> Izvozi v Excel
           </Button>
         }
