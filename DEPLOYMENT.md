@@ -217,7 +217,7 @@ insecure setup. Avoid it; if you must, recreate the old role
 check out the previous `docker-compose.yml` and `deploy/sql/grant-api.sql`,
 run that `grant-api.sql`, restore `.env.bak`, and run `docker compose up -d api`.
 
-## 8. v2.0.0 cutover: migration 002, release, rollback
+## 8. v2.0.0 cutover: migrations 002 and 003, release, rollback
 
 Migration `deploy/sql/002_data_model.sql` changes money storage: payments get
 installments (`payment_transactions`), assignments carry their own tariff
@@ -226,6 +226,16 @@ snapshot, roles and disciplines become tables, settings move to
 **1.1.x clients stop working on purpose** from the moment it is applied until
 they have updated. Apply it together with the v2.0.0 release, never separately,
 and do it in the evening when nobody is entering data.
+
+Migration `deploy/sql/003_audit.sql` runs right after 002 in the same `migrate.sh`
+call. It adds the append-only audit log (`public.audit_log`, shown to admins as
+Nastavitve -> Dnevnik): who changed what and when, plus successful and failed
+logins. It only adds a table, triggers and the audit calls inside a few
+functions; it changes no existing data, and the log is empty right after the
+migration (the triggers are created after 002 converted the data). Nobody can
+edit or delete log entries, not even through SQL as the table owner. Rolling
+back needs nothing extra: restoring the pre-cutover backup drops `audit_log`
+together with the v2 tables.
 
 The migration runs in one transaction. A failed preflight check or assertion
 rolls everything back and prints what to fix; it never edits your data to make a
@@ -292,9 +302,9 @@ sha256sum "deploy/dumps/$BACKUP" | cut -d' ' -f1
 source deploy/rehearsal/env.sh
 docker compose down -v && docker compose up -d       # empty database
 sleep 15                                              # wait for the healthcheck
-./deploy/scripts/restore-dump.sh "deploy/dumps/$BACKUP"   # restores, then applies 002 + grants
-./deploy/scripts/migrate.sh --status                  # 001_auth and 002_data_model: applied
-./deploy/sql/tests/run.sh                             # expect: 6/6 test files passed.
+./deploy/scripts/restore-dump.sh "deploy/dumps/$BACKUP"   # restores, then applies 002 + 003 + grants
+./deploy/scripts/migrate.sh --status                  # 001_auth, 002_data_model and 003_audit: applied
+./deploy/sql/tests/run.sh                             # expect: 7/7 test files passed.
 ZAS_API_URL=http://127.0.0.1:${REHEARSAL_API_PORT:-8081} ZAS_API_PREFIX="" ./deploy/scripts/verify.sh
                                                       # expect: Database and public API checks passed.
 docker compose exec -T db psql --no-psqlrc -U zas_sodniki_admin -d zas_sodniki \
@@ -303,6 +313,13 @@ docker compose exec -T db psql --no-psqlrc -U zas_sodniki_admin -d zas_sodniki \
 
 If `restore-dump.sh` stops with a preflight message, nothing was changed:
 fix the data (or ask) before cutover night, and take a fresh backup again.
+
+Check that 003 added nothing to the log by itself. The only entry should be the
+one failed login that `verify.sh` makes on purpose:
+
+```bash
+docker compose exec -T db psql --no-psqlrc -U zas_sodniki_admin -d zas_sodniki -Atc \n  "SELECT action, summary FROM public.audit_log"   # one row: login_failed ... __verify_nonexistent__
+```
 
 Read `~/002_report_rehearsal.txt`. The cutover goes ahead only if:
 
@@ -367,9 +384,11 @@ ssh "$VPS"
 cd ~/projects/zas-sodniki
 git status --short                      # clean
 git pull --ff-only                      # fast-forwards to the commit from step 3
-./deploy/scripts/migrate.sh --status    # 002_data_model: pending
-./deploy/scripts/migrate.sh             # ends with: Database is up to date (1 migration(s) applied).
+./deploy/scripts/migrate.sh --status    # 002_data_model and 003_audit: pending
+./deploy/scripts/migrate.sh             # ends with: Database is up to date (2 migration(s) applied).
 ./deploy/scripts/verify.sh              # ends with: Database and public API checks passed.
+                                        # (it includes the audit_log checks; its deliberately failed
+                                        # login is the first line in the Dnevnik)
 sudo docker compose exec -T db psql --no-psqlrc -U zas_sodniki_admin -d zas_sodniki \
   < deploy/sql/reports/002_report.sql > ~/002_report_vps.txt   # drop sudo if not needed
 exit
@@ -405,6 +424,9 @@ as a normal user:
   `officials_compared`.
 - Open one competition you know, check its D1 export.
 - Admin sees Nastavitve and Uporabniki, the normal user does not.
+- Nastavitve -> Dnevnik (admin only) lists your login and the failed login from
+  `verify.sh`; make a small edit (for example an official's phone number, then
+  put it back) and check it shows up with your name.
 
 If the numbers differ, roll back (8.3) rather than patching live data.
 
@@ -471,7 +493,7 @@ echo "REPLACE zas_sodniki" | ./deploy/scripts/restore-dump.sh --replace --no-mig
 ../zas-v1/deploy/scripts/migrate.sh      # v1 migrate.sh against the rehearsal stack (same exports)
 docker compose exec -T db psql -U zas_sodniki_admin -d zas_sodniki -Atc \
   "SELECT to_regclass('public.payment_transactions') IS NULL AS back_on_v1_schema"   # t
-./deploy/scripts/migrate.sh              # and forward again: applies 002 a second time
+./deploy/scripts/migrate.sh              # and forward again: applies 002 and 003 a second time
 git worktree remove ../zas-v1
 ```
 
