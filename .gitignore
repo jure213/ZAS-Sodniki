@@ -143,3 +143,6 @@ supabase.md
 supabase-fix-policies.sql
 supabase-migration.sql
 
+
+# Local review notes (not for the repo)
+REVIEW.md
