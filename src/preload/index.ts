@@ -3,7 +3,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { PreloadApi } from '../shared/ipc';
 
-const CHANNEL = /^(auth|prefs|app|updater):[A-Za-z]+$/;
+const CHANNEL = /^(auth|prefs|app|updater|officials|competitions|assignments|roles|disciplines|config|payments|dashboard|users|excel):[A-Za-z]+$/;
 const EVENT = /^(auth:expired|updater:[a-z-]+)$/;
 
 const api: PreloadApi = {
