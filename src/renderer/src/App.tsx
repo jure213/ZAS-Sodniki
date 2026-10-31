@@ -13,7 +13,7 @@ import { UsersPage } from '@/pages/users/UsersPage';
 import { CompetitionDetailPage } from '@/pages/competitions/CompetitionDetailPage';
 import { CompetitionsPage } from '@/pages/competitions/CompetitionsPage';
 import { PaymentsPage } from '@/pages/payments/PaymentsPage';
-import { Placeholder } from '@/pages/Placeholder';
+import { ExportsPage } from '@/pages/exports/ExportsPage';
 
 function AdminOnly({ children }: { children: React.ReactNode }) {
   return useIsAdmin() ? <>{children}</> : <Navigate to="/dashboard" replace />;
@@ -44,7 +44,7 @@ export function App() {
               <Route path="/competitions" element={<CompetitionsPage />} />
               <Route path="/competitions/:id" element={<CompetitionDetailPage />} />
               <Route path="/payments" element={<PaymentsPage />} />
-              <Route path="/exports" element={<Placeholder title="Izpisi" />} />
+              <Route path="/exports" element={<ExportsPage />} />
               <Route path="/settings" element={<AdminOnly><SettingsPage /></AdminOnly>} />
               <Route path="/users" element={<AdminOnly><UsersPage /></AdminOnly>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
