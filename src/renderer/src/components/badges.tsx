@@ -19,8 +19,8 @@ export function CompetitionStatusBadge({ status }: { status: CompetitionStatus }
 }
 
 const PAY: Record<PaymentStatus, { label: string; variant: 'warning' | 'default' | 'success' }> = {
-  owed: { label: 'Neplačano', variant: 'warning' },
-  partial: { label: 'Delno plačano', variant: 'default' },
+  owed: { label: 'Neplačano', variant: 'destructive' },
+  partial: { label: 'Delno plačano', variant: 'warning' },
   paid: { label: 'Plačano', variant: 'success' },
 };
 

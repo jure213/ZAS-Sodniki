@@ -132,7 +132,7 @@ export function PaymentSheet({ paymentId, onClose }: { paymentId: number | null;
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <Stat label="Za izplačilo" value={formatCents(p.amount_due_cents)} />
                 <Stat label="Plačano" value={formatCents(p.paid_cents)} tone="text-emerald-700" />
-                <Stat label="Preostanek" value={formatCents(p.remaining_cents)} tone={p.remaining_cents > 0 ? 'text-amber-700' : ''} />
+                <Stat label="Preostanek" value={formatCents(p.remaining_cents)} tone={p.remaining_cents > 0 ? 'text-red-700' : ''} />
                 <div className="rounded-lg border bg-card px-3 py-2.5">
                   <div className="text-xs text-muted-foreground">Status</div>
                   <div className="mt-1">

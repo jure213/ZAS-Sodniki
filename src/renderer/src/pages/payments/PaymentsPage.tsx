@@ -116,7 +116,7 @@ export function PaymentsPage() {
         accessorKey: 'remaining_cents',
         header: 'Preostanek',
         cell: ({ row }) => (
-          <span className={row.original.remaining_cents > 0 ? 'font-medium text-amber-700' : ''}>{money(row.original.remaining_cents)}</span>
+          <span className={row.original.remaining_cents > 0 ? 'font-medium text-red-700' : ''}>{money(row.original.remaining_cents)}</span>
         ),
         meta: { align: 'right', footer: (rows) => money(sumBy(rows, (r) => r.remaining_cents)) },
       },
