@@ -29,6 +29,22 @@ export function newRow(prev?: TierRow): TierRow {
   return { key: nextKey++, from: to != null ? fmt(to) : prev ? '' : '0', to: '', rate: null };
 }
 
+/**
+ * Rows after "Dodaj razpon": when the last tier is unbounded (empty "Do") it gets a
+ * sensible upper limit (its "Od" + 2 hours) so the new tier starts right where it ends
+ * and no overlap error appears immediately.
+ */
+export function appendRow(rows: TierRow[]): TierRow[] {
+  const last = rows[rows.length - 1];
+  if (!last) return [newRow()];
+  const from = parseHours(last.from);
+  if (last.to.trim() === '' && from != null) {
+    const closed = { ...last, to: fmt(from + 2) };
+    return [...rows.slice(0, -1), closed, newRow(closed)];
+  }
+  return [...rows, newRow(last)];
+}
+
 export type TierProblems = { rows: Record<number, string>; general: string[] };
 
 /** Returns an error message per row (by key) and general messages (gaps / overlaps). */

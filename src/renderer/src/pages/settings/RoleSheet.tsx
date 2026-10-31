@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetBody, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { qk, useApiMutation } from '@/lib/api';
-import { newRow, rowsToTiers, toRows, validateTiers, type TierRow } from './tiers';
+import { appendRow, rowsToTiers, toRows, validateTiers, type TierRow } from './tiers';
 
 function TierEditor({
   title,
@@ -30,7 +30,7 @@ function TierEditor({
     <section className="space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="font-medium">{title}</h3>
-        <Button type="button" variant="outline" size="sm" onClick={() => onChange([...rows, newRow(rows[rows.length - 1])])}>
+        <Button type="button" variant="outline" size="sm" onClick={() => onChange(appendRow(rows))}>
           <Plus /> Dodaj razpon
         </Button>
       </div>
