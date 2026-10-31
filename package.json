@@ -2,20 +2,25 @@
   "name": "zas-sodniki",
   "version": "1.1.2",
   "description": "Athletic Officials Payment Tracker",
-  "main": "dist-electron/main.js",
+  "main": "out/main/index.js",
   "author": {
     "name": "Jure Rus",
     "email": "jure.rus04@gmail.com"
   },
   "scripts": {
     "generate:config": "node scripts/generate-api-config.js",
-    "dev": "npm run tsc && electron .",
-    "tsc": "npm run generate:config && node scripts/copy-vendor.js && tsc -p tsconfig.json",
-    "start": "npm run dev",
-    "postinstall": "electron-builder install-app-deps",
-    "build": "npm run tsc && electron-builder",
-    "build:linux": "npm run tsc && electron-builder --linux",
-    "build:win": "npm run tsc && electron-builder --win"
+    "predev": "npm run generate:config",
+    "dev": "electron-vite dev",
+    "prebuild": "npm run generate:config",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
+    "test": "vitest run",
+    "check:asar": "node scripts/check-asar.js",
+    "dist": "npm run build && electron-builder --win",
+    "dist:dir": "npm run build && electron-builder --win --dir && npm run check:asar",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [
     "electron",
@@ -27,16 +32,36 @@
   "dependencies": {
     "@supabase/postgrest-js": "^2.78.0",
     "electron-updater": "^6.6.2",
-    "exceljs": "^3.4.0",
-    "xlsx": "^0.18.5"
+    "exceljs": "3.4.0",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.10.6",
-    "bootstrap": "5.3.3",
-    "bootstrap-icons": "1.11.3",
+    "@radix-ui/react-checkbox": "^1.4.1",
+    "@radix-ui/react-dialog": "^1.3.1",
+    "@radix-ui/react-label": "^2.1.17",
+    "@radix-ui/react-slot": "^1.5.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/react-query": "^5.105.0",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "electron": "^44.0.0",
     "electron-builder": "^26.15.3",
-    "typescript": "^5.3.3"
+    "electron-vite": "^6.0.0",
+    "lucide-react": "^1.66.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5",
+    "sonner": "^2.0.8",
+    "tailwind-merge": "^3.7.0",
+    "tailwindcss": "^4.3.3",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "^5.3.3",
+    "vite": "^7.3.7",
+    "vitest": "^5.0.5"
   },
   "build": {
     "appId": "com.zas.sodniki",
@@ -45,10 +70,9 @@
       "output": "release"
     },
     "files": [
-      "dist-electron/**/*",
-      "src/**/*"
+      "out/**/*",
+      "package.json"
     ],
-    "icon": "electron/zas_ikona.ico",
     "linux": {
       "target": [
         "AppImage",

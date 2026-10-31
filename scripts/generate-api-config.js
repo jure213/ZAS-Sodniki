@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// Writes electron/generated/api-config.ts with the API base URL.
+// Writes src/main/generated/api-config.ts with the API base URL.
 // The app ships no key: users authenticate with the login() RPC.
 
 const fs = require("fs");
@@ -10,7 +10,7 @@ const DEFAULT_API_URL = "https://sodniki-api.jurer.eu";
 
 const projectRoot = path.resolve(__dirname, "..");
 const envPath = path.join(projectRoot, ".env");
-const generatedDir = path.join(projectRoot, "electron", "generated");
+const generatedDir = path.join(projectRoot, "src", "main", "generated");
 const outputPath = path.join(generatedDir, "api-config.ts");
 
 function readEnv(filePath) {

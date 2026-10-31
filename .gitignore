@@ -69,7 +69,10 @@ dist-electron/
 .env.production
 
 # Generated API configuration and database migration artifacts
-electron/generated/
+src/main/generated/
+parity/
+*.dump
+*.dump.sha256
 deploy/dumps/
 deploy/backups/
 
@@ -139,5 +142,3 @@ supabase.md
 supabase-fix-policies.sql
 supabase-migration.sql
 
-# Copied from node_modules by scripts/copy-vendor.js
-src/vendor/
