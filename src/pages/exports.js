@@ -1,3 +1,5 @@
+import { esc } from '../utils/html.js';
+
 export async function renderExports(container, { user }) {
     const isAdmin = user?.role === 'admin';
 
@@ -226,7 +228,7 @@ export async function renderExports(container, { user }) {
             <div class="form-check">
                 <input class="form-check-input competition-checkbox" type="checkbox" value="${comp.id}" id="comp-${comp.id}">
                 <label class="form-check-label" for="comp-${comp.id}">
-                    ${comp.name} - ${window.formatDate(comp.date)}
+                    ${esc(comp.name)} - ${esc(window.formatDate(comp.date))}
                 </label>
             </div>
         `).join('');
@@ -290,11 +292,11 @@ export async function renderExports(container, { user }) {
                 <tbody>
                     ${reportData.map(row => `
                         <tr>
-                            <td class="text-center">${row.name}</td>
-                            <td class="text-center">${row.rank}</td>
-                            <td class="text-center">${row.role}</td>
-                            <td class="text-center">${row.discipline}</td>
-                            <td class="text-center">${row.hours}</td>
+                            <td class="text-center">${esc(row.name)}</td>
+                            <td class="text-center">${esc(row.rank)}</td>
+                            <td class="text-center">${esc(row.role)}</td>
+                            <td class="text-center">${esc(row.discipline)}</td>
+                            <td class="text-center">${esc(row.hours)}</td>
                             <td class="text-center">${window.formatCurrency(row.amount - row.travelCost)}</td>
                             <td class="text-center">${window.formatCurrency(row.travelCost)}</td>
                             <td class="text-center fw-bold">${window.formatCurrency(row.amount)}</td>
@@ -386,9 +388,9 @@ export async function renderExports(container, { user }) {
                 <tbody>
                     ${summaryData.map(row => `
                         <tr>
-                            <td class="text-center">${row.name}</td>
-                            <td class="text-center">${window.formatDate(row.date)}</td>
-                            <td class="text-center">${row.location}</td>
+                            <td class="text-center">${esc(row.name)}</td>
+                            <td class="text-center">${esc(window.formatDate(row.date))}</td>
+                            <td class="text-center">${esc(row.location)}</td>
                             <td class="text-center">${window.formatCurrency(row.officialsTotal)}</td>
                             <td class="text-center">${window.formatCurrency(row.travelTotal)}</td>
                             <td class="text-center fw-bold">${window.formatCurrency(row.grandTotal)}</td>
@@ -473,7 +475,7 @@ export async function renderExports(container, { user }) {
         notification.style.zIndex = '9999';
         notification.style.minWidth = '300px';
         notification.innerHTML = `
-      ${message}
+      ${esc(message)}
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
 

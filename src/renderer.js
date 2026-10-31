@@ -8,6 +8,7 @@ import { renderSettings } from './pages/settings.js';
 import { renderUsers } from './pages/users.js';
 import { renderExports } from './pages/exports.js';
 import { initializeUpdater } from './components/updater.js';
+import { esc, escMultiline } from './utils/html.js';
 
 function qs(id) {
   return document.getElementById(id);
@@ -62,11 +63,11 @@ window.confirmDialog = function(message, title = 'Potrditev') {
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">${title}</h5>
+            <h5 class="modal-title">${esc(title)}</h5>
             <button type="button" class="btn-close" data-action="cancel"></button>
           </div>
           <div class="modal-body">
-            <p>${message}</p>
+            <p>${escMultiline(message)}</p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-action="cancel">Prekliči</button>

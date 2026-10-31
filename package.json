@@ -1,6 +1,6 @@
 {
   "name": "zas-sodniki",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Athletic Officials Payment Tracker",
   "main": "dist-electron/main.js",
   "author": {
@@ -10,7 +10,7 @@
   "scripts": {
     "generate:config": "node scripts/generate-api-config.js",
     "dev": "npm run tsc && electron .",
-    "tsc": "npm run generate:config && tsc -p tsconfig.json",
+    "tsc": "npm run generate:config && node scripts/copy-vendor.js && tsc -p tsconfig.json",
     "start": "npm run dev",
     "postinstall": "electron-builder install-app-deps",
     "build": "npm run tsc && electron-builder",
@@ -32,6 +32,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
+    "bootstrap": "5.3.3",
+    "bootstrap-icons": "1.11.3",
     "electron": "^44.0.0",
     "electron-builder": "^26.15.3",
     "typescript": "^5.3.3"

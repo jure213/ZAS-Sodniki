@@ -138,3 +138,6 @@ Thumbs.db
 supabase.md
 supabase-fix-policies.sql
 supabase-migration.sql
+
+# Copied from node_modules by scripts/copy-vendor.js
+src/vendor/

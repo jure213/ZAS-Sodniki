@@ -1,3 +1,5 @@
+import { esc } from '../utils/html.js';
+
 export async function renderPayments(container, user, initialFilters = null) {
   const isAdmin = user?.role === 'admin';
   container.innerHTML = `
@@ -137,14 +139,14 @@ export async function renderPayments(container, user, initialFilters = null) {
       tbody.innerHTML = displayList
         .map(
           (p) => `<tr>
-            <td>${p.official_name ?? ''}</td>
-            <td>${p.competition_name ?? ''}</td>
+            <td>${esc(p.official_name)}</td>
+            <td>${esc(p.competition_name)}</td>
             <td class="text-center">${window.formatCurrency(p.znesek_sodnik ?? 0)}</td>
             <td class="text-center">${window.formatCurrency(p.amount ?? 0)}</td>
-            <td>${formatPaymentMethod(p.method)}</td>
+            <td>${esc(formatPaymentMethod(p.method))}</td>
             <td><span class="badge bg-${p.status === 'paid' ? 'success' : 'danger'}">${p.status === 'paid' ? 'Plačano' : 'Ni plačano'}</span></td>
-            <td>${window.formatDate(p.date)}</td>
-            <td>${p.date_paid ? window.formatDate(p.date_paid) : '<span class="text-muted">-</span>'}</td>
+            <td>${esc(window.formatDate(p.date))}</td>
+            <td>${p.date_paid ? esc(window.formatDate(p.date_paid)) : '<span class="text-muted">-</span>'}</td>
             ${isAdmin ? `<td>
               <button class="btn btn-sm btn-outline-primary edit-payment" data-id="${p.id}"><i class="bi bi-pencil"></i></button>
               ${p.status !== 'paid' ? `<button class="btn btn-sm btn-outline-success mark-paid" data-id="${p.id}">Označi plačano</button>` : ''}
@@ -287,7 +289,7 @@ export async function renderPayments(container, user, initialFilters = null) {
         });
       }
     } catch (e) {
-      container.querySelector('#payments-body').innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-danger">Napaka: ${String(e)}</td></tr>`;
+      container.querySelector('#payments-body').innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-danger">Napaka: ${esc(e)}</td></tr>`;
     }
   }
 
@@ -308,10 +310,10 @@ export async function renderPayments(container, user, initialFilters = null) {
             <button type="button" class="btn-close" data-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div class="mb-2"><label class="form-label">Sodnik</label><select id="f-official" class="form-select">${officials.map(o => `<option value="${o.id}" ${payment?.official_id === o.id ? 'selected' : ''}>${o.name}</option>`).join('')}</select></div>
-            <div class="mb-2"><label class="form-label">Tekmovanje</label><select id="f-competition" class="form-select">${competitions.map(c => `<option value="${c.id}" ${payment?.competition_id === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}</select></div>
+            <div class="mb-2"><label class="form-label">Sodnik</label><select id="f-official" class="form-select">${officials.map(o => `<option value="${o.id}" ${payment?.official_id === o.id ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select></div>
+            <div class="mb-2"><label class="form-label">Tekmovanje</label><select id="f-competition" class="form-select">${competitions.map(c => `<option value="${c.id}" ${payment?.competition_id === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></div>
             <div class="mb-2"><label class="form-label">Znesek (€)</label><input type="number" step="0.01" id="f-amount" class="form-control" value="${payment?.amount ?? ''}"></div>
-            <div class="mb-2"><label class="form-label">Datum</label><input type="date" id="f-date" class="form-control" value="${payment?.date ?? ''}"></div>
+            <div class="mb-2"><label class="form-label">Datum</label><input type="date" id="f-date" class="form-control" value="${esc(payment?.date)}"></div>
             <div class="mb-2"><label class="form-label">Način plačila</label><select id="f-method" class="form-select">
               <option value="gotovina" ${payment?.method === 'gotovina' || payment?.method === 'cash' ? 'selected' : ''}>Gotovina</option>
               <option value="nakazilo" ${payment?.method === 'nakazilo' || payment?.method === 'bank_transfer' ? 'selected' : ''}>Nakazilo</option>
@@ -322,10 +324,10 @@ export async function renderPayments(container, user, initialFilters = null) {
             </select></div>
             <div class="mb-2" id="date-paid-container" style="display: ${payment?.status === 'paid' ? 'block' : 'none'};">
               <label class="form-label">Datum plačila</label>
-              <input type="date" id="f-date-paid" class="form-control" value="${payment?.date_paid ?? ''}">
+              <input type="date" id="f-date-paid" class="form-control" value="${esc(payment?.date_paid)}">
             </div>
-            <div class="mb-2"><label class="form-label">Izračun</label><textarea id="f-notes" class="form-control" rows="2">${payment?.notes ?? ''}</textarea><div class="form-text">Avtomatsko generirani izračun</div></div>
-            <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-remarks" class="form-control" rows="2">${payment?.remarks ?? ''}</textarea><div class="form-text">Dodatne opombe</div></div>
+            <div class="mb-2"><label class="form-label">Izračun</label><textarea id="f-notes" class="form-control" rows="2">${esc(payment?.notes)}</textarea><div class="form-text">Avtomatsko generirani izračun</div></div>
+            <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-remarks" class="form-control" rows="2">${esc(payment?.remarks)}</textarea><div class="form-text">Dodatne opombe</div></div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Prekliči</button>

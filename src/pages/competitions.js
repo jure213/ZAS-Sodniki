@@ -1,3 +1,5 @@
+import { esc } from '../utils/html.js';
+
 export async function renderCompetitions(container, user) {
   const isAdmin = user?.role === 'admin';
 
@@ -22,7 +24,7 @@ export async function renderCompetitions(container, user) {
       'other_zas': { color: 'success', label: 'Plača drug ZAS' }
     };
     const statusInfo = statusMap[status] || { color: 'secondary', label: status };
-    return `<span class="badge bg-${statusInfo.color}">${statusInfo.label}</span>`;
+    return `<span class="badge bg-${statusInfo.color}">${esc(statusInfo.label)}</span>`;
   }
 
   container.innerHTML = `
@@ -55,7 +57,7 @@ export async function renderCompetitions(container, user) {
       allCompetitions = await window.api?.competitions?.list();
       renderCompetitionsList(allCompetitions);
     } catch (e) {
-      container.querySelector('#competitions-body').innerHTML = `<tr><td colspan="${isAdmin ? 5 : 4}" class="text-danger">Napaka: ${String(e)}</td></tr>`;
+      container.querySelector('#competitions-body').innerHTML = `<tr><td colspan="${isAdmin ? 5 : 4}" class="text-danger">Napaka: ${esc(e)}</td></tr>`;
     }
   }
 
@@ -64,9 +66,9 @@ export async function renderCompetitions(container, user) {
     tbody.innerHTML = list
       .map(
         (c) => `<tr>
-          <td>${c.name ?? ''}</td>
-          <td>${window.formatDate(c.date)}</td>
-          <td>${c.location ?? ''}</td>
+          <td>${esc(c.name)}</td>
+          <td>${esc(window.formatDate(c.date))}</td>
+          <td>${esc(c.location)}</td>
           <td>${getStatusBadge(c.status)}</td>
           ${isAdmin ? `<td>
             <button class="btn btn-sm btn-outline-dark manage-officials" data-id="${c.id}" title="Dodeli sodnike"><i class="bi bi-people"></i></button>
@@ -133,9 +135,9 @@ export async function renderCompetitions(container, user) {
             <button type="button" class="btn-close" data-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div class="mb-2"><label class="form-label">Ime</label><input id="f-name" class="form-control" value="${competition?.name ?? ''}"></div>
-            <div class="mb-2"><label class="form-label">Datum</label><input type="date" id="f-date" class="form-control" value="${competition?.date ?? ''}"></div>
-            <div class="mb-2"><label class="form-label">Lokacija</label><input id="f-location" class="form-control" value="${competition?.location ?? ''}"></div>
+            <div class="mb-2"><label class="form-label">Ime</label><input id="f-name" class="form-control" value="${esc(competition?.name)}"></div>
+            <div class="mb-2"><label class="form-label">Datum</label><input type="date" id="f-date" class="form-control" value="${esc(competition?.date)}"></div>
+            <div class="mb-2"><label class="form-label">Lokacija</label><input id="f-location" class="form-control" value="${esc(competition?.location)}"></div>
             <div class="mb-2"><label class="form-label">Status</label><select id="f-status" class="form-select">
               <option value="planned" ${competition?.status === 'planned' ? 'selected' : ''}>Načrtovano</option>
               <option value="completed" ${competition?.status === 'completed' ? 'selected' : ''}>Izvedeno</option>
@@ -143,7 +145,7 @@ export async function renderCompetitions(container, user) {
               <option value="free" ${competition?.status === 'free' ? 'selected' : ''}>Zastonj</option>
               <option value="other_zas" ${competition?.status === 'other_zas' ? 'selected' : ''}>Plača drugi ZAS</option>
             </select></div>
-            <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${competition?.notes ?? ''}</textarea></div>
+            <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${esc(competition?.notes)}</textarea></div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Prekliči</button>
@@ -195,7 +197,7 @@ export async function renderCompetitions(container, user) {
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Sodniki na tekmovanju: ${competition.name}</h5>
+            <h5 class="modal-title">Sodniki na tekmovanju: ${esc(competition.name)}</h5>
             <button type="button" class="btn-close" data-dismiss="modal"></button>
           </div>
           <div class="modal-body">
@@ -248,11 +250,11 @@ export async function renderCompetitions(container, user) {
           
           return `
           <tr>
-            <td style="${nameStyle}">${o.official_name ?? ''}</td>
-            <td>${o.role ?? ''}</td>
-            <td>${o.discipline ?? ''}</td>
-            <td>${o.hours ?? 0}</td>
-            <td>${o.kilometers ?? 0}</td>
+            <td style="${nameStyle}">${esc(o.official_name)}</td>
+            <td>${esc(o.role)}</td>
+            <td>${esc(o.discipline)}</td>
+            <td>${esc(o.hours ?? 0)}</td>
+            <td>${esc(o.kilometers ?? 0)}</td>
             <td>
               <button class="btn btn-sm btn-outline-primary edit-comp-official" data-id="${o.id}"><i class="bi bi-pencil"></i></button>
               ${deleteButton}
@@ -293,7 +295,7 @@ export async function renderCompetitions(container, user) {
         if (result.ok) {
           let message = `<strong>Izplačila generirana!</strong><br>Ustvarjenih: ${result.created}`;
           if (result.errors && result.errors.length > 0) {
-            message += `<br><small>Opomba: ${result.errors.join(', ')}</small>`;
+            message += `<br><small>Opomba: ${result.errors.map(esc).join(', ')}</small>`;
             showNotificationInModal(modal, message, 'warning');
           } else {
             showNotificationInModal(modal, message, 'success');
@@ -336,30 +338,30 @@ export async function renderCompetitions(container, user) {
           </div>
           <div class="modal-body">
             <div class="mb-2"><label class="form-label">Sodnik</label><select id="f-official" class="form-select" ${compOfficial ? 'disabled' : ''}>
-              ${allOfficials.map(o => `<option value="${o.id}" ${compOfficial?.official_id === o.id ? 'selected' : ''}>${o.name}</option>`).join('')}
+              ${allOfficials.map(o => `<option value="${o.id}" ${compOfficial?.official_id === o.id ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}
             </select></div>
             <div class="mb-2"><label class="form-label">Vloga</label><select id="f-role" class="form-select">
-              ${roles.map(r => `<option value="${r.name}" ${compOfficial?.role === r.name ? 'selected' : ''}>${r.name}</option>`).join('')}
+              ${roles.map(r => `<option value="${esc(r.name)}" ${compOfficial?.role === r.name ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}
             </select></div>
             <div class="mb-2"><label class="form-label">Disciplina</label><select id="f-discipline" class="form-select">
               <option value="">-- Izberi disciplino --</option>
-              ${disciplines.map(d => `<option value="${d}" ${compOfficial?.discipline === d ? 'selected' : ''}>${d}</option>`).join('')}
+              ${disciplines.map(d => `<option value="${esc(d)}" ${compOfficial?.discipline === d ? 'selected' : ''}>${esc(d)}</option>`).join('')}
             </select></div>
-            <div class="mb-2"><label class="form-label">Število ur</label><input type="number" step="0.5" id="f-hours" class="form-control" value="${compOfficial?.hours ?? '4'}"></div>
-            <div class="mb-2"><label class="form-label">Kilometri (potni stroški: €${travelCostPerKm.toFixed(2)}/km)</label><input type="number" step="1" min="0" id="f-kilometers" class="form-control" value="${compOfficial?.kilometers ?? '0'}"></div>
+            <div class="mb-2"><label class="form-label">Število ur</label><input type="number" step="0.5" id="f-hours" class="form-control" value="${esc(compOfficial?.hours ?? '4')}"></div>
+            <div class="mb-2"><label class="form-label">Kilometri (potni stroški: €${travelCostPerKm.toFixed(2)}/km)</label><input type="number" step="1" min="0" id="f-kilometers" class="form-control" value="${esc(compOfficial?.kilometers ?? '0')}"></div>
             <hr>
             <div class="mb-2">
               <label class="form-label">Znesek sodnik (€)</label>
-              <input type="number" step="0.01" min="0" id="f-znesek-sodnik" class="form-control" value="${compOfficial?.znesek_sodnik ?? '0'}">
+              <input type="number" step="0.01" min="0" id="f-znesek-sodnik" class="form-control" value="${esc(compOfficial?.znesek_sodnik ?? '0')}">
               <div class="form-text">Avtomatsko izračunan, lahko ročno uredite</div>
             </div>
             <div class="mb-2">
               <label class="form-label">Znesek račun (€)</label>
-              <input type="number" step="0.01" min="0" id="f-znesek-racun" class="form-control" value="${compOfficial?.znesek_racun ?? '0'}">
+              <input type="number" step="0.01" min="0" id="f-znesek-racun" class="form-control" value="${esc(compOfficial?.znesek_racun ?? '0')}">
               <div class="form-text">Avtomatsko izračunan iz tarife za račun, lahko ročno uredite</div>
             </div>
             <hr>
-            <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${compOfficial?.notes ?? ''}</textarea></div>
+            <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control">${esc(compOfficial?.notes)}</textarea></div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss-sub="modal">Prekliči</button>
@@ -549,8 +551,8 @@ export async function renderCompetitions(container, user) {
                 <div id="available-officials-container" style="max-height: 75vh; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 6px;">
                   ${allOfficials.filter(o => !assignedIds.has(o.id) && o.active).map(o => `
                     <div class="d-flex align-items-center justify-content-between mb-1 p-1 border rounded official-item" data-id="${o.id}">
-                      <span class="small">${o.name}</span>
-                      <button class="btn btn-sm btn-success add-official-btn" data-id="${o.id}" data-name="${o.name}">
+                      <span class="small">${esc(o.name)}</span>
+                      <button class="btn btn-sm btn-success add-official-btn" data-id="${o.id}" data-name="${esc(o.name)}">
                         <i class="bi bi-plus-circle"></i> Dodaj
                       </button>
                     </div>
@@ -606,21 +608,21 @@ export async function renderCompetitions(container, user) {
         <div class="modal-dialog modal-sm">
           <div class="modal-content">
             <div class="modal-header">
-              <h6 class="modal-title">${officialName}</h6>
+              <h6 class="modal-title">${esc(officialName)}</h6>
               <button type="button" class="btn-close" data-dismiss-quick="modal"></button>
             </div>
             <div class="modal-body">
               <div class="mb-2">
                 <label class="form-label">Vloga</label>
                 <select id="quick-role" class="form-select" autofocus>
-                  ${roles.map(r => `<option value="${r.name}">${r.name}</option>`).join('')}
+                  ${roles.map(r => `<option value="${esc(r.name)}">${esc(r.name)}</option>`).join('')}
                 </select>
               </div>
               <div class="mb-2">
                 <label class="form-label">Disciplina</label>
                 <select id="quick-discipline" class="form-select">
                   <option value="">-- Izberi disciplino --</option>
-                  ${disciplines.map(d => `<option value="${d}">${d}</option>`).join('')}
+                  ${disciplines.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('')}
                 </select>
               </div>
               <div class="mb-2">
@@ -825,8 +827,8 @@ export async function renderCompetitions(container, user) {
       } else {
         availableContainer.innerHTML = availableOfficials.map(o => `
           <div class="d-flex align-items-center justify-content-between mb-1 p-1 border rounded official-item" data-id="${o.id}">
-            <span class="small">${o.name}</span>
-            <button class="btn btn-sm btn-success add-official-btn" data-id="${o.id}" data-name="${o.name}" style="padding: 0.2rem 0.4rem; font-size: 0.75rem;">
+            <span class="small">${esc(o.name)}</span>
+            <button class="btn btn-sm btn-success add-official-btn" data-id="${o.id}" data-name="${esc(o.name)}" style="padding: 0.2rem 0.4rem; font-size: 0.75rem;">
               <i class="bi bi-plus-circle"></i> Dodaj
             </button>
           </div>
@@ -872,7 +874,7 @@ export async function renderCompetitions(container, user) {
           <div class="card mb-1" data-card-id="${id}" style="font-size: 0.85rem;">
             <div class="card-body p-2">
               <div class="d-flex justify-content-between align-items-start mb-1">
-                <strong class="small">${data.name}</strong>
+                <strong class="small">${esc(data.name)}</strong>
                 <button class="btn btn-sm btn-outline-danger remove-official-btn" data-id="${id}" style="padding: 0.1rem 0.3rem; font-size: 0.75rem;">
                   <i class="bi bi-x-circle"></i>
                 </button>
@@ -881,7 +883,7 @@ export async function renderCompetitions(container, user) {
                 <div class="col-md-12">
                   <label class="form-label mb-0" style="font-size: 0.7rem;">Vloga</label>
                   <select class="form-select form-select-sm role-select" data-id="${id}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-                    ${roles.map(r => `<option value="${r.name}" ${data.role === r.name ? 'selected' : ''}>${r.name}</option>`).join('')}
+                    ${roles.map(r => `<option value="${esc(r.name)}" ${data.role === r.name ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}
                   </select>
                 </div>
                 <div class="col-md-12">
@@ -907,11 +909,11 @@ export async function renderCompetitions(container, user) {
                 </div>
                 <div class="col-md-6">
                   <label class="form-label mb-0" style="font-size: 0.7rem;">Ure</label>
-                  <input type="number" step="0.5" class="form-control form-control-sm hours-input" data-id="${id}" value="${data.hours}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                  <input type="number" step="0.5" class="form-control form-control-sm hours-input" data-id="${id}" value="${esc(data.hours)}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
                 </div>
                 <div class="col-md-6">
                   <label class="form-label mb-0" style="font-size: 0.7rem;">Kilometri</label>
-                  <input type="number" step="1" min="0" class="form-control form-control-sm kilometers-input" data-id="${id}" value="${data.kilometers || 0}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                  <input type="number" step="1" min="0" class="form-control form-control-sm kilometers-input" data-id="${id}" value="${esc(data.kilometers || 0)}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
                 </div>
               </div>
             </div>
@@ -1116,7 +1118,7 @@ export async function renderCompetitions(container, user) {
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Predogled izplačil - ${competition.name}</h5>
+            <h5 class="modal-title">Predogled izplačil - ${esc(competition.name)}</h5>
             <button type="button" class="btn-close" data-dismiss-sub="modal"></button>
           </div>
           <div class="modal-body">
@@ -1137,12 +1139,12 @@ export async function renderCompetitions(container, user) {
                 <tbody>
                   ${previewData.map(item => `
                     <tr>
-                      <td>${item.officialName}</td>
-                      <td>${item.role}</td>
+                      <td>${esc(item.officialName)}</td>
+                      <td>${esc(item.role)}</td>
                       <td class="text-center">${item.hours.toFixed(1)}</td>
-                      <td class="text-center">${item.kilometers}</td>
+                      <td class="text-center">${esc(item.kilometers)}</td>
                       <td class="text-center">€${item.amount.toFixed(2)}</td>
-                      <td class="text-center">${item.kilometers}km × €${travelCostPerKm.toFixed(2)}<br>€${item.travelCost.toFixed(2)}</td>
+                      <td class="text-center">${esc(item.kilometers)}km × €${travelCostPerKm.toFixed(2)}<br>€${item.travelCost.toFixed(2)}</td>
                       <td class="text-center"><strong>€${item.totalAmount.toFixed(2)}</strong></td>
                     </tr>
                   `).join('')}
@@ -1213,7 +1215,7 @@ export async function renderCompetitions(container, user) {
         if (result.ok) {
           let message = `<strong>Izplačila generirana!</strong><br>Ustvarjenih: ${result.created}`;
           if (result.errors && result.errors.length > 0) {
-            message += `<br><small>Opomba: ${result.errors.join(', ')}</small>`;
+            message += `<br><small>Opomba: ${result.errors.map(esc).join(', ')}</small>`;
             showNotificationInModal(document.querySelector('.modal'), message, 'warning');
           } else {
             showNotificationInModal(document.querySelector('.modal'), message, 'success');
@@ -1276,7 +1278,7 @@ export async function renderCompetitions(container, user) {
       notification.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
       notification.style.zIndex = '9999';
       notification.innerHTML = `
-        <strong>Napaka pri izvozu:</strong> ${String(e)}
+        <strong>Napaka pri izvozu:</strong> ${esc(e)}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       `;
       document.body.appendChild(notification);

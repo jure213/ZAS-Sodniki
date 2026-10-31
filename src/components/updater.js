@@ -1,4 +1,17 @@
 // Auto-updater UI component
+import { esc } from '../utils/html.js';
+
+// Release notes arrive as HTML from GitHub. Show them as plain text: parse in
+// an inert document (no scripts run, nothing loads) and keep only the text.
+function releaseNotesText(notes) {
+  const raw = Array.isArray(notes)
+    ? notes.map((n) => n?.note ?? '').join('\n\n')
+    : String(notes ?? '');
+  const withBreaks = raw.replace(/<br\s*\/?>|<\/(p|li|h[1-6]|div)>/gi, '$&\n');
+  const doc = new DOMParser().parseFromString(withBreaks, 'text/html');
+  return (doc.body.textContent || '').trim();
+}
+
 export function initializeUpdater() {
   if (!window.api?.updater) {
     console.log('Updater API not available (development mode)');
@@ -45,9 +58,9 @@ export function initializeUpdater() {
             <h5 class="modal-title"><i class="bi bi-download me-2"></i>Nova posodobitev na voljo!</h5>
           </div>
           <div class="modal-body">
-            <p><strong>Verzija ${info.version}</strong> je na voljo za prenos.</p>
-            <p class="text-muted">Trenutna verzija: ${info.currentVersion || 'Neznana'}</p>
-            ${info.releaseNotes ? `<div class="mt-3"><strong>Spremembe:</strong><div class="mt-2" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;">${info.releaseNotes}</div></div>` : ''}
+            <p><strong>Verzija ${esc(info.version)}</strong> je na voljo za prenos.</p>
+            <p class="text-muted">Trenutna verzija: ${esc(info.currentVersion || 'Neznana')}</p>
+            ${info.releaseNotes ? `<div class="mt-3"><strong>Spremembe:</strong><div class="mt-2" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;">${esc(releaseNotesText(info.releaseNotes))}</div></div>` : ''}
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" id="update-later">Pozneje</button>
@@ -149,7 +162,7 @@ export function initializeUpdater() {
     toast.style.zIndex = '9999';
     toast.innerHTML = `
       <i class="bi bi-exclamation-triangle-fill me-2"></i>
-      <strong>Napaka pri posodobitvi:</strong> ${message}
+      <strong>Napaka pri posodobitvi:</strong> ${esc(message)}
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
     document.body.appendChild(toast);

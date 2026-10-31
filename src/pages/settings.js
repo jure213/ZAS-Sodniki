@@ -1,3 +1,5 @@
+import { esc } from '../utils/html.js';
+
 export async function renderSettings(container, user) {
   if (user?.role !== "admin") {
     container.innerHTML =
@@ -48,7 +50,7 @@ export async function renderSettings(container, user) {
           </label>
           <div class="input-group" style="max-width: 300px;">
             <span class="input-group-text">€</span>
-            <input type="number" step="0.01" min="0" id="travelCostInput" class="form-control" value="${travelCostPerKm}">
+            <input type="number" step="0.01" min="0" id="travelCostInput" class="form-control" value="${esc(travelCostPerKm)}">
             <span class="input-group-text">/km</span>
           </div>
           <small class="text-muted d-block mt-1">
@@ -170,12 +172,12 @@ export async function renderSettings(container, user) {
         .map(
           (r) => `
           <tr>
-            <td>${r.name}</td>
-            <td><small>${formatRateDisplay(r)}</small></td>
-            <td><small>${formatInvoiceRateDisplay(r)}</small></td>
+            <td>${esc(r.name)}</td>
+            <td><small>${esc(formatRateDisplay(r))}</small></td>
+            <td><small>${esc(formatInvoiceRateDisplay(r))}</small></td>
             <td>
               <button class="btn btn-sm btn-outline-primary edit-role me-1" data-id="${r.id}"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-sm btn-outline-danger delete-role" data-id="${r.id}" data-name="${r.name}"><i class="bi bi-trash"></i></button>
+              <button class="btn btn-sm btn-outline-danger delete-role" data-id="${r.id}" data-name="${esc(r.name)}"><i class="bi bi-trash"></i></button>
             </td>
           </tr>`
         )
@@ -193,7 +195,7 @@ export async function renderSettings(container, user) {
     } catch (e) {
       const rolesBody = settingsContent.querySelector("#roles-body");
       if (rolesBody) {
-        rolesBody.innerHTML = `<tr><td colspan="3" class="text-danger">Napaka: ${String(e)}</td></tr>`;
+        rolesBody.innerHTML = `<tr><td colspan="3" class="text-danger">Napaka: ${esc(e)}</td></tr>`;
       }
     }
   }
@@ -282,7 +284,7 @@ export async function renderSettings(container, user) {
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Ime vloge</label>
-              <input id="f-name" class="form-control" value="${role?.name ?? ""}">
+              <input id="f-name" class="form-control" value="${esc(role?.name)}">
             </div>
             
             <div class="row">
@@ -299,15 +301,15 @@ export async function renderSettings(container, user) {
                           <div class="row g-2 align-items-center">
                             <div class="col-3">
                               <label class="form-label small mb-0">Od (h)</label>
-                              <input type="number" step="0.5" class="form-control form-control-sm tier-from" value="${tier.from}" ${index === 0 ? 'readonly' : ''}>
+                              <input type="number" step="0.5" class="form-control form-control-sm tier-from" value="${esc(tier.from)}" ${index === 0 ? 'readonly' : ''}>
                             </div>
                             <div class="col-3">
                               <label class="form-label small mb-0">Do (h)</label>
-                              <input type="number" step="0.5" class="form-control form-control-sm tier-to" value="${tier.to === 999 ? '' : tier.to}" placeholder="∞">
+                              <input type="number" step="0.5" class="form-control form-control-sm tier-to" value="${tier.to === 999 ? '' : esc(tier.to)}" placeholder="∞">
                             </div>
                             <div class="col-4">
                               <label class="form-label small mb-0">Cena (€)</label>
-                              <input type="number" step="0.01" class="form-control form-control-sm tier-rate" value="${tier.rate}">
+                              <input type="number" step="0.01" class="form-control form-control-sm tier-rate" value="${esc(tier.rate)}">
                             </div>
                             <div class="col-2 text-center">
                               ${currentRates.length > 1 ? `<button type="button" class="btn btn-sm btn-outline-danger remove-tier-btn mt-3"><i class="bi bi-trash"></i></button>` : ''}
@@ -337,15 +339,15 @@ export async function renderSettings(container, user) {
                           <div class="row g-2 align-items-center">
                             <div class="col-3">
                               <label class="form-label small mb-0">Od (h)</label>
-                              <input type="number" step="0.5" class="form-control form-control-sm invoice-tier-from" value="${tier.from}" ${index === 0 ? 'readonly' : ''}>
+                              <input type="number" step="0.5" class="form-control form-control-sm invoice-tier-from" value="${esc(tier.from)}" ${index === 0 ? 'readonly' : ''}>
                             </div>
                             <div class="col-3">
                               <label class="form-label small mb-0">Do (h)</label>
-                              <input type="number" step="0.5" class="form-control form-control-sm invoice-tier-to" value="${tier.to === 999 ? '' : tier.to}" placeholder="∞">
+                              <input type="number" step="0.5" class="form-control form-control-sm invoice-tier-to" value="${tier.to === 999 ? '' : esc(tier.to)}" placeholder="∞">
                             </div>
                             <div class="col-4">
                               <label class="form-label small mb-0">Cena (€)</label>
-                              <input type="number" step="0.01" class="form-control form-control-sm invoice-tier-rate" value="${tier.rate}">
+                              <input type="number" step="0.01" class="form-control form-control-sm invoice-tier-rate" value="${esc(tier.rate)}">
                             </div>
                             <div class="col-2 text-center">
                               ${currentInvoiceRates.length > 1 ? `<button type="button" class="btn btn-sm btn-outline-danger remove-invoice-tier-btn mt-3"><i class="bi bi-trash"></i></button>` : ''}
@@ -441,7 +443,7 @@ export async function renderSettings(container, user) {
             <div class="row g-2 align-items-center">
               <div class="col-3">
                 <label class="form-label small mb-0">Od (h)</label>
-                <input type="number" step="0.5" class="form-control form-control-sm tier-from" value="${lastTo}">
+                <input type="number" step="0.5" class="form-control form-control-sm tier-from" value="${esc(lastTo)}">
               </div>
               <div class="col-3">
                 <label class="form-label small mb-0">Do (h)</label>
@@ -475,7 +477,7 @@ export async function renderSettings(container, user) {
             <div class="row g-2 align-items-center">
               <div class="col-3">
                 <label class="form-label small mb-0">Od (h)</label>
-                <input type="number" step="0.5" class="form-control form-control-sm invoice-tier-from" value="${lastTo}">
+                <input type="number" step="0.5" class="form-control form-control-sm invoice-tier-from" value="${esc(lastTo)}">
               </div>
               <div class="col-3">
                 <label class="form-label small mb-0">Do (h)</label>
@@ -642,7 +644,7 @@ export async function renderSettings(container, user) {
           toast.style.zIndex = "9999";
           toast.innerHTML = `
             <i class="bi bi-info-circle-fill me-2"></i>
-            ${result.error}
+            ${esc(result.error)}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
           `;
           document.body.appendChild(toast);
@@ -666,7 +668,7 @@ export async function renderSettings(container, user) {
         toast.style.zIndex = "9999";
         toast.innerHTML = `
           <i class="bi bi-exclamation-triangle-fill me-2"></i>
-          Napaka pri preverjanju: ${String(error)}
+          Napaka pri preverjanju: ${esc(error)}
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         document.body.appendChild(toast);
@@ -802,12 +804,12 @@ export async function renderSettings(container, user) {
 
       disciplinesBody.innerHTML = disciplines.map((discipline, index) => `
         <tr>
-          <td>${discipline}</td>
+          <td>${esc(discipline)}</td>
           <td>
-            <button class="btn btn-sm btn-outline-primary me-2 edit-discipline" data-discipline="${discipline}" data-index="${index}">
+            <button class="btn btn-sm btn-outline-primary me-2 edit-discipline" data-discipline="${esc(discipline)}" data-index="${index}">
               <i class="bi bi-pencil"></i>
             </button>
-            <button class="btn btn-sm btn-outline-danger delete-discipline" data-discipline="${discipline}">
+            <button class="btn btn-sm btn-outline-danger delete-discipline" data-discipline="${esc(discipline)}">
               <i class="bi bi-trash"></i>
             </button>
           </td>
@@ -871,7 +873,7 @@ export async function renderSettings(container, user) {
                 <div class="modal-body">
                   <div class="mb-3">
                     <label class="form-label">Ime discipline</label>
-                    <input type="text" id="edit-discipline-name" class="form-control" value="${oldDiscipline}">
+                    <input type="text" id="edit-discipline-name" class="form-control" value="${esc(oldDiscipline)}">
                   </div>
                 </div>
                 <div class="modal-footer">

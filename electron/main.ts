@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
 import { autoUpdater, AppUpdater } from 'electron-updater';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 import { SupabaseDatabaseManager } from './supabase';
 
 // Configure logging
@@ -28,8 +29,19 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
     title: 'ZAS Sodniki - Athletic Officials Payment Tracker',
+  });
+
+  // The window may only ever show the bundled UI: no pop-ups, and no
+  // navigation away from index.html (hash routes are in-page and unaffected).
+  const indexUrl = pathToFileURL(path.join(__dirname, '../src/index.html')).href;
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (url.split('#')[0] !== indexUrl) {
+      event.preventDefault();
+    }
   });
 
   // Maximize window when ready
@@ -158,14 +170,6 @@ app.on('before-quit', () => {
 // Handle IPC for app info
 ipcMain.handle('app:getVersion', () => {
   return app.getVersion();
-});
-
-ipcMain.handle('app:getPath', (_event: IpcMainInvokeEvent, name: string) => {
-  return app.getPath(name as any);
-});
-
-ipcMain.handle('app:ping', async () => {
-  return { pong: true, at: Date.now() };
 });
 
 ipcMain.handle('app:restart', async () => {

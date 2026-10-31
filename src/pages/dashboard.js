@@ -1,3 +1,5 @@
+import { esc } from '../utils/html.js';
+
 export async function renderDashboard(container) {
   container.innerHTML = `
     <div class="row g-4 mb-4">
@@ -133,8 +135,8 @@ export async function renderDashboard(container) {
         tbodyLeft.innerHTML = leftOfficials
           .map(
             ([officialName, totalAmount]) => `
-          <tr class="official-row" style="cursor: pointer;" data-official-name="${officialName}">
-            <td>${officialName}</td>
+          <tr class="official-row" style="cursor: pointer;" data-official-name="${esc(officialName)}">
+            <td>${esc(officialName)}</td>
             <td><strong>${window.formatCurrency(totalAmount)}</strong></td>
           </tr>
         `
@@ -145,8 +147,8 @@ export async function renderDashboard(container) {
         tbodyRight.innerHTML = rightOfficials
           .map(
             ([officialName, totalAmount]) => `
-          <tr class="official-row" style="cursor: pointer;" data-official-name="${officialName}">
-            <td>${officialName}</td>
+          <tr class="official-row" style="cursor: pointer;" data-official-name="${esc(officialName)}">
+            <td>${esc(officialName)}</td>
             <td><strong>${window.formatCurrency(totalAmount)}</strong></td>
           </tr>
         `
@@ -157,8 +159,8 @@ export async function renderDashboard(container) {
         tbodyLeft.innerHTML = sortedOfficials
           .map(
             ([officialName, totalAmount]) => `
-          <tr class="official-row" style="cursor: pointer;" data-official-name="${officialName}">
-            <td>${officialName}</td>
+          <tr class="official-row" style="cursor: pointer;" data-official-name="${esc(officialName)}">
+            <td>${esc(officialName)}</td>
             <td><strong>${window.formatCurrency(totalAmount)}</strong></td>
           </tr>
         `

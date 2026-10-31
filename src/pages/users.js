@@ -1,3 +1,5 @@
+import { esc } from '../utils/html.js';
+
 export async function renderUsers(container, user) {
   if (user?.role !== "admin") {
     container.innerHTML =
@@ -24,12 +26,12 @@ export async function renderUsers(container, user) {
       tbody.innerHTML = list
         .map(
           (u) => `<tr>
-            <td>${u.username}</td>
-            <td>${u.name}</td>
+            <td>${esc(u.username)}</td>
+            <td>${esc(u.name)}</td>
             <td><span class="badge bg-${
               u.role === "admin" ? "primary" : "secondary"
-            }">${u.role}</span></td>
-            <td>${window.formatDate(u.created_at)}</td>
+            }">${esc(u.role)}</span></td>
+            <td>${esc(window.formatDate(u.created_at))}</td>
             <td>
               <button class="btn btn-sm btn-outline-primary edit-user" data-id="${
                 u.id
@@ -72,9 +74,7 @@ export async function renderUsers(container, user) {
     } catch (e) {
       container.querySelector(
         "#users-body"
-      ).innerHTML = `<tr><td colspan="5" class="text-danger">Napaka: ${String(
-        e
-      )}</td></tr>`;
+      ).innerHTML = `<tr><td colspan="5" class="text-danger">Napaka: ${esc(e)}</td></tr>`;
     }
   }
 
@@ -97,12 +97,12 @@ export async function renderUsers(container, user) {
             <button type="button" class="btn-close" data-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div class="mb-2"><label class="form-label">Uporabniško ime</label><input id="f-username" class="form-control" value="${
-              u?.username ?? ""
-            }"></div>
-            <div class="mb-2"><label class="form-label">Ime</label><input id="f-name" class="form-control" value="${
-              u?.name ?? ""
-            }"></div>
+            <div class="mb-2"><label class="form-label">Uporabniško ime</label><input id="f-username" class="form-control" value="${esc(
+              u?.username
+            )}"></div>
+            <div class="mb-2"><label class="form-label">Ime</label><input id="f-name" class="form-control" value="${esc(
+              u?.name
+            )}"></div>
             <div class="mb-2"><label class="form-label">Geslo${
               u ? " (pusti prazno za brez spremembe)" : ""
             }</label><input type="password" id="f-password" class="form-control"><div class="form-text">Najmanj 8 znakov.</div></div>

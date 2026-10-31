@@ -3,8 +3,6 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('api', {
   // App
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
-  getPath: (name: string) => ipcRenderer.invoke('app:getPath', name),
-  ping: async () => ipcRenderer.invoke('app:ping'),
   restart: async () => ipcRenderer.invoke('app:restart'),
   quit: async () => ipcRenderer.invoke('app:quit'),
   // Updater

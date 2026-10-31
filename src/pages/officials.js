@@ -1,3 +1,5 @@
+import { esc } from '../utils/html.js';
+
 export async function renderOfficials(container, user) {
   const isAdmin = user?.role === 'admin';
   container.innerHTML = `
@@ -33,7 +35,7 @@ export async function renderOfficials(container, user) {
       allOfficials = await window.api?.officials?.list();
       renderOfficialsList(allOfficials);
     } catch (e) {
-      container.querySelector('#officials-body').innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-danger">Napaka: ${String(e)}</td></tr>`;
+      container.querySelector('#officials-body').innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" class="text-danger">Napaka: ${esc(e)}</td></tr>`;
     }
   }
 
@@ -42,17 +44,17 @@ export async function renderOfficials(container, user) {
     tbody.innerHTML = list
       .map(
         (o) => `<tr>
-          <td>${o.name ?? ''}</td>
-          <td>${o.email ?? ''}</td>
-          <td>${o.phone ?? ''}</td>
-          <td>${o.rank ?? ''}</td>
-          <td>${o.additional_exams ?? ''}</td>
-          <td>${o.notes ?? ''}</td>
+          <td>${esc(o.name)}</td>
+          <td>${esc(o.email)}</td>
+          <td>${esc(o.phone)}</td>
+          <td>${esc(o.rank)}</td>
+          <td>${esc(o.additional_exams)}</td>
+          <td>${esc(o.notes)}</td>
           <td><span class="badge bg-${o.active ? 'success' : 'secondary'}">${o.active ? 'Aktiven' : 'Neaktiven'}</span></td>
           ${isAdmin ? `<td>
-            <button class="btn btn-sm btn-outline-info info-official" data-id="${o.id}" data-name="${o.name}"><i class="bi bi-info-circle"></i></button>
+            <button class="btn btn-sm btn-outline-info info-official" data-id="${o.id}" data-name="${esc(o.name)}"><i class="bi bi-info-circle"></i></button>
             <button class="btn btn-sm btn-outline-primary edit-official" data-id="${o.id}"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-sm btn-outline-${o.active ? 'warning' : 'success'} toggle-active" data-id="${o.id}" data-active="${o.active}">${o.active ? 'Deaktiviraj' : 'Aktiviraj'}</button>
+            <button class="btn btn-sm btn-outline-${o.active ? 'warning' : 'success'} toggle-active" data-id="${o.id}" data-active="${esc(o.active)}">${o.active ? 'Deaktiviraj' : 'Aktiviraj'}</button>
             <button class="btn btn-sm btn-outline-danger delete-official" data-id="${o.id}"><i class="bi bi-trash"></i></button>
           </td>` : ''}
         </tr>`
@@ -124,13 +126,13 @@ export async function renderOfficials(container, user) {
             <button type="button" class="btn-close" data-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div class="mb-2"><label class="form-label">Ime</label><input id="f-name" class="form-control" value="${official?.name ?? ''}"></div>
-            <div class="mb-2"><label class="form-label">Email</label><input id="f-email" class="form-control" value="${official?.email ?? ''}"></div>
-            <div class="mb-2"><label class="form-label">Telefon</label><input id="f-phone" class="form-control" value="${official?.phone ?? ''}"></div>
-            <div class="mb-2"><label class="form-label">Rang (1, 2, 3)</label><input id="f-rank" class="form-control" value="${official?.rank ?? ''}"></div>
-            <div class="mb-2"><label class="form-label">Dodatni izpiti</label><input id="f-additional-exams" class="form-control" value="${official?.additional_exams ?? ''}"><div class="form-text">Npr: štarter, Delegat...</div></div>
+            <div class="mb-2"><label class="form-label">Ime</label><input id="f-name" class="form-control" value="${esc(official?.name)}"></div>
+            <div class="mb-2"><label class="form-label">Email</label><input id="f-email" class="form-control" value="${esc(official?.email)}"></div>
+            <div class="mb-2"><label class="form-label">Telefon</label><input id="f-phone" class="form-control" value="${esc(official?.phone)}"></div>
+            <div class="mb-2"><label class="form-label">Rang (1, 2, 3)</label><input id="f-rank" class="form-control" value="${esc(official?.rank)}"></div>
+            <div class="mb-2"><label class="form-label">Dodatni izpiti</label><input id="f-additional-exams" class="form-control" value="${esc(official?.additional_exams)}"><div class="form-text">Npr: štarter, Delegat...</div></div>
             <div class="mb-2"><label class="form-check-label"><input type="checkbox" id="f-active" class="form-check-input" ${official?.active ? 'checked' : ''}> Aktiven</label></div>
-            <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control" rows="3">${official?.notes ?? ''}</textarea><div class="form-text">Dodatne opombe o sodniku</div></div>
+            <div class="mb-2"><label class="form-label">Opombe</label><textarea id="f-notes" class="form-control" rows="3">${esc(official?.notes)}</textarea><div class="form-text">Dodatne opombe o sodniku</div></div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Prekliči</button>
@@ -189,7 +191,7 @@ export async function renderOfficials(container, user) {
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Zgodovina sodnika: ${officialName}</h5>
+            <h5 class="modal-title">Zgodovina sodnika: ${esc(officialName)}</h5>
             <button type="button" class="btn-close" data-dismiss="modal"></button>
           </div>
           <div class="modal-body">
@@ -205,8 +207,8 @@ export async function renderOfficials(container, user) {
                 <tbody>
                   ${history.map(h => `
                     <tr>
-                      <td>${h.name}</td>
-                      <td>${h.date ? window.formatDate(h.date) : 'Ni datuma'}</td>
+                      <td>${esc(h.name)}</td>
+                      <td>${h.date ? esc(window.formatDate(h.date)) : 'Ni datuma'}</td>
                       <td style="text-align: right">${window.formatCurrency(h.amount)}</td>
                     </tr>
                   `).join('')}
@@ -271,17 +273,17 @@ export async function renderOfficials(container, user) {
         if (result.ok) {
           let message = `<strong>Uvoz uspešen!</strong><br>Uvoženih: ${result.imported} | Preskočenih: ${result.skipped} | Skupaj: ${result.total}`;
           if (result.errors && result.errors.length > 0) {
-            message += `<br><small>Napake: ${result.errors.join(', ')}</small>`;
+            message += `<br><small>Napake: ${result.errors.map(esc).join(', ')}</small>`;
             showNotification(message, 'warning');
           } else {
             showNotification(message, 'success');
           }
           loadOfficials();
         } else {
-          showNotification(`<strong>Napaka:</strong> ${result.message || 'Neznana napaka'}`, 'danger');
+          showNotification(`<strong>Napaka:</strong> ${esc(result.message || 'Neznana napaka')}`, 'danger');
         }
       } catch (e) {
-        showNotification(`<strong>Napaka pri uvozu:</strong> ${String(e)}`, 'danger');
+        showNotification(`<strong>Napaka pri uvozu:</strong> ${esc(e)}`, 'danger');
       }
     };
   }
@@ -292,7 +294,7 @@ export async function renderOfficials(container, user) {
       await window.api?.officials?.exportExcel();
       showNotification('<strong>Izvoz uspešen!</strong> Seznam sodnikov je bil izvožen.', 'success');
     } catch (e) {
-      showNotification(`<strong>Napaka pri izvozu:</strong> ${String(e)}`, 'danger');
+      showNotification(`<strong>Napaka pri izvozu:</strong> ${esc(e)}`, 'danger');
     }
   };
 
