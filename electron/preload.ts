@@ -45,10 +45,15 @@ contextBridge.exposeInMainWorld('api', {
   },
   // Auth
   auth: {
-    login: (payload: { username: string; password: string }) =>
+    login: (payload: { username: string; password: string; remember?: boolean }) =>
       ipcRenderer.invoke('auth:login', payload),
     logout: () => ipcRenderer.invoke('auth:logout'),
-    validateSession: (userId: number) => ipcRenderer.invoke('auth:validateSession', userId),
+    restoreSession: () => ipcRenderer.invoke('auth:restoreSession'),
+    onExpired: (callback: () => void) => {
+      const listener = () => callback();
+      ipcRenderer.on('auth:expired', listener);
+      return () => ipcRenderer.removeListener('auth:expired', listener);
+    },
   },
   // Settings
   settings: {

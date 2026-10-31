@@ -59,12 +59,12 @@ async function initializeApp() {
     console.log('Database API initialized');
 
     // Set up IPC handlers
-    setupAuthHandlers(db as any);
+    setupAuthHandlers(db);
     setupSettingsHandlers(db as any);
     setupOfficialHandlers(db as any);
     setupCompetitionHandlers(db as any);
     setupPaymentHandlers(db as any);
-    setupUserHandlers(db as any);
+    setupUserHandlers(db);
     setupDashboardHandlers(db as any);
     setupExportHandlers(db as any);
 

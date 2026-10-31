@@ -1,30 +1,37 @@
 import { ipcMain } from 'electron';
-import bcrypt from 'bcryptjs';
+import type { SupabaseDatabaseManager } from '../supabase';
 
-const SALT_ROUNDS = 10;
-
-export function setupUserHandlers(db: any) {
+// Permissions are enforced by the database (only zas_admin may call the user
+// functions); these handlers just forward and report errors.
+export function setupUserHandlers(db: SupabaseDatabaseManager) {
   ipcMain.handle('user:list', async () => {
     return await db.listUsers();
   });
 
   ipcMain.handle('user:create', async (_event, data: { username: string; password: string; name: string; role: string }) => {
-    const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
-    const id = await db.addUser({ ...data, password: hashedPassword });
-    return { ok: id > 0, id };
+    try {
+      const id = await db.addUser(data);
+      return { ok: true, id };
+    } catch (error: any) {
+      return { ok: false, error: error.message };
+    }
   });
 
   ipcMain.handle('user:update', async (_event, { id, data }: { id: number; data: { username: string; name: string; role: string; password?: string } }) => {
-    const updateData = { ...data };
-    if (data.password) {
-      updateData.password = await bcrypt.hash(data.password, SALT_ROUNDS);
+    try {
+      await db.updateUser(id, data);
+      return { ok: true };
+    } catch (error: any) {
+      return { ok: false, error: error.message };
     }
-    const success = await db.updateUser(id, updateData);
-    return { ok: success };
   });
 
   ipcMain.handle('user:delete', async (_event, id: number) => {
-    const success = await db.deleteUser(id);
-    return { ok: success };
+    try {
+      await db.deleteUser(id);
+      return { ok: true };
+    } catch (error: any) {
+      return { ok: false, error: error.message };
+    }
   });
 }

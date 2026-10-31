@@ -24,7 +24,6 @@ samo pri povsem novi postavitvi.
 ```bash
 cd /home/jurer/projects/ZAS-Sodniki
 node scripts/generate-deploy-env.js
-npm run generate:config
 sudo docker network inspect proxy-net >/dev/null || sudo docker network create proxy-net
 sudo docker network inspect psql-net >/dev/null || sudo docker network create psql-net
 sudo docker compose config --quiet
@@ -33,9 +32,9 @@ sudo docker compose up -d
 sudo docker compose ps
 ```
 
-Datoteki `.env` in `electron/generated/api-config.ts` vsebujeta ključe in se ne
-commitata. `node scripts/generate-deploy-env.js --force` ju rotira; tega ne
-uporabi med delovanjem že izdanih odjemalcev brez nove izdaje aplikacije.
+`.env` vsebuje skrivnosti strežnika in se ne commita. Aplikacija od verzije
+1.1.0 ne vsebuje nobenega ključa: uporabniki se prijavijo prek `login()` v bazi
+(glej razdelek 7). JWT skrivnost rotiraš z `./deploy/scripts/rotate-jwt-secret.sh`.
 
 ## 3. HTTP route in TLS certifikat
 
@@ -147,6 +146,76 @@ sudo systemctl list-timers zas-sodniki-backup.timer
 
 Backupi so v `deploy/backups/`, imajo checksum in dovoljenja samo za lastnika.
 Datoteke, starejše od 56 dni, se samodejno odstranijo.
+
+## 7. Database migrations and the v1.1.0 auth cutover
+
+### How it works now
+
+- Schema changes live in `deploy/sql/NNN_*.sql` and are applied by
+  `./deploy/scripts/migrate.sh`, each in one transaction. Applied versions are
+  recorded in `private.schema_migrations`. `--status` lists them.
+- `migrate.sh` also always runs `deploy/sql/roles.sql` (API roles) and
+  `deploy/sql/grant-api.sql` (all API privileges), and copies
+  `PGRST_JWT_SECRET` from `.env` into `private.config` so the database can sign
+  login tokens. `restore-dump.sh` calls `migrate.sh` automatically.
+- Backups exclude the contents of `private.config`, so they don't contain the
+  JWT secret.
+- API roles:
+
+  | Role | Who | Can |
+  |---|---|---|
+  | `zas_anon` | no token | only `rpc/login` |
+  | `zas_user` | app role `user` | read everything except `users` |
+  | `zas_admin` | app role `admin` | read/write data; users only via `create_user` / `update_user` / `delete_user` |
+
+- Tokens last 12 h (30 days with "Ostani prijavljen"). Deleting a user or
+  changing their password or role immediately invalidates their tokens
+  (`private.check_request`, run by PostgREST before every request).
+
+### One-time cutover from v1.0.8 (shared key) to v1.1.0
+
+Do this in the evening when nobody is entering data. All 1.0.8 installs stop
+working at step 3 and get the 1.1.0 update on their next start.
+
+1. **Prepare the release:** on your PC, `npm install`, then `npm run build:win`.
+   Create GitHub release `v1.1.0` as a **draft** with the `.exe`, `.blockmap`
+   and `latest.yml`. Don't publish it yet.
+2. **Backup:** on the VPS:
+   ```bash
+   cd /home/jurer/projects/ZAS-Sodniki
+   ./deploy/scripts/backup.sh
+   git pull
+   ```
+3. **Migrate, rotate the secret, restart PostgREST:**
+   ```bash
+   ./deploy/scripts/migrate.sh
+   ./deploy/scripts/rotate-jwt-secret.sh   # also recreates the api container with the new config
+   ```
+4. **nginx** (adds the login rate limit):
+   ```bash
+   sudo cp deploy/nginx/sodniki-api.https.conf \
+     /home/jurer/projects/vps-reverse-proxy/conf.d/sodniki-api.https.conf
+   sudo docker exec reverse-proxy nginx -t
+   sudo docker exec reverse-proxy nginx -s reload
+   ```
+5. **Verify:**
+   ```bash
+   ./deploy/scripts/verify.sh
+   ```
+   It checks that anonymous reads get `401`, that the old `ZAS_API_KEY` from
+   `.env` is rejected, and that `rpc/login` answers.
+6. **Publish** the GitHub release, then install 1.1.0 and log in once as an
+   admin and once as a normal user.
+7. **Clean up:** delete the `ZAS_API_KEY=` line and `.env.bak` from the VPS. On
+   development machines `.env` no longer needs any server secrets: the app
+   defaults to `https://sodniki-api.jurer.eu`, and `ZAS_API_URL` overrides it.
+
+If `migrate.sh` fails, nothing has changed (single transaction) and 1.0.8 keeps
+working. Rolling back after a successful migration means restoring the
+insecure setup. Avoid it; if you must, recreate the old role
+(`CREATE ROLE zas_sodniki_api NOLOGIN BYPASSRLS; GRANT zas_sodniki_api TO postgrest_authenticator;`),
+check out the previous `docker-compose.yml` and `deploy/sql/grant-api.sql`,
+run that `grant-api.sql`, restore `.env.bak`, and run `docker compose up -d api`.
 
 ## Diagnostika
 

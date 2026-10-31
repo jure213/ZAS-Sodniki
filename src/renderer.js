@@ -115,8 +115,6 @@ function showApp(user) {
     try {
       await window.api?.auth?.logout();
     } catch {}
-    // Always remove session on logout
-    localStorage.removeItem('session');
     window.location.reload();
   };
   
@@ -211,49 +209,50 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.error('Updater initialization failed:', error);
   }
   
-  // Check if "remember me" is enabled
-  const rememberMe = localStorage.getItem('rememberMe') === 'true';
-  
-  // Check session only if remember me is enabled
-  if (rememberMe) {
-    const session = localStorage.getItem('session');
-    if (session) {
-      try {
-        const user = JSON.parse(session);
-        // Validate session with userId
-        const valid = await window.api?.auth?.validateSession(user.id);
-        if (valid?.ok) {
-          showApp(user);
-          return;
-        } else {
-          localStorage.removeItem('session');
-        }
-      } catch {
-        localStorage.removeItem('session');
-      }
-    }
-  } else {
-    // Clear session if remember me is disabled
-    localStorage.removeItem('session');
-  }
-  
-  // Login form handler
+  window.api?.getVersion?.()
+    .then((version) => { qs('appVersion').textContent = `v${version}`; })
+    .catch(() => {});
+
+  // Sessions now live in the main process; drop the pre-1.1 plaintext copy.
+  localStorage.removeItem('session');
+
+  // Token expired, password/role changed or user deleted: back to login.
+  window.api?.auth?.onExpired(() => {
+    sessionStorage.setItem('sessionExpired', '1');
+    window.location.reload();
+  });
+
   const loginForm = qs('loginForm');
   const loginError = qs('loginError');
+
+  if (sessionStorage.getItem('sessionExpired')) {
+    sessionStorage.removeItem('sessionExpired');
+    loginError.textContent = 'Seja je potekla. Prijavite se znova.';
+    loginError.classList.remove('d-none');
+  }
+
+  // Restore a remembered session (the user object comes from the server)
+  if (localStorage.getItem('rememberMe') === 'true') {
+    try {
+      const restored = await window.api?.auth?.restoreSession();
+      if (restored?.ok) {
+        showApp(restored.user);
+        return;
+      }
+    } catch {}
+  }
+
+  // Login form handler
   loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = qs('username').value.trim();
     const password = qs('password').value;
     loginError.classList.add('d-none');
-    
+
     try {
-      const res = await window.api?.auth?.login({ username, password });
+      const remember = localStorage.getItem('rememberMe') === 'true';
+      const res = await window.api?.auth?.login({ username, password, remember });
       if (res?.ok) {
-        // Only save session if "remember me" is enabled
-        const rememberMe = localStorage.getItem('rememberMe') === 'true';
-        if (rememberMe) {
-          localStorage.setItem('session', JSON.stringify(res.user));
-        }
         showApp(res.user);
       } else {
         loginError.textContent = res?.error || 'Napačno uporabniško ime ali geslo';

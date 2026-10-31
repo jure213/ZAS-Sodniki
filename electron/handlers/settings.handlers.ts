@@ -32,8 +32,12 @@ export function setupSettingsHandlers(db: any) {
   });
 
   ipcMain.handle('settings:clearDatabase', async () => {
-    await db.clearAllData();
-    return { ok: true };
+    try {
+      await db.clearAllData();
+      return { ok: true };
+    } catch (error: any) {
+      return { ok: false, error: error.message };
+    }
   });
 
   ipcMain.handle('settings:updateAppSetting', async (_event, key: string, value: any) => {

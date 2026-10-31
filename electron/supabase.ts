@@ -1,17 +1,87 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { API_KEY, API_URL } from "./generated/api-config";
+import { PostgrestClient } from "@supabase/postgrest-js";
+import { API_URL } from "./generated/api-config";
+
+export type AppUser = {
+  id: number;
+  username: string;
+  name: string;
+  role: string;
+};
+
+export type LoginResult = {
+  token: string;
+  expires_at: number;
+  user: AppUser;
+};
+
+// Turns a PostgREST error into a message suitable for the UI. Messages raised
+// by our SQL functions are already in Slovenian.
+function apiErrorMessage(error: { code?: string; message?: string } | null): string {
+  if (!error) return "Neznana napaka";
+  if (error.code === "23505") return "Zapis s to vrednostjo že obstaja.";
+  if (error.code === "42501") return "Nimate dovoljenja za to dejanje.";
+  return error.message || "Neznana napaka";
+}
 
 export class SupabaseDatabaseManager {
-  private supabase: SupabaseClient;
+  private supabase: PostgrestClient<any, any, any>;
+  // The current user's JWT. Lives only in the main process; the renderer
+  // never sees it.
+  private token: string | null = null;
+  private onSessionExpired: (() => void) | null = null;
 
   constructor() {
-    this.supabase = createClient(API_URL, API_KEY, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
+    this.supabase = new PostgrestClient(`${API_URL}/rest/v1`, {
+      fetch: (input: any, init?: any) => this.authFetch(input, init),
     });
+  }
+
+  private async authFetch(input: any, init: any = {}): Promise<Response> {
+    const token = this.token;
+    const headers = new Headers(init.headers);
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    } else {
+      headers.delete("Authorization");
+    }
+
+    const response = await fetch(input, { ...init, headers });
+
+    // Expired token, password/role changed, or user deleted.
+    if (response.status === 401 && token && token === this.token) {
+      this.token = null;
+      this.onSessionExpired?.();
+    }
+    return response;
+  }
+
+  // --- Session ------------------------------------------------------------
+
+  setSessionExpiredHandler(handler: () => void): void {
+    this.onSessionExpired = handler;
+  }
+
+  setToken(token: string | null): void {
+    this.token = token;
+  }
+
+  hasSession(): boolean {
+    return this.token !== null;
+  }
+
+  async login(username: string, password: string, remember: boolean): Promise<LoginResult | null> {
+    this.token = null;
+    const { data, error } = await this.supabase.rpc("login", { username, password, remember });
+    if (error) throw new Error(apiErrorMessage(error));
+    if (!data) return null;
+    this.token = (data as LoginResult).token;
+    return data as LoginResult;
+  }
+
+  async me(): Promise<AppUser | undefined> {
+    const { data, error } = await this.supabase.rpc("me");
+    if (error || !data) return undefined;
+    return data as AppUser;
   }
 
   // Helper function to format currency to European format (1.000,00 €)
@@ -32,47 +102,6 @@ export class SupabaseDatabaseManager {
 
   close(): void {
     // The HTTP-based database client has no persistent connection to close.
-  }
-
-  // Simple helpers
-  async getUserByUsername(username: string): Promise<
-    | {
-        id: number;
-        username: string;
-        password: string;
-        name: string;
-        role: string;
-      }
-    | undefined
-  > {
-    const { data, error } = await this.supabase
-      .from("users")
-      .select("id, username, password, name, role")
-      .eq("username", username)
-      .single();
-
-    if (error || !data) return undefined;
-    return data as any;
-  }
-
-  async getUserById(id: number): Promise<
-    | {
-        id: number;
-        username: string;
-        password: string;
-        name: string;
-        role: string;
-      }
-    | undefined
-  > {
-    const { data, error } = await this.supabase
-      .from("users")
-      .select("id, username, password, name, role")
-      .eq("id", id)
-      .single();
-
-    if (error || !data) return undefined;
-    return data as any;
   }
 
   async listOfficials(): Promise<
@@ -507,53 +536,41 @@ export class SupabaseDatabaseManager {
     return data as any[];
   }
 
+  // User writes go through SQL functions: passwords are hashed in the
+  // database and admins cannot read or write password hashes directly.
   async addUser(data: {
     username: string;
     password: string;
     name: string;
     role: string;
   }): Promise<number> {
-    const { data: result, error } = await this.supabase
-      .from("users")
-      .insert({
-        username: data.username,
-        password: data.password,
-        name: data.name,
-        role: data.role,
-      })
-      .select("id")
-      .single();
-
-    if (error || !result) throw new Error("Failed to add user");
-    return result.id;
+    const { data: id, error } = await this.supabase.rpc("create_user", {
+      username: data.username,
+      password: data.password,
+      name: data.name,
+      role: data.role,
+    });
+    if (error) throw new Error(apiErrorMessage(error));
+    return id as number;
   }
 
   async updateUser(
     id: number,
     data: { username: string; name: string; role: string; password?: string }
-  ): Promise<boolean> {
-    const updateData: any = {
+  ): Promise<void> {
+    const { error } = await this.supabase.rpc("update_user", {
+      id,
       username: data.username,
       name: data.name,
       role: data.role,
-    };
-
-    if (data.password) {
-      updateData.password = data.password;
-    }
-
-    const { error } = await this.supabase
-      .from("users")
-      .update(updateData)
-      .eq("id", id);
-
-    return !error;
+      password: data.password || null,
+    });
+    if (error) throw new Error(apiErrorMessage(error));
   }
 
-  async deleteUser(id: number): Promise<boolean> {
-    const { error } = await this.supabase.from("users").delete().eq("id", id);
-
-    return !error;
+  async deleteUser(id: number): Promise<void> {
+    const { error } = await this.supabase.rpc("delete_user", { id });
+    if (error) throw new Error(apiErrorMessage(error));
   }
 
   // Dashboard stats
@@ -605,19 +622,10 @@ export class SupabaseDatabaseManager {
     };
   }
 
-  // Clear all data from database but keep structure
-  async clearAllData(): Promise<boolean> {
-    try {
-      await this.supabase.from("payments").delete().neq("id", 0);
-      await this.supabase.from("competition_officials").delete().neq("id", 0);
-      await this.supabase.from("competitions").delete().neq("id", 0);
-      await this.supabase.from("officials").delete().neq("id", 0);
-      await this.supabase.from("users").delete().neq("username", "admin");
-      return true;
-    } catch (error) {
-      console.error("Error clearing data:", error);
-      return false;
-    }
+  // Deletes all data in one transaction; keeps settings and the calling admin.
+  async clearAllData(): Promise<void> {
+    const { error } = await this.supabase.rpc("admin_clear_all_data");
+    if (error) throw new Error(apiErrorMessage(error));
   }
 
   // Role management helpers

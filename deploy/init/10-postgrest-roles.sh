@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Runs once, when the database volume is first created. Creates the login role
+# PostgREST connects with. The API roles (zas_anon, zas_user, zas_admin) and
+# their privileges are created by deploy/scripts/migrate.sh after a restore.
 set -euo pipefail
 
 if [[ -z "${POSTGREST_DB_PASSWORD:-}" ]]; then
@@ -10,13 +13,6 @@ psql --set ON_ERROR_STOP=1 \
   --username "$POSTGRES_USER" \
   --dbname "$POSTGRES_DB" \
   --set postgrest_password="$POSTGREST_DB_PASSWORD" <<'SQL'
-CREATE ROLE zas_sodniki_api NOLOGIN BYPASSRLS;
 CREATE ROLE postgrest_authenticator LOGIN NOINHERIT PASSWORD :'postgrest_password';
-GRANT zas_sodniki_api TO postgrest_authenticator;
-
-ALTER ROLE zas_sodniki_api SET statement_timeout = '20s';
-ALTER ROLE zas_sodniki_api SET idle_in_transaction_session_timeout = '20s';
-
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
-GRANT USAGE ON SCHEMA public TO zas_sodniki_api;
 SQL

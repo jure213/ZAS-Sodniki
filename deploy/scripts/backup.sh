@@ -22,6 +22,7 @@ trap 'rm -f "$TEMP_PATH"' EXIT
 "${COMPOSE[@]}" exec -T db pg_dump \
   --username=zas_sodniki_admin --dbname=zas_sodniki \
   --format=custom --compress=9 --no-owner --no-privileges \
+  --exclude-table-data=private.config \
   > "$TEMP_PATH"
 
 "${COMPOSE[@]}" exec -T db pg_restore --list >/dev/null < "$TEMP_PATH"

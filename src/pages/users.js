@@ -53,7 +53,10 @@ export async function renderUsers(container, user) {
           const id = parseInt(btn.dataset.id);
           const confirmed = await window.confirmDialog('Ali ste prepričani, da želite izbrisati tega uporabnika?', 'Izbriši uporabnika');
           if (confirmed) {
-            await window.api?.users?.delete(id);
+            const result = await window.api?.users?.delete(id);
+            if (!result?.ok) {
+              alert(`Napaka pri brisanju: ${result?.error ?? 'Neznana napaka'}`);
+            }
             loadUsers();
           }
         };
@@ -102,7 +105,8 @@ export async function renderUsers(container, user) {
             }"></div>
             <div class="mb-2"><label class="form-label">Geslo${
               u ? " (pusti prazno za brez spremembe)" : ""
-            }</label><input type="password" id="f-password" class="form-control"></div>
+            }</label><input type="password" id="f-password" class="form-control"><div class="form-text">Najmanj 8 znakov.</div></div>
+            <div id="user-form-error" class="alert alert-danger d-none"></div>
             <div class="mb-2"><label class="form-label">Vloga</label><select id="f-role" class="form-select">
               <option value="admin" ${
                 u?.role === "admin" ? "selected" : ""
@@ -139,10 +143,15 @@ export async function renderUsers(container, user) {
       if (password || !u) {
         data.password = password;
       }
-      if (u) {
-        await window.api?.users?.update(u.id, data);
-      } else {
-        await window.api?.users?.create(data);
+      const result = u
+        ? await window.api?.users?.update(u.id, data)
+        : await window.api?.users?.create(data);
+      if (!result?.ok) {
+        // Keep the form open so the input is not lost.
+        const errorBox = modal.querySelector("#user-form-error");
+        errorBox.textContent = result?.error ?? "Neznana napaka";
+        errorBox.classList.remove("d-none");
+        return;
       }
       if (window.cleanupModals) {
         window.cleanupModals();

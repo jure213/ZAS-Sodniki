@@ -56,6 +56,14 @@ RESTORE_LIST="$DUMP_DIR/.restore-list"
 "${COMPOSE[@]}" exec -T db pg_restore --list "/migrations/$(basename "$DUMP_PATH")" \
   | sed -E '/ (POLICY|ROW SECURITY) /d' > "$RESTORE_LIST"
 
+if [[ "$REPLACE" == "true" ]]; then
+  # Forget migration state; migrate.sh re-applies whatever the archive lacks
+  # (all migrations are idempotent). Without this, restoring an older archive
+  # would leave schema_migrations claiming changes the restored tables lack.
+  "${COMPOSE[@]}" exec -T db psql -U zas_sodniki_admin -d zas_sodniki \
+    -v ON_ERROR_STOP=1 -c "DROP SCHEMA IF EXISTS private CASCADE;"
+fi
+
 echo "Restoring schema and data..."
 "${COMPOSE[@]}" exec -T db pg_restore \
   --username=zas_sodniki_admin \
@@ -64,9 +72,9 @@ echo "Restoring schema and data..."
   --use-list=/migrations/.restore-list \
   "/migrations/$(basename "$DUMP_PATH")"
 
-"${COMPOSE[@]}" exec -T db psql \
-  --username=zas_sodniki_admin --dbname=zas_sodniki \
-  < "$PROJECT_DIR/deploy/sql/grant-api.sql"
-
 rm -f "$RESTORE_LIST"
-echo "Restore completed and API grants refreshed."
+
+# Applies pending migrations, recreates API roles and grants, and restores the
+# JWT signing secret (backups deliberately do not contain it).
+"$SCRIPT_DIR/migrate.sh"
+echo "Restore completed, migrations applied and API grants refreshed."

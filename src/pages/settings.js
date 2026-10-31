@@ -38,7 +38,7 @@ export async function renderSettings(container, user) {
             </label>
           </div>
           <small class="text-muted d-block mt-1">
-            <i class="bi bi-info-circle"></i> Ko je ta možnost vključena, boste ostali prijavljeni tudi po ponovnem zagonu aplikacije.
+            <i class="bi bi-info-circle"></i> Ko je ta možnost vključena, boste ostali prijavljeni tudi po ponovnem zagonu aplikacije (največ 30 dni). Velja od naslednje prijave.
           </small>
         </div>
         
@@ -703,12 +703,12 @@ export async function renderSettings(container, user) {
               <li>Vsa tekmovanja</li>
               <li>Vse dodelitve sodnikov</li>
               <li>Vsa plačila</li>
-              <li>Vse uporabnike razen administratorja</li>
+              <li>Vse uporabnike razen vas</li>
             </ul>
             <p>To bo <strong>ohranilo</strong>:</p>
             <ul>
-              <li>Administratorski račun</li>
-              <li>Nastavitve vlog</li>
+              <li>Vaš uporabniški račun</li>
+              <li>Nastavitve (vloge, discipline, potni stroški)</li>
             </ul>
             <p class="text-danger fw-bold mt-3">
               <i class="bi bi-exclamation-circle me-1"></i>TA AKCIJA JE NEPOVRATNA!
@@ -762,7 +762,10 @@ export async function renderSettings(container, user) {
         modal2.remove();
 
         try {
-          await window.api?.settings?.clearDatabase();
+          const result = await window.api?.settings?.clearDatabase();
+          if (!result?.ok) {
+            throw new Error(result?.error ?? "Neznana napaka");
+          }
 
           // Show success message
           const successDiv = document.createElement("div");
