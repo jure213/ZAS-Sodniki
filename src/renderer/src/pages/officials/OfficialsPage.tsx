@@ -154,7 +154,7 @@ export function OfficialsPage() {
         error={officials.error}
         onRetry={() => void officials.refetch()}
         searchText={(o) => [o.name, o.email, o.phone, o.rank, o.additional_exams, o.notes].join(' ')}
-        searchPlaceholder="Išči po imenu, e-pošti, rangu, opombah…"
+        searchPlaceholder="Išči sodnika…"
         filters={[
           {
             id: 'status',
