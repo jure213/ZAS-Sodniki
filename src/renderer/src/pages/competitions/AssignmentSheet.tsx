@@ -259,11 +259,13 @@ export function AssignmentSheet({
                       <div className="grid grid-cols-[6rem_1fr_1fr] items-center gap-2 border-t px-3 py-2">
                         <span className="text-sm">Osnova</span>
                         <MoneyInput
+                          id="a-base-sodnik"
                           value={calc ? calc.baseSodnik : null}
                           disabled={!calc}
                           onChange={(c) => c != null && setOverride((o) => ({ ...o, sodnik: c }))}
                         />
                         <MoneyInput
+                          id="a-base-racun"
                           value={calc ? calc.baseRacun : null}
                           disabled={!calc}
                           onChange={(c) => c != null && setOverride((o) => ({ ...o, racun: c }))}
