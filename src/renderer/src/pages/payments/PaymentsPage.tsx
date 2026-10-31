@@ -152,15 +152,15 @@ export function PaymentsPage() {
       />
 
       <div className="mb-3 flex flex-wrap items-end gap-3 rounded-xl border bg-card p-3 shadow-sm">
-        <div className="w-56 space-y-1">
+        <div className="w-60 space-y-1">
           <Label className="text-xs">Sodnik</Label>
           <Combobox value={official} onChange={(v) => setParam('official', v)} options={officialOptions} placeholder="Vsi sodniki" searchPlaceholder="Išči sodnika…" />
         </div>
-        <div className="w-64 space-y-1">
+        <div className="w-72 space-y-1">
           <Label className="text-xs">Tekmovanje</Label>
           <Combobox value={competition} onChange={(v) => setParam('competition', v)} options={competitionOptions} placeholder="Vsa tekmovanja" searchPlaceholder="Išči tekmovanje…" />
         </div>
-        <div className="w-52 space-y-1">
+        <div className="w-64 space-y-1">
           <Label className="text-xs">Status</Label>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger aria-label="Status izplačila">
@@ -176,13 +176,13 @@ export function PaymentsPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="w-36 space-y-1">
+        <div className="w-40 space-y-1">
           <Label className="text-xs" htmlFor="f-from">
             Tekma od
           </Label>
           <DateField id="f-from" value={from} onChange={setFrom} />
         </div>
-        <div className="w-36 space-y-1">
+        <div className="w-40 space-y-1">
           <Label className="text-xs" htmlFor="f-to">
             Tekma do
           </Label>
