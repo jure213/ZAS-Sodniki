@@ -1,6 +1,8 @@
 // Domain query hooks. Mutations are used directly via useApiMutation in the pages.
 
-import { useApiQuery, qk } from '@/lib/api';
+import { toast } from 'sonner';
+import type { SaveFileResult } from '@shared/types';
+import { useApiMutation, useApiQuery, qk } from '@/lib/api';
 
 export const useOfficials = () => useApiQuery('officials:list', undefined, qk.officials.list);
 export const useOfficialHistory = (id: number | null) =>
@@ -22,3 +24,18 @@ export const useDashboardStats = (year?: number) =>
 export const useOwedByOfficial = () => useApiQuery('dashboard:owedByOfficial', undefined, qk.dashboard.owed);
 
 export const useUsers = () => useApiQuery('users:list', undefined, qk.users.list);
+
+/**
+ * Excel export mutation: the channel opens the native save dialog in main and
+ * returns { saved }. Shows a success toast with the file path (nothing on cancel).
+ */
+export function useExcelExport<C extends 'excel:officials' | 'excel:competitions' | 'excel:payments' | 'excel:competitionReport' | 'excel:summary' | 'excel:preview'>(
+  channel: C,
+) {
+  return useApiMutation(channel, {
+    onSuccess: (res) => {
+      const r = res as SaveFileResult;
+      if (r.saved) toast.success('Datoteka shranjena', { description: r.filePath });
+    },
+  });
+}

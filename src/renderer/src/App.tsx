@@ -6,6 +6,8 @@ import { AppShell } from '@/components/AppShell';
 import { SessionExpiredDialog } from '@/components/SessionExpiredDialog';
 import { UpdaterDialog } from '@/components/UpdaterDialog';
 import { LoginPage } from '@/pages/LoginPage';
+import { DashboardPage } from '@/pages/DashboardPage';
+import { OfficialsPage } from '@/pages/officials/OfficialsPage';
 import { Placeholder } from '@/pages/Placeholder';
 
 function AdminOnly({ children }: { children: React.ReactNode }) {
@@ -32,8 +34,8 @@ export function App() {
           <Routes>
             <Route element={<AppShell />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Placeholder title="Nadzorna plošča" />} />
-              <Route path="/officials" element={<Placeholder title="Sodniki" />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/officials" element={<OfficialsPage />} />
               <Route path="/competitions" element={<Placeholder title="Tekmovanja" />} />
               <Route path="/payments" element={<Placeholder title="Izplačila" />} />
               <Route path="/exports" element={<Placeholder title="Izpisi" />} />
