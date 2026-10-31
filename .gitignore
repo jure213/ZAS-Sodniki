@@ -71,6 +71,7 @@ dist-electron/
 # Generated API configuration and database migration artifacts
 src/main/generated/
 parity/
+!/scripts/parity/
 *.dump
 *.dump.sha256
 deploy/dumps/
