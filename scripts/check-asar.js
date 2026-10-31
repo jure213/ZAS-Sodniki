@@ -42,4 +42,16 @@ if (bad.length) {
   for (const f of bad) console.error("  " + f);
   process.exit(1);
 }
+// Which API does this build talk to? --release insists on production, so a
+// leftover ZAS_API_URL (for example localhost in .env) cannot ship by accident.
+const PROD_API = "https://sodniki-api.jurer.eu";
+const asarLib = require("@electron/asar");
+const mainJs = asarLib.extractFile(asar, path.join("out", "main", "index.js")).toString("utf8");
+const apiUrl = (/const API_URL = "([^"]*)"/.exec(mainJs) || [])[1];
+console.log(`API URL in this package: ${apiUrl ?? "(not found)"}`);
+if (process.argv.includes("--release") && apiUrl !== PROD_API) {
+  console.error(`--release: expected ${PROD_API}. Remove ZAS_API_URL from .env (or the shell) and rebuild.`);
+  process.exit(1);
+}
+
 console.log(`asar check OK: ${listing.length} entries, nothing forbidden (${path.relative(root, asar)}).`);
